@@ -1,0 +1,73 @@
+# Logs
+logs
+backend/logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Variáveis de Ambiente e Arquivos Sensíveis
+.env
+.env.*
+.env.local
+.env.staging
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+.envrc
+.npmrc
+.yarnrc
+.yarnrc.yml
+*.key
+*.pem
+*.pub
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+
+# Dados locais, dumps e backups
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+*.backup
+*.orig
+*.rej
+tmp/
+temp/
+
+# Documentações Administrativas
+awesome-codex-skills/
+agent-repos/
+.codex
+
+# Build e Dependências do Front (React) e Back (Node)
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.nyc_output/
+.cache/
+.vite/
+playwright-report/
+test-results/
+*.tsbuildinfo
+backend/node_modules/
+frontend/node_modules/
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store

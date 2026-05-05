@@ -1,0 +1,4 @@
+interface:
+  display_name: "SyncSphere"
+  short_description: "Contexto operacional do projeto SyncSphere."
+  default_prompt: "Use o contexto do SyncSphere para trabalhar neste projeto seguindo sua arquitetura, padrões de segurança, front-end e back-end."

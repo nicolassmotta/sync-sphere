@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "rube": {
+      "url": "https://rube.app/mcp"
+    },
+    "syncsphere-filesystem": {
+      "command": "REPLACE_WITH_FILESYSTEM_MCP_COMMAND",
+      "args": [
+        "/home/nicolasmotta/sync-sphere"
+      ]
+    },
+    "syncsphere-git": {
+      "command": "REPLACE_WITH_GIT_MCP_COMMAND",
+      "args": [
+        "/home/nicolasmotta/sync-sphere"
+      ]
+    },
+    "syncsphere-mongodb-dev": {
+      "command": "REPLACE_WITH_MONGODB_MCP_COMMAND",
+      "args": [
+        "mongodb://localhost:27017/syncsphere"
+      ]
+    },
+    "syncsphere-redis-dev": {
+      "command": "REPLACE_WITH_REDIS_MCP_COMMAND",
+      "args": [
+        "redis://127.0.0.1:6379"
+      ]
+    },
+    "syncsphere-browser": {
+      "command": "REPLACE_WITH_BROWSER_OR_PLAYWRIGHT_MCP_COMMAND",
+      "args": []
+    }
+  }
+}

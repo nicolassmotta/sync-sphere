@@ -1,0 +1,48 @@
+import { ListMusic } from 'lucide-react';
+
+const workflowSteps = [
+    {
+        label: '1',
+        title: 'Back-end e serviços',
+        text: 'Express, MongoDB, Redis e trabalhador precisam estar prontos.',
+    },
+    {
+        label: '2',
+        title: 'Integrações',
+        text: 'Spotify OAuth e YTMUSIC_COOKIE validam origem e destino.',
+    },
+    {
+        label: '3',
+        title: 'Migração',
+        text: 'Escolha playlists, enfileire tarefas e acompanhe Socket.io.',
+    },
+];
+
+const WorkflowCard = () => (
+    <div className="elevated-card p-6">
+        <div className="mb-6 flex items-center justify-between">
+            <div>
+                <p className="text-xs font-bold uppercase text-white/40">Como funciona</p>
+                <h3 className="mt-1 text-xl font-black text-white">Fluxo local resumido</h3>
+            </div>
+            <ListMusic className="text-spotify" size={24} />
+        </div>
+
+        <div className="space-y-3">
+            {workflowSteps.map((step, index) => (
+                <div key={step.label} className="flex gap-4 rounded-lg border border-white/10 bg-black/30 p-4">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-sm font-black text-white">
+                        {index + 1}
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold uppercase text-spotify">Passo {step.label}</p>
+                        <h4 className="mt-1 font-black text-white">{step.title}</h4>
+                        <p className="mt-1 text-sm leading-6 text-muted">{step.text}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+export default WorkflowCard;
