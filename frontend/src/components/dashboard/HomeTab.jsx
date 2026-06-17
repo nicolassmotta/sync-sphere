@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Plus,
     Radio,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getTransferDirectionOption, TRANSFER_DIRECTIONS } from '../../constants/transferDirections';
 import api from '../../services/api';
 import Button from '../ui/Button';
 import FadeInPage from '../ui/FadeInPage';
@@ -15,6 +16,7 @@ import SourceSelectionCard from './home/SourceSelectionCard';
 import SpotifyPlaylistSelectionCard from './home/SpotifyPlaylistSelectionCard';
 import TransferConfirmModal from './home/TransferConfirmModal';
 import WorkflowCard from './home/WorkflowCard';
+import YoutubePlaylistSelectionCard from './home/YoutubePlaylistSelectionCard';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -31,6 +33,8 @@ const cardVariants = {
 
 const HomeTab = ({
     user,
+    transferDirection,
+    onTransferDirectionChange,
     showModal,
     setShowModal,
     sourcePlaylistId,
@@ -54,26 +58,54 @@ const HomeTab = ({
     refreshSpotifyPlaylists,
     setActiveTab
 }) => {
-    const youtubeReady = integrations?.youtubeMusic?.connected;
-    const spotifyConnected = integrations?.spotify?.connected;
+    const directionOption = getTransferDirectionOption(transferDirection);
+    const isYoutubeToSpotify = transferDirection === TRANSFER_DIRECTIONS.YOUTUBE_TO_SPOTIFY;
+    const youtubeReady = Boolean(integrations?.youtubeMusic?.connected);
+    const spotifyConnected = Boolean(integrations?.spotify?.connected);
     const [trackPreviews, setTrackPreviews] = useState({});
+    const [youtubePlaylistPreview, setYoutubePlaylistPreview] = useState(null);
     const selectedPlaylistIdSet = useMemo(() => new Set(sourcePlaylistIds), [sourcePlaylistIds]);
     const blockedPlaylistIdSet = useMemo(() => new Set(
         Object.entries(trackPreviews)
             .filter(([, preview]) => preview?.blocked)
             .map(([playlistId]) => playlistId)
     ), [trackPreviews]);
-    const selectedPlaylists = useMemo(
+    const spotifySelectedPlaylists = useMemo(
         () => spotifyPlaylists.filter((playlist) => selectedPlaylistIdSet.has(playlist.id)),
         [spotifyPlaylists, selectedPlaylistIdSet]
     );
+    const youtubeSelectedPlaylists = useMemo(() => {
+        if (!isYoutubeToSpotify || !sourcePlaylistId) return [];
+
+        return [{
+            id: sourcePlaylistId,
+            name: youtubePlaylistPreview?.name || 'Playlist YouTube Music',
+            imageUrl: youtubePlaylistPreview?.imageUrl,
+            trackCount: youtubePlaylistPreview?.totalTracks || youtubePlaylistPreview?.tracks?.length || 0,
+        }];
+    }, [isYoutubeToSpotify, sourcePlaylistId, youtubePlaylistPreview]);
+    const selectedPlaylists = isYoutubeToSpotify ? youtubeSelectedPlaylists : spotifySelectedPlaylists;
     const hasManualPlaylist = Boolean(sourcePlaylistId);
-    const selectedCount = sourcePlaylistIds.length || (hasManualPlaylist ? 1 : 0);
-    const readyToTransfer = Boolean(youtubeReady && selectedCount > 0);
+    const selectedCount = isYoutubeToSpotify
+        ? (hasManualPlaylist ? 1 : 0)
+        : sourcePlaylistIds.length || (hasManualPlaylist ? 1 : 0);
+    const readyToTransfer = isYoutubeToSpotify
+        ? Boolean(youtubeReady && spotifyConnected && selectedCount > 0)
+        : Boolean(youtubeReady && selectedCount > 0);
+
+    useEffect(() => {
+        setYoutubePlaylistPreview(null);
+    }, [transferDirection]);
 
     const openTransferModal = useCallback(() => {
         setShowModal(true);
     }, [setShowModal]);
+
+    const handleTransferDirectionChange = useCallback((nextDirection) => {
+        setTrackPreviews({});
+        setYoutubePlaylistPreview(null);
+        onTransferDirectionChange(nextDirection);
+    }, [onTransferDirectionChange]);
 
     const loadTrackPreview = useCallback(async (playlistId, { open = true } = {}) => {
         setTrackPreviews((current) => ({
@@ -126,6 +158,56 @@ const HomeTab = ({
             return { ok: false, blocked, message };
         }
     }, [setSourcePlaylistIds]);
+
+    const loadYoutubePlaylistPreview = useCallback(async () => {
+        const playlistId = sourcePlaylistId.trim();
+        if (!playlistId) {
+            toast.error('Cole o link ou ID da playlist do YouTube Music.');
+            return { ok: false };
+        }
+
+        setYoutubePlaylistPreview({
+            open: true,
+            loading: true,
+            tracks: [],
+            totalTracks: 0,
+            hasMore: false,
+            error: '',
+            blocked: false,
+        });
+
+        try {
+            const response = await api.get('/integrations/youtube-music/playlist-tracks', {
+                params: { playlistId, limit: 30 },
+            });
+            const data = response.data.data;
+            setYoutubePlaylistPreview({
+                open: true,
+                loading: false,
+                name: data.name,
+                imageUrl: data.imageUrl,
+                tracks: data.tracks || [],
+                totalTracks: data.totalTracks || 0,
+                hasMore: Boolean(data.hasMore),
+                error: '',
+                blocked: false,
+            });
+            return { ok: true };
+        } catch (err) {
+            const message = err.response?.data?.message || 'Não foi possível carregar as faixas dessa playlist.';
+            setYoutubePlaylistPreview({
+                open: true,
+                loading: false,
+                tracks: [],
+                totalTracks: 0,
+                hasMore: false,
+                error: message,
+                blocked: true,
+            });
+            toast.error(message);
+            return { ok: false, message };
+        }
+    }, [sourcePlaylistId]);
 
     const togglePlaylist = useCallback(async (playlistId) => {
         if (selectedPlaylistIdSet.has(playlistId)) {
@@ -209,16 +291,22 @@ const HomeTab = ({
     const handleManualPlaylistChange = useCallback((event) => {
         setSourcePlaylistIds([]);
         setSourcePlaylistId(event.target.value);
+        setYoutubePlaylistPreview(null);
     }, [setSourcePlaylistId, setSourcePlaylistIds]);
 
     const handlePrimaryAction = useCallback(() => {
-        if (!youtubeReady) {
+        if (isYoutubeToSpotify && (!youtubeReady || !spotifyConnected)) {
+            setActiveTab('integrations');
+            return;
+        }
+
+        if (!isYoutubeToSpotify && !youtubeReady) {
             setActiveTab('integrations');
             return;
         }
 
         openTransferModal();
-    }, [openTransferModal, setActiveTab, youtubeReady]);
+    }, [isYoutubeToSpotify, openTransferModal, setActiveTab, spotifyConnected, youtubeReady]);
 
     return (
         <FadeInPage className="mx-auto w-full max-w-7xl">
@@ -226,13 +314,13 @@ const HomeTab = ({
                 <div>
                     <p className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold text-white/65">
                         <Radio size={15} className="text-spotify" />
-                        Olá, {user?.name || 'usuário local'} · configuração e migração no mesmo painel
+                        Olá, {user?.name || 'usuário local'} · {directionOption.label}
                     </p>
                     <h1 className="max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">
-                        SyncSphere: migrador local Spotify -&gt; YouTube Music.
+                        SyncSphere: migrador local entre Spotify e YouTube Music.
                     </h1>
                     <p className="mt-3 max-w-2xl text-base leading-7 text-muted">
-                        Valide back-end, MongoDB, Redis, Spotify OAuth e YTMUSIC_COOKIE antes de enfileirar a migração.
+                        Valide o back-end, conecte o Spotify por OAuth e configure o YTMUSIC_COOKIE antes de enfileirar a migração.
                     </p>
                 </div>
 
@@ -242,7 +330,7 @@ const HomeTab = ({
                     size="lg"
                     leftIcon={<Plus size={19} />}
                 >
-                    {youtubeReady ? 'Nova transferência' : 'Configurar destino'}
+                    {readyToTransfer ? 'Nova transferência' : 'Configurar fluxo'}
                 </Button>
             </div>
 
@@ -255,7 +343,10 @@ const HomeTab = ({
                     onRefreshIntegrations={refreshIntegrations}
                     onRefreshSystemStatus={refreshSystemStatus}
                     refreshLoading={integrationsLoading || systemStatusLoading}
+                    readyToTransfer={readyToTransfer}
                     selectedCount={selectedCount}
+                    sourceLabel={directionOption.source}
+                    targetLabel={directionOption.target}
                     systemStatus={systemStatus}
                 />
             </div>
@@ -263,6 +354,8 @@ const HomeTab = ({
             <TransferConfirmModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
+                sourceLabel={directionOption.source}
+                targetLabel={directionOption.target}
                 selectedPlaylists={selectedPlaylists}
                 sourcePlaylistId={sourcePlaylistId}
                 onManualPlaylistChange={handleManualPlaylistChange}
@@ -279,34 +372,55 @@ const HomeTab = ({
             >
                 <motion.section variants={cardVariants} className="space-y-5">
                     <SourceSelectionCard
+                        transferDirection={transferDirection}
                         spotifyConnected={spotifyConnected}
+                        youtubeReady={youtubeReady}
                         hasManualPlaylist={hasManualPlaylist}
-                        onRefreshSpotifyPlaylists={() => refreshSpotifyPlaylists()}
+                        onTransferDirectionChange={handleTransferDirectionChange}
                         onOpenManualPlaylist={openTransferModal}
-                        onOpenIntegrations={() => setActiveTab('integrations')}
                     />
 
-                    <SpotifyPlaylistSelectionCard
-                        spotifyConnected={spotifyConnected}
-                        spotifyPlaylists={spotifyPlaylists}
-                        spotifyPlaylistsSummary={spotifyPlaylistsSummary}
-                        spotifyPlaylistsLoading={spotifyPlaylistsLoading}
-                        spotifyPlaylistsError={spotifyPlaylistsError}
-                        sourcePlaylistIds={sourcePlaylistIds}
-                        selectedPlaylistIdSet={selectedPlaylistIdSet}
-                        trackPreviews={trackPreviews}
-                        onRefreshSpotifyPlaylists={() => refreshSpotifyPlaylists()}
-                        onSelectAllPlaylists={selectAllPlaylists}
-                        onClearSelectedPlaylists={clearSelectedPlaylists}
-                        onTogglePlaylist={togglePlaylist}
-                        onToggleTrackPreview={toggleTrackPreview}
-                        onOpenIntegrations={() => setActiveTab('integrations')}
-                    />
+                    {!isYoutubeToSpotify && (
+                        <SpotifyPlaylistSelectionCard
+                            spotifyConnected={spotifyConnected}
+                            spotifyPlaylists={spotifyPlaylists}
+                            spotifyPlaylistsSummary={spotifyPlaylistsSummary}
+                            spotifyPlaylistsLoading={spotifyPlaylistsLoading}
+                            spotifyPlaylistsError={spotifyPlaylistsError}
+                            sourcePlaylistIds={sourcePlaylistIds}
+                            selectedPlaylistIdSet={selectedPlaylistIdSet}
+                            trackPreviews={trackPreviews}
+                            onRefreshSpotifyPlaylists={() => refreshSpotifyPlaylists()}
+                            onSelectAllPlaylists={selectAllPlaylists}
+                            onClearSelectedPlaylists={clearSelectedPlaylists}
+                            onTogglePlaylist={togglePlaylist}
+                            onToggleTrackPreview={toggleTrackPreview}
+                            onOpenIntegrations={() => setActiveTab('integrations')}
+                        />
+                    )}
+
+                    {isYoutubeToSpotify && (
+                        <YoutubePlaylistSelectionCard
+                            preview={youtubePlaylistPreview}
+                            sourcePlaylistId={sourcePlaylistId}
+                            spotifyConnected={spotifyConnected}
+                            youtubeReady={youtubeReady}
+                            onLoadPreview={loadYoutubePlaylistPreview}
+                            onOpenIntegrations={() => setActiveTab('integrations')}
+                            onPlaylistChange={handleManualPlaylistChange}
+                            onReviewTransfer={openTransferModal}
+                        />
+                    )}
                 </motion.section>
 
                 <motion.aside variants={cardVariants} className="space-y-5">
-                    <WorkflowCard />
+                    <WorkflowCard
+                        sourceLabel={directionOption.source}
+                        targetLabel={directionOption.target}
+                    />
                     <DestinationCard
+                        transferDirection={transferDirection}
+                        spotifyReady={spotifyConnected}
                         youtubeReady={youtubeReady}
                         selectedCount={selectedCount}
                         readyToTransfer={readyToTransfer}

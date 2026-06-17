@@ -1,10 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
     Database,
     ExternalLink,
     Info,
     Plug,
-    Radio,
     RefreshCw,
     Server,
     Trash2,
@@ -19,12 +18,6 @@ import CopySnippet from '../ui/CopySnippet';
 import FadeInPage from '../ui/FadeInPage';
 import StatusBadge from '../ui/StatusBadge';
 import { SpotifyIcon, YoutubeIcon } from '../ui/BrandIcons';
-
-const dependencyState = (value) => {
-    if (value === 'up') return { label: 'online', tone: 'success' };
-    if (value === 'down') return { label: 'offline', tone: 'danger' };
-    return { label: 'desconhecido', tone: 'warning' };
-};
 
 const TechnicalStatusCard = ({ detail, icon: Icon, label, state, tone }) => (
     <div className="rounded-lg border border-white/10 bg-black/35 p-4">
@@ -127,8 +120,6 @@ const IntegrationsTab = ({
     const spotifyConnected = integrations?.spotify?.connected;
     const youtubeReady = integrations?.youtubeMusic?.connected;
     const backendOnline = systemStatus?.backend?.status === 'online';
-    const mongoState = dependencyState(systemStatus?.dependencies?.mongo);
-    const redisState = dependencyState(systemStatus?.dependencies?.redis);
 
     const startOAuth = async ({ path, setLoading, fallbackMessage }) => {
         setLoading(true);
@@ -166,7 +157,7 @@ const IntegrationsTab = ({
                         <Plug className="text-spotify" /> Integrações locais
                     </h2>
                     <p className="max-w-3xl text-muted">
-                        Status técnico do back-end e dos provedores usados pelo fluxo Spotify -&gt; YouTube Music.
+                        Status técnico do back-end e dos provedores usados nos fluxos Spotify -&gt; YouTube Music e YouTube Music -&gt; Spotify.
                     </p>
                 </div>
                 <Button
@@ -184,7 +175,7 @@ const IntegrationsTab = ({
                 <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="text-xs font-bold uppercase text-white/40">Ambiente local</p>
-                        <h3 className="mt-1 text-xl font-black text-white">Back-end, MongoDB e Redis</h3>
+                        <h3 className="mt-1 text-xl font-black text-white">Back-end e dados locais</h3>
                     </div>
                     <a
                         href={`${API_ORIGIN}/api/health`}
@@ -195,7 +186,7 @@ const IntegrationsTab = ({
                         Saúde local <ExternalLink size={15} />
                     </a>
                 </div>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                     <TechnicalStatusCard
                         detail={backendOnline ? systemStatus?.backend?.message : `Valide ${API_ORIGIN}/api/health.`}
                         icon={Server}
@@ -204,18 +195,11 @@ const IntegrationsTab = ({
                         tone={backendOnline ? 'success' : 'danger'}
                     />
                     <TechnicalStatusCard
-                        detail="Persistência de usuários, tokens criptografados e histórico de transferências."
+                        detail="Credenciais cifradas e histórico em arquivos locais (backend/data); a fila roda no próprio processo."
                         icon={Database}
-                        label="MongoDB"
-                        state={mongoState.label}
-                        tone={mongoState.tone}
-                    />
-                    <TechnicalStatusCard
-                        detail="Fila BullMQ para trabalhos longos e progresso assíncrono."
-                        icon={Radio}
-                        label="Redis"
-                        state={redisState.label}
-                        tone={redisState.tone}
+                        label="Dados e fila locais"
+                        state={backendOnline ? 'online' : 'offline'}
+                        tone={backendOnline ? 'success' : 'danger'}
                     />
                 </div>
             </Card>
@@ -224,7 +208,7 @@ const IntegrationsTab = ({
                 <IntegrationCard
                     accent="via-spotify"
                     connected={spotifyConnected}
-                    description="Origem das playlists. O back-end usa OAuth para listar playlists e ler faixas autorizadas pelo usuário autenticado."
+                    description="Origem ou destino. O back-end usa OAuth para listar playlists, buscar faixas e criar playlists privadas quando o Spotify for destino."
                     icon={<SpotifyIcon className="h-8 w-8 fill-spotify" />}
                     loading={connectingSpotify}
                     onConnect={() => startOAuth({
@@ -239,7 +223,8 @@ const IntegrationsTab = ({
                     })}
                     setupSteps={[
                         'Defina SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET no backend/.env.',
-                        'Use SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback.',
+                        'Use SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback.',
+                        'Reconecte se o app antigo não tiver playlist-modify-private/playlist-modify-public.',
                         'Clique em conectar para concluir o OAuth no navegador.',
                     ]}
                     title="Spotify OAuth"
@@ -248,7 +233,7 @@ const IntegrationsTab = ({
                 <IntegrationCard
                     accent="via-youtube"
                     connected={youtubeReady}
-                    description="Destino da migração. O back-end cria playlists privadas no YouTube Music usando o cookie local configurado no .env."
+                    description="Origem ou destino. O back-end lê playlists e cria playlists privadas no YouTube Music usando o cookie local configurado no .env."
                     icon={<YoutubeIcon className="h-8 w-8 fill-youtube" />}
                     loading={systemStatusLoading || integrationsLoading}
                     onConnect={refreshAll}

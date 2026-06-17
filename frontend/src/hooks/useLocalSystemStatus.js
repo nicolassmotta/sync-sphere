@@ -8,8 +8,8 @@ const DEFAULT_STATUS = {
         uptimeSeconds: null,
     },
     dependencies: {
-        mongo: 'unknown',
-        redis: 'unknown',
+        storage: 'unknown',
+        queue: 'unknown',
     },
     checkedAt: null,
 };
@@ -44,8 +44,8 @@ export const useLocalSystemStatus = () => {
                 uptimeSeconds: null,
             },
             dependencies: {
-                mongo: 'unknown',
-                redis: 'unknown',
+                storage: 'unknown',
+                queue: 'unknown',
             },
             checkedAt: new Date().toISOString(),
         };
@@ -62,8 +62,8 @@ export const useLocalSystemStatus = () => {
         if (readyResult.status === 'fulfilled') {
             const readyPayload = await readJson(readyResult.value);
             nextStatus.dependencies = {
-                mongo: readyPayload.dependencies?.mongo || 'unknown',
-                redis: readyPayload.dependencies?.redis || 'unknown',
+                storage: readyPayload.dependencies?.storage || 'unknown',
+                queue: readyPayload.dependencies?.queue || 'unknown',
             };
         }
 

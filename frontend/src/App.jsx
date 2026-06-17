@@ -5,7 +5,6 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/useAuthStore';
 
 const Landing = lazy(() => import('./pages/Landing'));
-const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -18,12 +17,6 @@ const LoadingScreen = () => (
     </div>
 );
 
-// Guardião que trava rotas sem Auth e sem Delay visual
-const PrivateRoute = ({ children }) => {
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    return isAuthenticated ? children : <Navigate to="/login" replace />;
-};
-
 // Componente Wrapper para injetar hooks do react-router adequadamente nas animações
 const AnimatedRoutes = () => {
     const location = useLocation();
@@ -32,12 +25,9 @@ const AnimatedRoutes = () => {
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/dashboard" element={
-                    <PrivateRoute>
-                        <Dashboard />
-                    </PrivateRoute>
-                } />
+                {/* No modo local não há login: rota antiga redireciona para o painel. */}
+                <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </AnimatePresence>

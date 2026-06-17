@@ -1,33 +1,24 @@
 import { create } from 'zustand';
-import api from '../services/api';
+
+// Usuário local fixo: no modo self-hosted não há contas nem login.
+const LOCAL_USER = { id: 'local', name: 'Você', email: null };
 
 export const useAuthStore = create((set) => ({
-    user: null, // Guarda os dados do usuário vindos do Mongo.
-    isAuthenticated: false,
-    isCheckingAuth: true, // Começa como true para pausar a renderização enquanto a sessão é conferida.
-    
-    // Ações básicas.
-    login: (userData) => set({ user: userData, isAuthenticated: true }),
-    logout: () => set({ user: null, isAuthenticated: false }),
+    user: LOCAL_USER,
+    isAuthenticated: true,
+    isCheckingAuth: true, // Começa true só para alinhar o primeiro render; resolvido por checkAuth.
+
+    // Ações básicas (mantidas para compatibilidade com componentes existentes).
+    login: () => set({ user: LOCAL_USER, isAuthenticated: true }),
+    logout: () => set({ user: LOCAL_USER, isAuthenticated: true }),
     updateUser: (userData) => set((state) => ({ user: { ...state.user, ...userData } })),
 
-    // Hidrata a sessão sempre que o front-end acorda, como ao recarregar a página.
+    // Modo local: não há login. A sessão já começa autenticada como o dono da máquina.
     checkAuth: async () => {
-        try {
-            // Pede ao Express para validar o cookie HttpOnly via middleware `protect`.
-            const response = await api.get('/auth/me');
-            set({ 
-                user: response.data.data.user, 
-                isAuthenticated: true, 
-                isCheckingAuth: false 
-            });
-        } catch {
-            // Se cair aqui, o cookie expirou, foi apagado ou não existe. O front-end volta ao estado inicial.
-            set({ 
-                user: null, 
-                isAuthenticated: false, 
-                isCheckingAuth: false 
-            });
-        }
-    }
+        set({
+            user: LOCAL_USER,
+            isAuthenticated: true,
+            isCheckingAuth: false,
+        });
+    },
 }));

@@ -21,12 +21,12 @@ import {
 } from '../components/setup/localSetupContent';
 
 const quickSnippets = setupSnippets.filter((snippet) => (
-    ['Back-end local', 'Spotify OAuth', 'YouTube Music cookie', 'Front-end local'].includes(snippet.title)
+    ['Aplicação local', 'Spotify OAuth', 'YouTube Music cookie', 'Front-end Vite'].includes(snippet.title)
 ));
 
 const Landing = () => {
     const navigate = useNavigate();
-    const goToLogin = () => navigate('/login');
+    const goToApp = () => navigate('/dashboard');
     const scrollToTutorial = () => document.getElementById('tutorial-local')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
@@ -43,7 +43,7 @@ const Landing = () => {
                         </span>
                         <span className="min-w-0">
                             <span className="block text-lg font-extrabold text-white">SyncSphere</span>
-                            <span className="block truncate text-xs font-semibold text-muted">local Spotify -&gt; YouTube Music</span>
+                            <span className="block truncate text-xs font-semibold text-muted">local Spotify &lt;-&gt; YouTube Music</span>
                         </span>
                     </button>
 
@@ -51,7 +51,7 @@ const Landing = () => {
                         <Button onClick={scrollToTutorial} variant="ghost" size="sm" leftIcon={<BookOpen size={15} />}>
                             Tutorial
                         </Button>
-                        <Button onClick={goToLogin} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}>
+                        <Button onClick={goToApp} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}>
                             Abrir painel
                         </Button>
                     </div>
@@ -70,14 +70,14 @@ const Landing = () => {
                                 código aberto local
                             </Badge>
                             <h1 className="mt-5 text-4xl font-black leading-tight text-white md:text-6xl">
-                                SyncSphere: migrador local Spotify -&gt; YouTube Music
+                                SyncSphere: migrador local Spotify &lt;-&gt; YouTube Music
                             </h1>
                             <p className="mt-5 max-w-2xl text-base leading-8 text-muted md:text-lg">
-                                Rode o back-end, valide MongoDB/Redis, conecte Spotify por OAuth, configure YTMUSIC_COOKIE e acompanhe a migração pelo painel.
+                                Rode o back-end, conecte o Spotify por OAuth, configure o YTMUSIC_COOKIE, escolha a direção e acompanhe a migração pelo painel. Sem contas, banco de dados ou serviços externos.
                             </p>
 
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                                <Button onClick={goToLogin} variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>
+                                <Button onClick={goToApp} variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>
                                     Abrir painel local
                                 </Button>
                                 <Button onClick={scrollToTutorial} variant="secondary" size="lg" leftIcon={<Terminal size={18} />}>
@@ -99,7 +99,7 @@ const Landing = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <SpotifyIcon className="h-7 w-7 fill-spotify" />
-                                    <ArrowRight size={16} className="text-muted" />
+                                    <RefreshCw size={16} className="text-muted" />
                                     <YoutubeIcon className="h-7 w-7 fill-youtube" />
                                 </div>
                             </div>
@@ -165,18 +165,18 @@ const Landing = () => {
                             </p>
                             <h2 className="text-3xl font-black text-white">O painel continua o tutorial.</h2>
                             <p className="mt-3 text-sm leading-7 text-muted">
-                                Depois do login local, a aba Início mostra checklist de back-end, MongoDB, Redis, Spotify, YTMUSIC_COOKIE, seleção, fila e histórico.
+                                A aba Início mostra checklist de back-end, Spotify, YTMUSIC_COOKIE, direção, seleção, fila e histórico.
                             </p>
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
                             {[
-                                'Back-end online/offline',
-                                'MongoDB e Redis via /api/ready',
+                                'Back-end online/offline via /api/health',
+                                'Dados e fila locais (sem banco externo)',
                                 'Spotify OAuth conectado/desconectado',
                                 'YTMUSIC_COOKIE configurado/não configurado',
                                 'Progresso em tempo real via Socket.io',
-                                'Histórico de migrações e falhas',
+                                'Histórico de migrações, direção e falhas',
                             ].map((item) => (
                                 <div key={item} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/35 p-4">
                                     <CheckCircle2 size={17} className="shrink-0 text-spotify" />

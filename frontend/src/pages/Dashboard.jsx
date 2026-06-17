@@ -7,6 +7,7 @@ import { useLocalSystemStatus } from '../hooks/useLocalSystemStatus';
 import { useStartTransfer } from '../hooks/useStartTransfer';
 import { useSpotifyPlaylists } from '../hooks/useSpotifyPlaylists';
 import { useTransferSocket } from '../hooks/useTransferSocket';
+import { TRANSFER_DIRECTIONS } from '../constants/transferDirections';
 
 import DashboardLayout from '../components/layout/DashboardLayout';
 
@@ -36,6 +37,7 @@ const Dashboard = () => {
     } = useLocalSystemStatus();
     
     const [showModal, setShowModal] = useState(false);
+    const [transferDirection, setTransferDirection] = useState(TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE);
     const [sourcePlaylistId, setSourcePlaylistId] = useState('');
     const [sourcePlaylistIds, setSourcePlaylistIds] = useState([]);
     const [transferIds, setTransferIds] = useState([]);
@@ -45,7 +47,9 @@ const Dashboard = () => {
         loading: spotifyPlaylistsLoading,
         error: spotifyPlaylistsError,
         refreshPlaylists: refreshSpotifyPlaylists,
-    } = useSpotifyPlaylists({ enabled: integrations.spotify.connected });
+    } = useSpotifyPlaylists({
+        enabled: integrations.spotify.connected && transferDirection === TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE,
+    });
     const {
         isTransferring,
         progress,
@@ -78,9 +82,17 @@ const Dashboard = () => {
         prepareTransferProgress('Preparando sua migração...');
     }, [prepareTransferProgress]);
 
+    const handleTransferDirectionChange = useCallback((nextDirection) => {
+        setTransferDirection(nextDirection);
+        setSourcePlaylistId('');
+        setSourcePlaylistIds([]);
+    }, []);
+
     const startTransferProcess = useStartTransfer({
+        direction: transferDirection,
         sourcePlaylistId,
         sourcePlaylistIds,
+        spotifyReady: integrations.spotify.connected,
         youtubeReady: integrations.youtubeMusic.connected,
         setActiveTab,
         onBeforeStart: handleBeforeTransferStart,
@@ -94,6 +106,8 @@ const Dashboard = () => {
                 {activeTab === 'home' && (
                     <HomeTab 
                         user={user}
+                        transferDirection={transferDirection}
+                        onTransferDirectionChange={handleTransferDirectionChange}
                         showModal={showModal}
                         setShowModal={setShowModal}
                         sourcePlaylistId={sourcePlaylistId}

@@ -63,7 +63,7 @@ const LocalSetupGuide = ({ compact = false }) => {
             </div>
 
             <Alert tone="warning" title="Cuidado com segredos">
-                `SPOTIFY_CLIENT_SECRET`, `JWT_SECRET`, `ENCRYPTION_KEY` e `YTMUSIC_COOKIE` são dados locais sensíveis. Use valores demonstrativos em tutoriais, issues e capturas de tela.
+                `SPOTIFY_CLIENT_SECRET`, `YTMUSIC_COOKIE` e o conteúdo de `backend/data/` (credenciais cifradas) são dados locais sensíveis. Use valores demonstrativos em tutoriais, issues e capturas de tela.
             </Alert>
 
             {!compact && (

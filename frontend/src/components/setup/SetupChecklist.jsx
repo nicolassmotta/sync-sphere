@@ -1,12 +1,10 @@
 import {
     CheckCircle2,
     CircleDashed,
-    Database,
     History,
     ListChecks,
     ListMusic,
     Plug,
-    Radio,
     RefreshCw,
     Server,
     ShieldCheck,
@@ -15,8 +13,6 @@ import { API_ORIGIN } from '../../services/api';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-
-const isUp = (value) => value === 'up';
 
 const getStateTone = (state) => {
     if (state === 'done') return 'success';
@@ -62,15 +58,17 @@ const SetupChecklist = ({
     onRefreshIntegrations,
     onRefreshSystemStatus,
     refreshLoading,
+    readyToTransfer,
     selectedCount = 0,
+    sourceLabel = 'Spotify',
+    targetLabel = 'YouTube Music',
     systemStatus,
 }) => {
     const backendOnline = systemStatus?.backend?.status === 'online';
-    const mongoReady = isUp(systemStatus?.dependencies?.mongo);
-    const redisReady = isUp(systemStatus?.dependencies?.redis);
     const spotifyConnected = Boolean(integrations?.spotify?.connected);
     const youtubeReady = Boolean(integrations?.youtubeMusic?.connected);
     const hasSelection = selectedCount > 0;
+    const migrationReady = Boolean(readyToTransfer);
 
     const checklist = [
         {
@@ -80,22 +78,6 @@ const SetupChecklist = ({
                 : `Inicie o back-end e valide ${API_ORIGIN}/api/health.`,
             icon: Server,
             state: backendOnline ? 'done' : 'blocked',
-        },
-        {
-            title: 'MongoDB',
-            detail: mongoReady
-                ? 'Mongoose está conectado segundo /api/ready.'
-                : 'Suba MongoDB local e confira /api/ready.',
-            icon: Database,
-            state: mongoReady ? 'done' : 'pending',
-        },
-        {
-            title: 'Redis + BullMQ',
-            detail: redisReady
-                ? 'Redis respondeu e a fila pode receber tarefas.'
-                : 'Suba Redis local antes de iniciar migrações.',
-            icon: Radio,
-            state: redisReady ? 'done' : 'pending',
         },
         {
             title: 'Spotify OAuth',
@@ -117,7 +99,7 @@ const SetupChecklist = ({
             title: 'Playlist escolhida',
             detail: hasSelection
                 ? `${selectedCount} playlist${selectedCount === 1 ? '' : 's'} selecionada${selectedCount === 1 ? '' : 's'}.`
-                : 'Selecione uma playlist do Spotify ou cole um link.',
+                : `Selecione uma playlist do ${sourceLabel} ou cole um link.`,
             icon: ListMusic,
             state: hasSelection ? 'done' : 'pending',
         },
@@ -125,9 +107,9 @@ const SetupChecklist = ({
             title: 'Migração',
             detail: isTransferring
                 ? 'Tarefa em andamento com progresso via Socket.io.'
-                : youtubeReady && hasSelection ? 'Pronto para revisar e enfileirar.' : 'Aguarde destino e seleção.',
+                : migrationReady ? `Pronto para criar playlist no ${targetLabel}.` : 'Aguarde destino e seleção.',
             icon: ListChecks,
-            state: isTransferring || (youtubeReady && hasSelection) ? 'done' : 'pending',
+            state: isTransferring || migrationReady ? 'done' : 'pending',
         },
         {
             title: 'Histórico',

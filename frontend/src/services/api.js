@@ -1,9 +1,15 @@
 import axios from 'axios';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL;
+const isBrowser = typeof window !== 'undefined';
+const localDevPorts = new Set(['5173', '5174', '4173']);
+const defaultApiUrl = isBrowser && localDevPorts.has(window.location.port)
+    ? 'http://localhost:8000/api/v1'
+    : '/api/v1';
 const FALLBACK_BASE_URLS = [
+    defaultApiUrl,
+    'http://localhost:8000/api/v1',
     'http://localhost:4001/api/v1',
-    'http://localhost:4000/api/v1',
 ];
 
 const uniqueLocalFallbacks = [...new Set(FALLBACK_BASE_URLS)];
@@ -11,11 +17,17 @@ const apiCandidates = ENV_API_URL ? [ENV_API_URL] : uniqueLocalFallbacks;
 
 let candidateIndex = 0;
 export let API_BASE_URL = apiCandidates[candidateIndex];
-export let API_ORIGIN = API_BASE_URL.replace('/api/v1', '');
+
+const resolveApiOrigin = (baseUrl) => {
+    if (/^https?:\/\//i.test(baseUrl)) return new URL(baseUrl).origin;
+    return isBrowser ? window.location.origin : '';
+};
+
+export let API_ORIGIN = resolveApiOrigin(API_BASE_URL);
 
 const updateActiveBaseUrl = (nextBaseUrl) => {
     API_BASE_URL = nextBaseUrl;
-    API_ORIGIN = nextBaseUrl.replace('/api/v1', '');
+    API_ORIGIN = resolveApiOrigin(nextBaseUrl);
 };
 
 const shouldSkipAuthRedirect = (requestUrl = '') => {

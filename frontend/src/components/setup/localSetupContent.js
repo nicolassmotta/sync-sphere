@@ -1,15 +1,11 @@
 export const localSetupFlow = [
     {
-        title: 'Configurar back-end',
-        description: 'Instale dependências, copie o `.env.example` e rode a API Express em `localhost:4001`.',
-    },
-    {
-        title: 'Subir MongoDB e Redis',
-        description: 'Mongo persiste usuários/transferências; Redis mantém a fila BullMQ e o trabalhador.',
+        title: 'Configurar aplicação local',
+        description: 'Instale dependências, copie o `.env.example`, gere o build React e rode tudo em `localhost:8000`. Os dados ficam em arquivos locais cifrados; não precisa de banco nem Redis.',
     },
     {
         title: 'Configurar Spotify OAuth',
-        description: 'Crie um app no painel do Spotify e use o callback local do SyncSphere.',
+        description: 'Crie um app no painel do Spotify e use o callback local com escopos de leitura e escrita.',
     },
     {
         title: 'Configurar YTMUSIC_COOKIE',
@@ -21,44 +17,36 @@ export const localSetupFlow = [
     },
     {
         title: 'Escolher playlists',
-        description: 'Conecte Spotify, carregue playlists e marque uma ou várias origens.',
+        description: 'Escolha a direção, carregue playlists do Spotify ou cole link/ID do YouTube Music.',
     },
     {
         title: 'Iniciar migração',
-        description: 'O back-end cria registros de transferência e envia tarefas para BullMQ.',
+        description: 'O back-end cria registros de transferência e envia tarefas para a fila local em memória.',
     },
     {
         title: 'Acompanhar progresso e histórico',
-        description: 'Socket.io atualiza a migração ativa; o histórico mostra sucesso, falhas e links criados.',
+        description: 'Socket.io atualiza a migração ativa; o histórico mostra direção, sucesso, falhas e links criados.',
     },
 ];
 
 export const setupSnippets = [
     {
-        title: 'Back-end local',
-        description: 'Execute em um terminal dedicado.',
-        label: 'backend',
-        code: `cd backend
-npm install
-cp .env.example .env
-npm run dev`,
-    },
-    {
-        title: 'Serviços locais',
-        description: 'Use serviços já instalados na máquina e valide a conexão pelo back-end.',
-        label: 'mongo redis',
-        code: `mongod --dbpath ./data/mongo
-redis-server
-curl http://localhost:4001/api/ready`,
+        title: 'Aplicação local',
+        description: 'Execute na raiz do projeto para instalar, buildar e servir tudo em `localhost:8000`.',
+        label: 'raiz',
+        code: `npm run setup
+cp backend/.env.example backend/.env
+# preencha backend/.env
+npm start`,
     },
     {
         title: 'Spotify OAuth',
-        description: 'Valores de exemplo para `backend/.env`; nunca publique seus segredos.',
+        description: 'Valores de exemplo para `backend/.env`; reconecte se faltar permissão para criar playlists.',
         label: 'backend/.env',
         language: 'env',
         code: `SPOTIFY_CLIENT_ID=seu_client_id_spotify
 SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback`,
+SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback`,
     },
     {
         title: 'YouTube Music cookie',
@@ -69,19 +57,20 @@ SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback`
 YTMUSIC_AUTH_USER=0`,
     },
     {
-        title: 'Front-end local',
-        description: 'Execute depois do back-end responder em `localhost:4001`.',
+        title: 'Front-end Vite',
+        description: 'Use apenas para desenvolver a UI; o uso normal abre em `localhost:8000`.',
         label: 'frontend',
         code: `cd frontend
 npm install
+cp .env.example .env
 npm run dev`,
     },
     {
         title: 'Validação rápida',
         description: 'Confirme back-end, dependências e API base antes de migrar playlists.',
         label: 'checagens',
-        code: `curl http://localhost:4001/api/health
-curl http://localhost:4001/api/ready`,
+        code: `curl http://localhost:8000/api/health
+curl http://localhost:8000/api/ready`,
     },
 ];
 
@@ -96,25 +85,25 @@ export const usefulLinks = [
     },
     {
         label: 'Saúde local',
-        href: 'http://localhost:4001/api/health',
+        href: 'http://localhost:8000/api/health',
     },
 ];
 
 export const troubleshootingItems = [
     {
         title: 'Front-end não conecta no back-end',
-        text: 'Confirme `VITE_API_URL=http://localhost:4001/api/v1`, `FRONTEND_URL=http://localhost:5173` e se o back-end subiu sem erro.',
+        text: 'Confirme `VITE_API_URL=http://localhost:8000/api/v1`, `FRONTEND_URL=http://localhost:8000` e se o back-end subiu sem erro.',
     },
     {
         title: 'Spotify volta para erro ou tela negada',
-        text: 'Revise `SPOTIFY_REDIRECT_URI` no `.env` e no painel do Spotify. O callback precisa bater exatamente.',
+        text: 'Revise `SPOTIFY_REDIRECT_URI` no `.env` e no painel do Spotify. Para YouTube Music -> Spotify, reconecte se faltar escopo de escrita.',
     },
     {
         title: 'YouTube Music aparece como pendente',
         text: 'Preencha `YTMUSIC_COOKIE`, reinicie o back-end e use o botão de atualizar status. Nunca cole cookies reais em docs, commits ou issues.',
     },
     {
-        title: 'Mongo ou Redis caem no `/api/ready`',
-        text: 'Inicie os serviços locais e reinicie o back-end para reconectar Mongoose e BullMQ.',
+        title: 'Dados locais e histórico',
+        text: 'Credenciais e histórico ficam cifrados em `backend/data/` (ignorado pelo Git). Para limpar o histórico, rode `npm run history:clear` no back-end.',
     },
 ];

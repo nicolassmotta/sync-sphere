@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { History, Search, ExternalLink, ListVideo } from 'lucide-react';
+import { ArrowRightLeft, History, Search, ExternalLink, ListVideo } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Button from '../ui/Button';
@@ -19,6 +19,10 @@ const formatDate = (date) => {
         minute: '2-digit',
     }).format(new Date(date));
 };
+
+const getDirectionLabel = (item) => (
+    item.direction === 'youtube_to_spotify' ? 'YouTube -> Spotify' : 'Spotify -> YouTube'
+);
 
 const HistoryTab = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -78,6 +82,7 @@ const HistoryTab = () => {
                         <thead>
                             <tr className="border-b border-white/10 bg-white/5">
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Playlist</th>
+                                <th className="p-5 text-xs font-bold uppercase text-white/45">Direção</th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Status</th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Músicas <span className="text-[10px] lowercase text-gray-500">(total / pendentes)</span></th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Data</th>
@@ -87,7 +92,7 @@ const HistoryTab = () => {
                         <tbody className="divide-y divide-white/5">
                             {loading && (
                                 <tr>
-                                    <td colSpan="5" className="p-6">
+                                    <td colSpan="6" className="p-6">
                                         <LoadingState
                                             label="Carregando histórico..."
                                             description="Buscando suas migrações recentes."
@@ -102,6 +107,12 @@ const HistoryTab = () => {
                                             <ListVideo size={18} className="text-gray-300" />
                                         </div>
                                         {item.playlistName}
+                                    </td>
+                                    <td className="p-5">
+                                        <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-extrabold text-white/65">
+                                            <ArrowRightLeft size={13} className="text-spotify" />
+                                            {getDirectionLabel(item)}
+                                        </span>
                                     </td>
                                     <td className="p-5"><StatusBadge status={item.status} /></td>
                                     <td className="p-5 font-medium text-gray-300">
@@ -122,7 +133,7 @@ const HistoryTab = () => {
                             ))}
                             {!loading && filteredHistory.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="p-6">
+                                    <td colSpan="6" className="p-6">
                                         <EmptyState
                                             icon={<ListVideo size={20} />}
                                             title="Nenhuma migração listada."

@@ -3,8 +3,8 @@ import { ListMusic } from 'lucide-react';
 const workflowSteps = [
     {
         label: '1',
-        title: 'Back-end e serviços',
-        text: 'Express, MongoDB, Redis e trabalhador precisam estar prontos.',
+        title: 'Back-end local',
+        text: 'Suba a API Express; dados ficam em arquivos locais e a fila roda no processo.',
     },
     {
         label: '2',
@@ -18,7 +18,7 @@ const workflowSteps = [
     },
 ];
 
-const WorkflowCard = () => (
+const WorkflowCard = ({ sourceLabel = 'Spotify', targetLabel = 'YouTube Music' }) => (
     <div className="elevated-card p-6">
         <div className="mb-6 flex items-center justify-between">
             <div>
@@ -41,6 +41,11 @@ const WorkflowCard = () => (
                     </div>
                 </div>
             ))}
+            <div className="rounded-lg border border-white/10 bg-black/30 p-4">
+                <p className="text-xs font-bold uppercase text-spotify">Direção atual</p>
+                <h4 className="mt-1 font-black text-white">{sourceLabel} -&gt; {targetLabel}</h4>
+                <p className="mt-1 text-sm leading-6 text-muted">A fila cria playlists privadas no destino selecionado.</p>
+            </div>
         </div>
     </div>
 );

@@ -8,6 +8,8 @@ import { formatTrackCount } from './formatTrackCount';
 const TransferConfirmModal = ({
     isOpen,
     onClose,
+    sourceLabel = 'Spotify',
+    targetLabel = 'YouTube Music',
     selectedPlaylists,
     sourcePlaylistId,
     onManualPlaylistChange,
@@ -20,7 +22,7 @@ const TransferConfirmModal = ({
         onClose={onClose}
         size="sm"
         title="Confirmar transferência"
-        description="Revise a seleção antes de criar as playlists no YouTube."
+        description={`Revise a seleção antes de criar as playlists no ${targetLabel}.`}
         footer={(
             <Button
                 onClick={onStartTransfer}
@@ -53,10 +55,12 @@ const TransferConfirmModal = ({
             <Link2 size={14} /> Colar link da playlist
         </p>
         <TextField
-            label="Link da playlist no Spotify"
+            label={`Link da playlist no ${sourceLabel}`}
             value={sourcePlaylistId}
             onChange={onManualPlaylistChange}
-            placeholder="https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M"
+            placeholder={sourceLabel === 'YouTube Music'
+                ? 'https://music.youtube.com/playlist?list=PL...'
+                : 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}
         />
     </Modal>
 );
