@@ -1,7 +1,8 @@
 {
-  "name": "spotify-ytmusic-backend",
+  "name": "sync-sphere-backend",
   "version": "1.0.0",
-  "description": "Back-end MVC para o conversor de playlists",
+  "private": true,
+  "description": "Back-end local-first do SyncSphere: API Express + Socket.io para migrar playlists entre Spotify e YouTube Music, com persistência em arquivos JSON cifrados e fila em memória.",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
