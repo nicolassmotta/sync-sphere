@@ -3,11 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import mongoSanitize from 'express-mongo-sanitize';
-import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import { corsOptions } from './config/cors.js';
-import redisConnection from './config/redis.js';
 import { appEnv, nodeEnv } from './config/env.js';
+import { FRONTEND_DIST_DIR } from './config/paths.js';
 import { globalLimiter } from './middlewares/rateLimiter.js';
 import authRoutes from './routes/authRoutes.js';
 import transferRoutes from './routes/transferRoutes.js';
@@ -18,9 +18,6 @@ const app = express();
 
 // Middlewares globais de segurança.
 app.use(helmet()); // Blindagem padrão de cabeçalhos HTTP.
-
-// Proteção estrita contra injeção NoSQL cortando parâmetros Mongoose de payloads ($ e .).
-app.use(mongoSanitize());
 
 // Configuração CORS para aceitar múltiplas origens locais, como Vite 5173/5174.
 app.use(cors(corsOptions));
@@ -49,16 +46,14 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-app.get('/api/ready', async (req, res) => {
-    const mongoReady = mongoose.connection.readyState === 1;
-    const redisReady = redisConnection.status === 'ready';
-
-    const statusCode = mongoReady && redisReady ? 200 : 503;
-    res.status(statusCode).json({
-        status: statusCode === 200 ? 'ready' : 'not-ready',
+app.get('/api/ready', (req, res) => {
+    // No modo local não há dependências externas: o armazenamento é em arquivo
+    // e a fila roda no próprio processo.
+    res.status(200).json({
+        status: 'ready',
         dependencies: {
-            mongo: mongoReady ? 'up' : 'down',
-            redis: redisReady ? 'up' : 'down',
+            storage: 'local',
+            queue: 'in-memory',
         },
         env: {
             nodeEnv,
@@ -66,6 +61,18 @@ app.get('/api/ready', async (req, res) => {
         },
     });
 });
+
+const frontendIndexPath = path.join(FRONTEND_DIST_DIR, 'index.html');
+const hasFrontendBuild = fs.existsSync(frontendIndexPath);
+
+if (hasFrontendBuild) {
+    app.use(express.static(FRONTEND_DIST_DIR, { index: false }));
+
+    app.get(/^\/(?!api(?:\/|$)).*/, (req, res, next) => {
+        if (path.extname(req.path) || !req.accepts('html')) return next();
+        return res.sendFile(frontendIndexPath);
+    });
+}
 
 // Interceptadores de erro garantem respostas JSON padronizadas.
 app.use(notFound);  // Intercepta rotas não mapeadas acima.

@@ -1,87 +1,62 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import { encryptText, decryptText } from '../utils/crypto.js';
+import { readStore, writeStore } from '../storage/jsonStore.js';
 
 /**
- * @typedef {Object} User
- * @description Esquema principal de Usuários (`userSchema`). Armazena credenciais locais encriptadas 
- * e abriga tokens de serviços OAuth.
- * As senhas usam `select: false` para nunca vazarem nos `.find()`.
+ * No modo local não há contas nem login: existe um único "usuário" implícito,
+ * que é a pessoa dona da máquina. Este módulo mantém a mesma API que o restante
+ * do código já consumia do model Mongoose (`User.findById(...).select(...)` e
+ * `instance.save()`), mas guarda apenas os tokens do Spotify em um arquivo local
+ * cifrado (`data/credentials.json`). O cookie do YouTube Music continua vindo de
+ * `process.env.YTMUSIC_COOKIE`.
  */
-const userSchema = new mongoose.Schema(
-    {
-        name: {
-            type: String,
-            required: [true, 'O nome é obrigatório'],
-        },
-        email: {
-            type: String,
-            required: [true, 'O email é obrigatório'],
-            unique: true,
-            lowercase: true,
-        },
-        password: {
-            type: String,
-            required: [true, 'A senha é obrigatória'],
-            minlength: 6,
-            select: false, // Evita que a senha seja enviada para o front-end acidentalmente.
-        },
-        spotifyToken: {
-            type: String, // Criptografado automaticamente no banco de dados via Mongoose
-            default: null,
-            select: false,
-            set: encryptText,
-            get: decryptText
-        },
-        spotifyRefreshToken: {
-            type: String,
-            default: null,
-            select: false,
-            set: encryptText,
-            get: decryptText
-        },
-        spotifyTokenExpiresAt: {
-            type: Date,
-            default: null,
-        },
-    },
-    {
-        timestamps: true, // Cria automaticamente createdAt e updatedAt
-        toJSON: { getters: true },
-        toObject: { getters: true }
+const CREDENTIALS_STORE = 'credentials.json';
+export const LOCAL_USER_ID = 'local';
+
+const PERSISTED_FIELDS = ['spotifyToken', 'spotifyRefreshToken', 'spotifyTokenExpiresAt'];
+
+class LocalAccount {
+    constructor(data = {}) {
+        this._id = LOCAL_USER_ID;
+        this.id = LOCAL_USER_ID;
+        this.spotifyToken = data.spotifyToken ?? null;
+        this.spotifyRefreshToken = data.spotifyRefreshToken ?? null;
+        this.spotifyTokenExpiresAt = data.spotifyTokenExpiresAt
+            ? new Date(data.spotifyTokenExpiresAt)
+            : null;
     }
-);
 
-/**
- * @function preSave
- * @description Middleware nativo do mongoose engatilhado momentos antes de salvar um `User`.
- * Processa a re-encriptação usando Bcrypt com salt nível 14 caso o banco perceba mudança de senha.
- */
-// Middleware Mongoose para gerar hash da senha antes de salvar no banco.
-userSchema.pre('save', async function (next) {
-    // Só roda a criptografia se a senha for alterada ou criada nesta chamada.
-    if (!this.isModified('password')) return next();
+    async save() {
+        const snapshot = {};
+        for (const field of PERSISTED_FIELDS) {
+            snapshot[field] = this[field] ?? null;
+        }
+        writeStore(CREDENTIALS_STORE, snapshot);
+        return this;
+    }
+}
 
-    // Gera hash com saltCost 14, tornando ataques por força bruta mais caros.
-    this.password = await bcrypt.hash(this.password, 14);
-    next();
-});
+let account = null;
 
-/**
- * @function correctPassword
- * @description Método de instância adicionado ao Mongoose para validação criptográfica com bcrypt.
- * Usa comparação resistente a ataques por temporização.
- * @param {string} candidatePassword - Senha recebida pelo formulário de login.
- * @param {string} userPassword - Hash salvo no banco de dados.
- * @returns {Promise<boolean>}
- */
-// Método de instância para comparar senhas no login.
-userSchema.methods.correctPassword = async function (
-    candidatePassword,
-    userPassword
-) {
-    return await bcrypt.compare(candidatePassword, userPassword);
+const getAccount = () => {
+    if (!account) {
+        account = new LocalAccount(readStore(CREDENTIALS_STORE, {}));
+    }
+    return account;
 };
 
-const User = mongoose.model('User', userSchema);
+// Query "thenable" que ignora projeções (`.select`) e sempre resolve para a conta local.
+const makeQuery = () => {
+    const promise = Promise.resolve().then(() => getAccount());
+    promise.select = () => makeQuery();
+    return promise;
+};
+
+const User = {
+    findById() {
+        return makeQuery();
+    },
+    findOne() {
+        return makeQuery();
+    },
+};
+
 export default User;

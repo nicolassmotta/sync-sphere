@@ -1,13 +1,15 @@
-import {
+﻿import {
     buildSpotifyPlaylistAccessErrorMessage,
     isSpotifyPlaylistAccessDenied,
     SpotifyPlaylistAccessError,
 } from './spotifyErrors.js';
 
-export const fetchSpotifyJson = async (url, accessToken, fallbackMessage) => {
+export const fetchSpotifyJson = async (url, accessToken, fallbackMessage, options = {}) => {
     const response = await fetch(url, {
+        ...options,
         headers: {
             Authorization: `Bearer ${accessToken}`,
+            ...(options.headers || {}),
         },
     });
 
@@ -37,7 +39,7 @@ export const fetchSpotifyText = async (url, fallbackMessage) => {
     const response = await fetch(url, {
         headers: {
             Accept: 'text/html,application/xhtml+xml',
-            'User-Agent': 'SyncSphere playlist migration bot (+http://localhost:5173)',
+            'User-Agent': 'SyncSphere playlist migration bot (+http://localhost:8000)',
         },
     });
 

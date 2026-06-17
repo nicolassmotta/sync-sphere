@@ -1,25 +1,10 @@
 import express from 'express';
-import {
-    login,
-    register,
-    logout,
-    getMe,
-} from '../controllers/authController.js';
-import { validate } from '../middlewares/validateMiddleware.js';
-import { protect } from '../middlewares/authMiddleware.js';
-import {
-    registerSchema,
-    loginSchema,
-} from '../schemas/userSchemas.js';
-import { authLimiter } from '../middlewares/rateLimiter.js';
+import { getMe, logout } from '../controllers/authController.js';
 
 const router = express.Router();
 
-router.post('/register', authLimiter, validate(registerSchema), register);
-router.post('/login', authLimiter, validate(loginSchema), login);
+// No modo local não há registro nem login: só a confirmação da sessão local.
+router.get('/me', getMe);
 router.post('/logout', logout);
-
-// Acesso restrito protegido por cookie seguro.
-router.get('/me', protect, getMe);
 
 export default router;

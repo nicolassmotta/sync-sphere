@@ -1,8 +1,6 @@
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import mongoose from 'mongoose';
-import redisConnection from '../src/config/redis.js';
 
 const mockFindById = jest.fn();
 const mockGetSpotifyPlaylistTracksPreview = jest.fn();
@@ -13,6 +11,7 @@ jest.unstable_mockModule('../src/models/User.js', () => ({
     default: {
         findById: mockFindById,
     },
+    LOCAL_USER_ID: 'local',
 }));
 
 jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
@@ -122,7 +121,7 @@ describe('contratos de integrações e transferência do MVP', () => {
                 trackCount: 50,
             }),
         ]);
-        expect(mockListSpotifyUserPlaylists).toHaveBeenCalledWith({ userId: 'user-1' });
+        expect(mockListSpotifyUserPlaylists).toHaveBeenCalledWith({ userId: 'local' });
     });
 
     it('GET /api/v1/integrations/spotify/playlists/:playlistId/tracks retorna preview de faixas', async () => {
@@ -155,7 +154,7 @@ describe('contratos de integrações e transferência do MVP', () => {
         }));
         expect(mockGetSpotifyPlaylistTracksPreview).toHaveBeenCalledWith({
             playlistId: '37i9dQZF1DXcBWIGoYBM5M',
-            userId: 'user-1',
+            userId: 'local',
             limit: '2',
         });
     });
@@ -182,7 +181,7 @@ describe('contratos de integrações e transferência do MVP', () => {
             transferIds: ['transfer-1', 'transfer-2'],
         });
         expect(mockQueuePlaylistTransfers).toHaveBeenCalledWith({
-            userId: 'user-1',
+            userId: 'local',
             sourcePlaylistId: undefined,
             sourcePlaylistIds: ['spotify-playlist-001', 'spotify-playlist-002'],
         });
@@ -198,14 +197,4 @@ describe('contratos de integrações e transferência do MVP', () => {
         expect(response.body.message).toContain('Selecione ao menos uma playlist');
         expect(mockQueuePlaylistTransfers).not.toHaveBeenCalled();
     });
-});
-
-afterAll(async () => {
-    if (mongoose.connection.readyState !== 0) {
-        await mongoose.disconnect();
-    }
-
-    if (redisConnection.status !== 'end') {
-        await redisConnection.quit();
-    }
 });

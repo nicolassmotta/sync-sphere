@@ -3,11 +3,11 @@ import { clampConcurrency, mapWithConcurrency } from '../../utils/concurrency.js
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const NO_CONFIDENT_MATCH_REASON = 'Nenhum resultado confiável encontrado no YouTube Music.';
 
-const buildSearchFailureError = (errors) => {
-    const operationalError = errors.find((error) => error.reason && error.reason !== NO_CONFIDENT_MATCH_REASON);
+const buildSearchFailureError = (errors, noConfidentMatchReason, providerLabel) => {
+    const operationalError = errors.find((error) => error.reason && error.reason !== noConfidentMatchReason);
     if (!operationalError) return null;
 
-    const error = new Error(`Falha ao buscar faixas no YouTube Music: ${operationalError.reason}`);
+    const error = new Error(`Falha ao buscar faixas no ${providerLabel}: ${operationalError.reason}`);
     if (/quota|exceeded|cota|excedid/i.test(operationalError.reason)) {
         error.isPermanentTransferError = true;
     }
@@ -26,8 +26,19 @@ export default class TrackMatcher {
         this.searchConcurrency = searchConcurrency;
     }
 
-    async matchPlaylistTracks({ youtubeClient, tracks, transferRecord, onTrackProgress, onCheckpoint }) {
-        const matchedVideoIdsByTrackIndex = new Array(tracks.length);
+    async matchPlaylistTracks({
+        youtubeClient,
+        searchClient = youtubeClient,
+        tracks,
+        transferRecord,
+        onTrackProgress,
+        onCheckpoint,
+        providerLabel = 'YouTube Music',
+        noConfidentMatchReason = NO_CONFIDENT_MATCH_REASON,
+        getMatchId = (match) => match?.id || match?.videoId || match?.uri,
+        stage = 'matching',
+    }) {
+        const matchedIdsByTrackIndex = new Array(tracks.length);
         let completedTracks = 0;
         const checkpointEvery = Math.max(5, this.searchConcurrency * 2);
         let checkpointQueue = Promise.resolve();
@@ -51,20 +62,23 @@ export default class TrackMatcher {
             if (this.delayMs > 0) await wait(this.delayMs);
 
             try {
-                const match = await youtubeClient.searchBestVideoMatch({ track });
-                if (!match?.videoId || match.matchScore < this.minMatchScore) {
-                    throw new Error(NO_CONFIDENT_MATCH_REASON);
+                const match = searchClient.searchBestMatch
+                    ? await searchClient.searchBestMatch({ track })
+                    : await searchClient.searchBestVideoMatch({ track });
+                const matchId = getMatchId(match);
+                if (!matchId || match.matchScore < this.minMatchScore) {
+                    throw new Error(noConfidentMatchReason);
                 }
 
-                matchedVideoIdsByTrackIndex[index] = match.videoId;
+                matchedIdsByTrackIndex[index] = matchId;
 
                 transferRecord.processedTracks += 1;
             } catch (searchError) {
                 transferRecord.errors.push({
                     trackName: track.name,
                     artistName: track.artist,
-                    reason: searchError.message || 'Falha ao buscar faixa no YouTube.',
-                    stage: 'matching',
+                    reason: searchError.message || `Falha ao buscar faixa no ${providerLabel}.`,
+                    stage,
                 });
             }
 
@@ -75,20 +89,24 @@ export default class TrackMatcher {
             }
         }, this.searchConcurrency);
 
-        const seenVideoIds = new Set();
-        const matchedVideoIds = matchedVideoIdsByTrackIndex.filter((videoId) => {
-            if (!videoId || seenVideoIds.has(videoId)) return false;
-            seenVideoIds.add(videoId);
+        const seenIds = new Set();
+        const matchedIds = matchedIdsByTrackIndex.filter((matchId) => {
+            if (!matchId || seenIds.has(matchId)) return false;
+            seenIds.add(matchId);
             return true;
         });
 
-        if (!matchedVideoIds.length) {
-            const searchFailureError = buildSearchFailureError(transferRecord.errors);
+        if (!matchedIds.length) {
+            const searchFailureError = buildSearchFailureError(
+                transferRecord.errors,
+                noConfidentMatchReason,
+                providerLabel
+            );
             if (searchFailureError) {
                 throw searchFailureError;
             }
         }
 
-        return matchedVideoIds;
+        return matchedIds;
     }
 }

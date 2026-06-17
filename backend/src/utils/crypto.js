@@ -1,15 +1,42 @@
 import '../config/loadEnv.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import { ensureDataDir, dataFile } from '../config/paths.js';
 
-if (!process.env.ENCRYPTION_KEY) {
-    throw new Error('ERRO FATAL: ENCRYPTION_KEY não está definida nas variáveis de ambiente. Defina uma string hexadecimal de 32 bytes.');
-}
-const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-if (ENCRYPTION_KEY.length !== 32) {
-    throw new Error('ERRO FATAL: ENCRYPTION_KEY deve ter exatamente 32 bytes / 64 caracteres hexadecimais.');
-}
+/**
+ * Resolve a chave de criptografia de 32 bytes usada para proteger as
+ * credenciais locais. Prioriza ENCRYPTION_KEY (64 caracteres hex). Se não
+ * existir, gera uma chave automaticamente e persiste em data/encryption.key,
+ * para que o projeto funcione assim que a pessoa clona e roda, sem setup.
+ */
+const resolveEncryptionKey = () => {
+    const envKey = String(process.env.ENCRYPTION_KEY || '').trim();
+    if (envKey) {
+        const buffer = Buffer.from(envKey, 'hex');
+        if (buffer.length !== 32) {
+            throw new Error('ENCRYPTION_KEY deve ter exatamente 32 bytes / 64 caracteres hexadecimais.');
+        }
+        return buffer;
+    }
 
-const IV_LENGTH = 16; // Vetor de inicialização em AES: sempre 16.
+    ensureDataDir();
+    const keyPath = dataFile('encryption.key');
+
+    if (fs.existsSync(keyPath)) {
+        const stored = fs.readFileSync(keyPath, 'utf8').trim();
+        const buffer = Buffer.from(stored, 'hex');
+        if (buffer.length === 32) {
+            return buffer;
+        }
+    }
+
+    const generated = crypto.randomBytes(32);
+    fs.writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600 });
+    return generated;
+};
+
+const ENCRYPTION_KEY = resolveEncryptionKey();
+
 const GCM_IV_LENGTH = 12;
 
 const encryptText = (text) => {
@@ -21,7 +48,7 @@ const encryptText = (text) => {
     const authTag = cipher.getAuthTag();
 
     return ['gcm', iv.toString('hex'), authTag.toString('hex'), encrypted.toString('hex')].join(':');
-}
+};
 
 const decryptText = (text) => {
     if (!text) return text;
@@ -43,6 +70,6 @@ const decryptText = (text) => {
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
-}
+};
 
 export { encryptText, decryptText };

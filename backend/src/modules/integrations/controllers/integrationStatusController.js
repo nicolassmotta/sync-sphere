@@ -20,11 +20,13 @@ export const getIntegrationStatus = async (req, res, next) => {
                     spotify: {
                         connected: hasSpotifyConnection(user),
                         expiresAt: user?.spotifyTokenExpiresAt || null,
+                        roles: ['source', 'destination'],
                     },
                     youtubeMusic: {
                         connected: cookieDestinationConfigured,
                         authMethod: cookieDestinationConfigured ? 'ytmusic-cookie' : null,
                         expiresAt: null,
+                        roles: ['source', 'destination'],
                     },
                 },
             },

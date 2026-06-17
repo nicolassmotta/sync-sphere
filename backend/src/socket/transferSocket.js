@@ -1,48 +1,12 @@
-import jwt from 'jsonwebtoken';
 import Transfer from '../models/Transfer.js';
-import User from '../models/User.js';
+import { LOCAL_USER_ID } from '../models/User.js';
 import { buildTransferSnapshot } from '../services/transfer/transferProgressSnapshot.js';
 import logger from '../utils/logger.js';
 
-const parseCookieHeader = (cookieHeader = '') => (
-    String(cookieHeader || '').split(';').reduce((acc, item) => {
-        const index = item.indexOf('=');
-        if (index === -1) return acc;
-
-        const rawValue = item.slice(index + 1).trim();
-        const name = item.slice(0, index).trim();
-
-        try {
-            acc[name] = decodeURIComponent(rawValue);
-        } catch {
-            acc[name] = rawValue;
-        }
-
-        return acc;
-    }, {})
-);
-
-const authenticateSocket = async (socket, next) => {
-    try {
-        const cookies = parseCookieHeader(socket.handshake.headers.cookie);
-        const token = cookies.jwt;
-
-        if (!token || !process.env.JWT_SECRET) {
-            return next(new Error('Socket não autenticado.'));
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('_id');
-
-        if (!user) {
-            return next(new Error('Usuário do socket não existe.'));
-        }
-
-        socket.userId = user._id.toString();
-        return next();
-    } catch {
-        return next(new Error('Sessão de socket inválida.'));
-    }
+// No modo local não há autenticação de socket: o único usuário é o dono da máquina.
+const authenticateSocket = (socket, next) => {
+    socket.userId = LOCAL_USER_ID;
+    return next();
 };
 
 const subscribeToTransfer = async (socket, transferId) => {
@@ -50,7 +14,7 @@ const subscribeToTransfer = async (socket, transferId) => {
         const transfer = await Transfer.findOne({
             _id: transferId,
             user: socket.userId,
-        }).select('_id status lastMessage totalTracks processedTracks targetPlaylistUrl');
+        }).select('_id status direction sourceProvider targetProvider lastMessage totalTracks processedTracks targetPlaylistUrl');
 
         if (!transfer) {
             socket.emit('transfer_error', { message: 'Transferência não encontrada para este usuário.' });

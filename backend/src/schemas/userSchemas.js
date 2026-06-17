@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRANSFER_DIRECTION_VALUES } from '../constants/transferDirections.js';
 
 /**
  * @constant registerSchema
@@ -31,13 +32,14 @@ export const loginSchema = z.object({
 // Futura validação do POST na hora de começar uma transferência real
 export const transferStartSchema = z.object({
     body: z.object({
-        sourcePlaylistId: z.string().min(10, 'A playlist base do Spotify não está bem formulada.').optional(),
+        direction: z.enum(TRANSFER_DIRECTION_VALUES).optional(),
+        sourcePlaylistId: z.string().min(10, 'A playlist de origem não está bem formulada.').optional(),
         sourcePlaylistIds: z
-            .array(z.string().min(10, 'Uma das playlists do Spotify não está bem formulada.'))
+            .array(z.string().min(10, 'Uma das playlists de origem não está bem formulada.'))
             .min(1, 'Selecione ao menos uma playlist.')
             .optional(),
     }).refine((body) => body.sourcePlaylistId || body.sourcePlaylistIds?.length, {
-        message: 'Selecione ao menos uma playlist do Spotify.',
+        message: 'Selecione ao menos uma playlist de origem.',
         path: ['sourcePlaylistIds'],
     })
 });

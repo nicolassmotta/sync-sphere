@@ -14,11 +14,14 @@ class MockSpotifyPlaylistAccessError extends Error {
 jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
     getSpotifyPlaylistSnapshot: mockGetSpotifyPlaylistSnapshot,
     SpotifyPlaylistAccessError: MockSpotifyPlaylistAccessError,
+    createSpotifySearchClient: jest.fn(),
+    createSpotifyDestinationClient: jest.fn(),
 }));
 
 jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => ({
     createYoutubeMusicSearchClient: mockCreateYoutubeMusicSearchClient,
     createYoutubeMusicCookieDestinationClient: mockCreateYoutubeMusicCookieDestinationClient,
+    getYoutubeMusicPlaylistSnapshot: jest.fn(),
 }));
 
 const { default: TransferProcessor } = await import('../src/services/transfer/TransferProcessor.js');
@@ -114,7 +117,7 @@ describe('metadados de playlist no TransferProcessor', () => {
         });
 
         expect(trackMatcher.matchPlaylistTracks).toHaveBeenCalledWith(expect.objectContaining({
-            youtubeClient: searchClient,
+            searchClient,
         }));
         expect(destinationClient.createPlaylist).toHaveBeenCalledWith({
             title: 'Playlist Original',

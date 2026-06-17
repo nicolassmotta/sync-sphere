@@ -4,7 +4,7 @@ import { getOwnedTransfer, listOwnedTransfers } from '../services/transfer/trans
 /**
  * @function startTransfer
  * @description Inicia o processo de transferência de uma playlist. Valida as entradas (IDs de playlist e cookie do YouTube Music),
- * cria um documento de registro "Pendente" no banco de dados e coloca a tarefa pesada na fila BullMQ/Redis.
+ * cria um registro "Pendente" no histórico local e coloca a tarefa pesada na fila local em memória.
  * @param {import('express').Request} req - Requisição Express contendo 'sourcePlaylistId' no body.
  * @param {import('express').Response} res - Resposta Express com HTTP 202, indicando processamento.
  * @param {import('express').NextFunction} next - Middleware global de erros do Express.
@@ -13,6 +13,7 @@ export const startTransfer = async (req, res, next) => {
     try {
         const { transfers, playlistIds } = await queuePlaylistTransfers({
             userId: req.user._id,
+            direction: req.body.direction,
             sourcePlaylistId: req.body.sourcePlaylistId,
             sourcePlaylistIds: req.body.sourcePlaylistIds,
         });
@@ -20,8 +21,8 @@ export const startTransfer = async (req, res, next) => {
         res.status(202).json({
             status: 'success',
             message: playlistIds.length === 1
-                ? 'A playlist foi engatilhada para conversão.'
-                : `${playlistIds.length} playlists foram engatilhadas para conversão.`,
+                ? 'A playlist foi engatilhada para migração.'
+                : `${playlistIds.length} playlists foram engatilhadas para migração.`,
             data: {
                 transferId: transfers[0]._id,
                 transferIds: transfers.map((transfer) => transfer._id),

@@ -1,53 +1,18 @@
 import '../config/loadEnv.js';
-import { Queue } from 'bullmq';
+import { writeStore, readStore } from '../storage/jsonStore.js';
 
-import redisConnection from '../config/redis.js';
-
-const queue = new Queue('playlist-transfer', {
-    connection: redisConnection,
-});
-
+/**
+ * No modo local a fila roda em memória (some quando o processo encerra). O que
+ * persiste é o histórico de transferências em `data/transfers.json`. Este script
+ * limpa esse histórico.
+ */
 const run = async () => {
-    const before = await queue.getJobCounts(
-        'active',
-        'completed',
-        'delayed',
-        'failed',
-        'paused',
-        'prioritized',
-        'repeat',
-        'unknown',
-        'waiting',
-        'waiting-children'
-    );
+    const before = readStore('transfers.json', []);
+    console.log(`[Histórico] Transferências antes da limpeza: ${before.length}`);
 
-    console.log('[Fila] Estado antes da limpeza:', before);
+    writeStore('transfers.json', []);
 
-    await queue.pause();
-    await queue.drain(true);
-    await queue.clean(0, 1000, 'failed');
-    await queue.clean(0, 1000, 'completed');
-    await queue.clean(0, 1000, 'delayed');
-    await queue.obliterate({ force: true });
-
-    const after = await queue.getJobCounts(
-        'active',
-        'completed',
-        'delayed',
-        'failed',
-        'paused',
-        'prioritized',
-        'repeat',
-        'unknown',
-        'waiting',
-        'waiting-children'
-    );
-
-    console.log('[Fila] Estado depois da limpeza:', after);
+    console.log('[Histórico] Histórico de transferências limpo.');
 };
 
-run()
-    .finally(async () => {
-        await queue.close();
-        await redisConnection.quit();
-    });
+run();

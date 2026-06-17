@@ -15,6 +15,7 @@ let publicSearchClientPromise = null;
 let authenticatedClientPromise = null;
 
 const YTMUSIC_COOKIE_DESTINATION = 'ytmusic-cookie';
+const YOUTUBE_MUSIC_PLAYLIST_MAX_ITEMS = 1000;
 
 export const isYoutubeMusicCookieDestinationEnabled = () => (
     true
@@ -23,6 +24,24 @@ export const isYoutubeMusicCookieDestinationEnabled = () => (
 export const isYoutubeMusicCookieDestinationConfigured = () => (
     Boolean(process.env.YTMUSIC_COOKIE?.trim())
 );
+
+export const normalizeYoutubeMusicPlaylistId = (input) => {
+    if (!input) return input;
+
+    const trimmed = String(input).trim();
+    try {
+        const url = new URL(trimmed);
+        const listId = url.searchParams.get('list');
+        if (listId) return listId.trim();
+    } catch {
+        // O valor pode ser um ID puro.
+    }
+
+    const pathMatch = trimmed.match(/playlist\/([a-zA-Z0-9_-]+)/);
+    if (pathMatch) return pathMatch[1];
+
+    return trimmed.split('?')[0];
+};
 
 const getAddChunkSize = () => {
     const parsed = Number(process.env.YTMUSIC_ADD_CHUNK_SIZE);
@@ -107,8 +126,69 @@ export const searchBestYoutubeMusicMatch = async ({ track }) => {
 
 export const createYoutubeMusicSearchClient = () => ({
     kind: 'ytmusic-search',
+    searchBestMatch: ({ track }) => searchBestYoutubeMusicMatch({ track }),
     searchBestVideoMatch: ({ track }) => searchBestYoutubeMusicMatch({ track }),
 });
+
+const getYoutubeMusicFirstImageUrl = (thumbnails = []) => (
+    thumbnails
+        ?.filter((thumbnail) => thumbnail?.url)
+        ?.sort((a, b) => (b.width || 0) - (a.width || 0))[0]?.url || null
+);
+
+const normalizeYoutubeMusicTrackItems = (items = []) => {
+    const tracks = [];
+
+    for (const item of items || []) {
+        if (!item?.videoId || !item.name) continue;
+
+        tracks.push({
+            youtubeVideoId: item.videoId,
+            name: item.name,
+            artist: item.artist?.name || 'Unknown',
+            album: item.album?.name || '',
+            durationMs: item.duration ? item.duration * 1000 : 0,
+            uri: `https://music.youtube.com/watch?v=${item.videoId}`,
+        });
+    }
+
+    return tracks;
+};
+
+export const getYoutubeMusicPlaylistSnapshot = async ({
+    playlistId,
+    limit = YOUTUBE_MUSIC_PLAYLIST_MAX_ITEMS,
+} = {}) => {
+    const normalizedPlaylistId = normalizeYoutubeMusicPlaylistId(playlistId);
+    const maxItems = Math.max(1, Math.min(Number(limit) || YOUTUBE_MUSIC_PLAYLIST_MAX_ITEMS, YOUTUBE_MUSIC_PLAYLIST_MAX_ITEMS));
+    const ytmusic = await createAuthenticatedClient();
+
+    const [playlist, videos] = await Promise.all([
+        ytmusic.getPlaylist(normalizedPlaylistId).catch(() => null),
+        ytmusic.getPlaylistVideos(normalizedPlaylistId),
+    ]);
+
+    const allTracks = normalizeYoutubeMusicTrackItems(videos);
+    const tracks = allTracks.slice(0, maxItems);
+    const totalTracks = playlist?.videoCount || allTracks.length;
+
+    return {
+        id: normalizedPlaylistId,
+        name: playlist?.name || 'Playlist YouTube Music',
+        description: '',
+        ownerName: playlist?.artist?.name || '',
+        imageUrl: getYoutubeMusicFirstImageUrl(playlist?.thumbnails),
+        totalTracks,
+        returnedTracks: tracks.length,
+        hasMore: totalTracks > tracks.length,
+        source: 'youtube-music-cookie',
+        tracks,
+    };
+};
+
+export const getYoutubeMusicPlaylistTracksPreview = ({ playlistId, limit = 25 }) => (
+    getYoutubeMusicPlaylistSnapshot({ playlistId, limit })
+);
 
 const validateUnofficialResponseStatus = (response, fallbackMessage) => {
     if (!response?.status || String(response.status).includes('SUCCEEDED')) return;

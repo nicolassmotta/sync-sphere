@@ -28,6 +28,7 @@ import {
     normalizeSpotifyPlaylistSummary,
     normalizeSpotifyTrackItems,
 } from './spotify/spotifyPlaylistFormatters.js';
+import { scoreSpotifyCandidate } from './spotify/spotifyTrackMatchScoring.js';
 
 export {
     buildSpotifyAuthorizationUrl,
@@ -41,6 +42,7 @@ const SPOTIFY_PLAYLIST_PAGE_LIMIT = 50;
 const SPOTIFY_PLAYLIST_MAX_ITEMS = 1000;
 const SPOTIFY_PLAYLIST_PAGE_CONCURRENCY = 3;
 const SPOTIFY_PUBLIC_PLAYLIST_PAGE_LIMIT = 500;
+const SPOTIFY_ADD_TRACK_CHUNK_SIZE = 100;
 const SPOTIFY_PATHFINDER_QUERY_PLAYLIST_HASH = '908a5597b4d0af0489a9ad6a2d41bc3b416ff47c0884016d92bbd6822d0eb6d8';
 
 export const listSpotifyUserPlaylists = async ({ userId, maxItems = SPOTIFY_PLAYLIST_MAX_ITEMS }) => {
@@ -359,5 +361,169 @@ export const getSpotifyPlaylistTracksPreview = async ({ playlistId, userId, limi
         tracks,
         returnedTracks: tracks.length,
         hasMore: totalTracks > tracks.length,
+    };
+};
+
+const sanitizeSpotifyPlaylistName = (name) => (
+    String(name || 'Playlist migrada').replace(/[<>]/g, '').trim() || 'Playlist migrada'
+);
+
+const sanitizeSpotifyPlaylistDescription = (description) => (
+    String(description || '').replace(/<[^>]*>/g, '').trim()
+);
+
+const getSpotifyCurrentUserProfile = async (accessToken) => (
+    fetchSpotifyJson(
+        'https://api.spotify.com/v1/me',
+        accessToken,
+        'Falha ao consultar o perfil do Spotify.'
+    )
+);
+
+const createSpotifyPlaylist = async ({ accessToken, userId, title, description }) => (
+    fetchSpotifyJson(
+        `https://api.spotify.com/v1/users/${encodeURIComponent(userId)}/playlists`,
+        accessToken,
+        'Falha ao criar playlist no Spotify.',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: sanitizeSpotifyPlaylistName(title),
+                description: sanitizeSpotifyPlaylistDescription(description),
+                public: false,
+            }),
+        }
+    )
+);
+
+const getSpotifyPlaylistExistingTrackUris = async ({ accessToken, playlistId }) => {
+    const existingTrackUris = new Set();
+    let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&fields=items(track(uri)),next`;
+
+    while (nextUrl) {
+        const page = await fetchSpotifyJson(
+            nextUrl,
+            accessToken,
+            'Falha ao consultar faixas existentes da playlist no Spotify.'
+        );
+
+        for (const item of page.items || []) {
+            if (item.track?.uri) existingTrackUris.add(item.track.uri);
+        }
+
+        nextUrl = page.next;
+    }
+
+    return existingTrackUris;
+};
+
+const addSpotifyTracksToPlaylist = async ({ accessToken, playlistId, trackUris }) => {
+    const existingTrackUris = await getSpotifyPlaylistExistingTrackUris({ accessToken, playlistId });
+    const pendingTrackUris = [...new Set(trackUris)].filter((trackUri) => (
+        trackUri && !existingTrackUris.has(trackUri)
+    ));
+
+    for (let index = 0; index < pendingTrackUris.length; index += SPOTIFY_ADD_TRACK_CHUNK_SIZE) {
+        const uris = pendingTrackUris.slice(index, index + SPOTIFY_ADD_TRACK_CHUNK_SIZE);
+        if (!uris.length) continue;
+
+        await fetchSpotifyJson(
+            `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+            accessToken,
+            'Falha ao adicionar faixas na playlist do Spotify.',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ uris }),
+            }
+        );
+
+        uris.forEach((uri) => existingTrackUris.add(uri));
+    }
+};
+
+const buildSpotifySearchQuery = (track) => (
+    [track.name, track.artist].filter(Boolean).join(' ').trim()
+);
+
+export const searchBestSpotifyTrackMatch = async ({ track, userId }) => {
+    const accessToken = await getSpotifyAccessTokenForUser(userId);
+    const query = buildSpotifySearchQuery(track);
+    if (!query) return null;
+
+    const url = new URL('https://api.spotify.com/v1/search');
+    url.searchParams.set('type', 'track');
+    url.searchParams.set('limit', '10');
+    url.searchParams.set('market', 'from_token');
+    url.searchParams.set('q', query);
+
+    const data = await fetchSpotifyJson(
+        url.toString(),
+        accessToken,
+        'Falha ao buscar faixas no Spotify.'
+    );
+    const candidates = data.tracks?.items || [];
+    if (!candidates.length) return null;
+
+    return candidates
+        .filter((candidate) => candidate.uri)
+        .map((candidate) => ({
+            ...candidate,
+            matchScore: scoreSpotifyCandidate(track, candidate),
+        }))
+        .sort((a, b) => b.matchScore - a.matchScore)[0] || null;
+};
+
+export const createSpotifySearchClient = ({ userId }) => ({
+    kind: 'spotify-search',
+    searchBestMatch: ({ track }) => searchBestSpotifyTrackMatch({ track, userId }),
+});
+
+export const ensureSpotifyDestinationReady = async ({ userId }) => {
+    await getConnectedSpotifyAccessTokenForUser(userId);
+};
+
+export const createSpotifyDestinationClient = ({ userId }) => {
+    const getAccessToken = () => getConnectedSpotifyAccessTokenForUser(userId);
+
+    return {
+        kind: 'spotify-destination',
+
+        async createPlaylist({ title, description }) {
+            const accessToken = await getAccessToken();
+            const profile = await getSpotifyCurrentUserProfile(accessToken);
+            if (!profile?.id) {
+                throw new Error('Spotify não retornou o ID do usuário conectado.');
+            }
+
+            const playlist = await createSpotifyPlaylist({
+                accessToken,
+                userId: profile.id,
+                title,
+                description,
+            });
+
+            if (!playlist?.id) {
+                throw new Error('Spotify não retornou o ID da playlist criada.');
+            }
+
+            return playlist.id;
+        },
+
+        setPlaylistImage: null,
+
+        async addTracksToPlaylist({ playlistId, trackUris }) {
+            const accessToken = await getAccessToken();
+            await addSpotifyTracksToPlaylist({ accessToken, playlistId, trackUris });
+        },
+
+        getPlaylistUrl(playlistId) {
+            return playlistId ? `https://open.spotify.com/playlist/${playlistId}` : null;
+        },
     };
 };

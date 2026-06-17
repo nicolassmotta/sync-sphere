@@ -3,6 +3,9 @@ import User from '../../models/User.js';
 const SPOTIFY_SCOPES = [
     'playlist-read-private',
     'playlist-read-collaborative',
+    'playlist-modify-private',
+    'playlist-modify-public',
+    'user-read-private',
 ];
 
 const requireSpotifyConfig = () => {

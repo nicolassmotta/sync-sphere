@@ -12,6 +12,9 @@ export const getTransferProgress = (transfer) => {
 export const buildTransferSnapshot = (transfer) => ({
     transferId: transfer._id,
     status: transfer.status,
+    direction: transfer.direction,
+    sourceProvider: transfer.sourceProvider,
+    targetProvider: transfer.targetProvider,
     message: transfer.lastMessage || (
         transfer.status === 'pending'
             ? 'Transferência aguardando processamento na fila.'

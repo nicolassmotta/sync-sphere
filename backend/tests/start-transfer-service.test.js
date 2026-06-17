@@ -16,6 +16,7 @@ jest.unstable_mockModule('../src/services/queueService.js', () => ({
 
 jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
     getSpotifyPlaylistTracksPreview: mockGetSpotifyPlaylistTracksPreview,
+    ensureSpotifyDestinationReady: jest.fn(),
     normalizeSpotifyPlaylistId: (input) => {
         const trimmed = String(input).trim();
         const match = trimmed.match(/playlist\/([a-zA-Z0-9]+)/);
@@ -63,7 +64,7 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
                 sourcePlaylistId: 'playlist123',
             }),
         ]);
-        expect(mockAddTransferJob).toHaveBeenCalledWith('transfer-1', 'user-1', 'playlist123');
+        expect(mockAddTransferJob).toHaveBeenCalledWith('transfer-1', 'user-1', 'playlist123', 'spotify_to_youtube');
     });
 
     it('não cria transferência nem tarefa quando o Spotify bloqueia as faixas', async () => {
