@@ -80,9 +80,10 @@ Spotify OAuth em `backend/.env`:
 
 ```env
 SPOTIFY_CLIENT_ID=seu_client_id_spotify
-SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback
 ```
+
+O fluxo usa Authorization Code + PKCE, então não há `SPOTIFY_CLIENT_SECRET`.
 
 YouTube Music em `backend/.env`:
 
@@ -107,7 +108,7 @@ Use apenas valores demonstrativos em documentação, commits, issues e capturas 
 
 - Painel não carrega dados: confirme back-end online, `FRONTEND_URL` e `VITE_API_URL`.
 - Checklist mostra back-end offline: valide `VITE_API_URL` e `http://localhost:8000/api/health`.
-- Spotify desconectado: revise credenciais e URI de redirecionamento no back-end e no painel do Spotify.
+- Spotify desconectado: revise `SPOTIFY_CLIENT_ID` e a URI de redirecionamento no back-end e no painel do Spotify.
 - `YTMUSIC_COOKIE` pendente: reinicie o back-end depois de editar `.env` e clique em revalidar.
 
 ## Verificação

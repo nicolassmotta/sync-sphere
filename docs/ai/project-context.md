@@ -94,9 +94,8 @@ Back-end `.env.example`:
 - `PORT=8000`
 - `FRONTEND_URL=http://localhost:8000`
 - `SPOTIFY_CLIENT_ID`
-- `SPOTIFY_CLIENT_SECRET`
-- `SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback`
-- Spotify OAuth usa escopos de leitura e escrita (`playlist-read-*`, `playlist-modify-*`, `user-read-private`) para suportar YouTube Music -> Spotify.
+- `SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback`
+- Spotify OAuth usa Authorization Code + PKCE, sem `SPOTIFY_CLIENT_SECRET`, com escopos de leitura e escrita (`playlist-read-*`, `playlist-modify-*`, `user-read-private`) para suportar YouTube Music -> Spotify.
 - `YTMUSIC_COOKIE`
 - `YTMUSIC_AUTH_USER` opcional
 - `YT_MUSIC_SEARCH_DELAY_MS=750`

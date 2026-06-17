@@ -76,10 +76,10 @@ Variáveis principais em `backend/.env`:
 PORT=8000
 FRONTEND_URL=http://localhost:8000
 SPOTIFY_CLIENT_ID=seu_client_id_spotify
-SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback
 YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
 ```
+
+O Spotify usa OAuth Authorization Code + PKCE: configure apenas `SPOTIFY_CLIENT_ID` no `.env`. Não há `SPOTIFY_CLIENT_SECRET`. Se precisar sobrescrever o callback padrão, defina também `SPOTIFY_REDIRECT_URI`.
 
 A chave de criptografia das credenciais locais é gerada automaticamente em `backend/data/encryption.key` na primeira execução. Para fixar uma própria, defina `ENCRYPTION_KEY` (64 caracteres hexadecimais) no `.env`:
 
@@ -87,7 +87,7 @@ A chave de criptografia das credenciais locais é gerada automaticamente em `bac
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Nunca publique `SPOTIFY_CLIENT_SECRET`, `ENCRYPTION_KEY` ou `YTMUSIC_COOKIE`. A pasta `backend/data/` é ignorada pelo Git.
+Nunca publique `ENCRYPTION_KEY` ou `YTMUSIC_COOKIE`. A pasta `backend/data/` é ignorada pelo Git. O Client ID do Spotify não é segredo; com PKCE não há Client Secret.
 
 Valide que o back-end está no ar:
 
@@ -100,14 +100,15 @@ curl http://localhost:8000/api/ready
 
 ## 3. Spotify OAuth
 
-No painel de desenvolvedores do Spotify:
+No painel de desenvolvedores (`https://developer.spotify.com/dashboard`):
 
 - crie ou abra um app;
-- configure a URI de redirecionamento exatamente como `http://localhost:8000/api/v1/integrations/spotify/callback`;
-- copie `SPOTIFY_CLIENT_ID` e `SPOTIFY_CLIENT_SECRET` para `backend/.env`;
-- reinicie o back-end;
-- conecte pelo painel do SyncSphere em `Integrações`;
+- em "Redirect URIs", cadastre exatamente `http://127.0.0.1:8000/api/v1/integrations/spotify/callback` (o Spotify exige o IP de loopback `127.0.0.1`, não `localhost`);
+- copie o `Client ID` para `SPOTIFY_CLIENT_ID` em `backend/.env` (não precisa de Client Secret);
+- reinicie o back-end e conecte pelo painel em `Integrações`;
 - reconecte o Spotify se a autorização antiga não incluir `playlist-modify-private`/`playlist-modify-public`, necessárias para YouTube Music -> Spotify.
+
+> Observação: um app Spotify novo nasce em "Development Mode" e só permite até 25 contas adicionadas manualmente no painel. Para liberar para qualquer pessoa, peça o "Extended Quota Mode" na revisão do Spotify.
 
 ## 4. Cookie do YouTube Music
 
@@ -174,7 +175,7 @@ O front-end inclui um tutorial embutido:
 ## Solução de Problemas
 
 - Front-end não conecta: confira `VITE_API_URL`, `FRONTEND_URL`, porta `8000` e CORS.
-- Spotify OAuth falha: confirme se `SPOTIFY_REDIRECT_URI` é idêntico no `.env` e no painel do Spotify.
+- Spotify OAuth falha: confirme se `SPOTIFY_CLIENT_ID` está no `.env` e se `SPOTIFY_REDIRECT_URI` é idêntico no `.env` e no painel do Spotify.
 - YouTube Music fica pendente: preencha `YTMUSIC_COOKIE`, reinicie o back-end e revalide no painel.
 - Playlist não lista faixas: o Spotify pode bloquear playlists sem permissão de leitura; tente outra playlist ou reconecte OAuth.
 - YouTube Music -> Spotify falha ao criar destino: reconecte o Spotify para conceder os escopos de escrita.

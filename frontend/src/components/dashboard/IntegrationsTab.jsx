@@ -222,10 +222,10 @@ const IntegrationsTab = ({
                         fallbackMessage: 'Falha ao desconectar Spotify.',
                     })}
                     setupSteps={[
-                        'Defina SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET no backend/.env.',
-                        'Use SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback.',
+                        'Crie um app no painel do Spotify e defina SPOTIFY_CLIENT_ID no backend/.env.',
+                        'Cadastre SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback no Spotify.',
                         'Reconecte se o app antigo não tiver playlist-modify-private/playlist-modify-public.',
-                        'Clique em conectar para concluir o OAuth no navegador.',
+                        'Clique em "Conectar Spotify" e autorize sua conta no navegador (OAuth + PKCE, sem Client Secret).',
                     ]}
                     title="Spotify OAuth"
                 />

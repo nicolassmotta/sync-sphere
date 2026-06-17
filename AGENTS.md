@@ -69,7 +69,7 @@ Serviços esperados:
 - Back-end: `http://localhost:8000` por padrão do `.env.example`
 - API base esperada no Vite: `VITE_API_URL=http://localhost:8000/api/v1`; no app servido pelo back-end, `frontend/src/services/api.js` usa `/api/v1`.
 - Dados locais: arquivos cifrados em `backend/data/` (sem banco de dados externo).
-- Spotify OAuth: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback`
+- Spotify OAuth: `SPOTIFY_CLIENT_ID` e `SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback` (Authorization Code + PKCE, sem `SPOTIFY_CLIENT_SECRET`)
 - YouTube Music: `YTMUSIC_COOKIE`
 
 ## Convenções de Implementação

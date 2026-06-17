@@ -35,8 +35,7 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
    FRONTEND_URL=http://localhost:8000
 
    SPOTIFY_CLIENT_ID=seu_client_id_spotify
-   SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-   SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback
+   SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback
 
    YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
    # YTMUSIC_AUTH_USER=0
@@ -68,10 +67,12 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
 
 1. Abra o painel em `https://developer.spotify.com/dashboard` e faça login.
 2. Clique em `Create app`.
-3. Em `Redirect URIs`, adicione `http://localhost:8000/api/v1/integrations/spotify/callback`.
-4. Copie `Client ID` e `Client Secret` para o arquivo `backend/.env`.
+3. Em `Redirect URIs`, adicione `http://127.0.0.1:8000/api/v1/integrations/spotify/callback`.
+4. Copie o `Client ID` para o arquivo `backend/.env`.
 5. Reinicie o back-end e clique em `Conectar Spotify` na central de integrações.
 6. Reconecte contas já autorizadas antes desta versão para conceder `playlist-modify-private`/`playlist-modify-public`, usados no fluxo YouTube Music -> Spotify.
+
+O fluxo usa Authorization Code + PKCE, então não há `SPOTIFY_CLIENT_SECRET`.
 
 ## YouTube Music via Cookie
 

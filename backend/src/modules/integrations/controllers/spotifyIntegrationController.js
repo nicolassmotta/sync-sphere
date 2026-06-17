@@ -50,7 +50,7 @@ export const spotifyCallback = async (req, res, next) => {
             return next(new AppError('Parâmetro `state` do Spotify inválido.', 400));
         }
 
-        const tokenData = await exchangeSpotifyCode(code);
+        const tokenData = await exchangeSpotifyCode(code, state);
         const user = await User.findById(decoded.id).select('+spotifyRefreshToken');
         if (!user) {
             return next(new AppError('Usuário do OAuth não encontrado.', 404));

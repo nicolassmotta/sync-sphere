@@ -40,13 +40,13 @@ cp backend/.env.example backend/.env
 npm start`,
     },
     {
-        title: 'Spotify OAuth',
-        description: 'Valores de exemplo para `backend/.env`; reconecte se faltar permissão para criar playlists.',
+        title: 'Spotify OAuth (PKCE)',
+        description: 'Crie um app no painel do Spotify, copie o Client ID e autorize sua conta pelo navegador. O fluxo usa OAuth + PKCE, então não há Client Secret.',
         label: 'backend/.env',
         language: 'env',
         code: `SPOTIFY_CLIENT_ID=seu_client_id_spotify
-SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback`,
+# Cadastre esta URL exata em "Redirect URIs" no painel do Spotify:
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback`,
     },
     {
         title: 'YouTube Music cookie',
@@ -96,7 +96,7 @@ export const troubleshootingItems = [
     },
     {
         title: 'Spotify volta para erro ou tela negada',
-        text: 'Revise `SPOTIFY_REDIRECT_URI` no `.env` e no painel do Spotify. Para YouTube Music -> Spotify, reconecte se faltar escopo de escrita.',
+        text: '`SPOTIFY_CLIENT_ID` precisa estar no `.env` e a URL de callback (`http://127.0.0.1:8000/api/v1/integrations/spotify/callback`) precisa estar idêntica em "Redirect URIs" no painel do Spotify. Para YouTube Music -> Spotify, reconecte se faltar escopo de escrita.',
     },
     {
         title: 'YouTube Music aparece como pendente',
