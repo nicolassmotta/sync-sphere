@@ -4,11 +4,11 @@ Use este arquivo como briefing inicial para qualquer agente/assistente trabalhan
 
 ## Identidade do Produto
 
-SyncSphere e uma aplicacao fullstack para migrar playlists do Spotify para o YouTube Music. O produto combina autenticação local, conexões com serviços de musica, fila assíncrona para transferências e painel React para acompanhar progresso.
+SyncSphere é uma aplicação fullstack para migrar playlists entre Spotify e YouTube Music. É open-source self-hosted single-user: a pessoa clona, configura credenciais e usa localmente. O produto combina conexões com serviços de música, fila local para transferências e painel React para acompanhar progresso. Não há contas, login nem banco de dados.
 
 ## Tecnologias e Estrutura
 
-- `backend/`: API Node.js + Express em ESM, arquitetura MVC, MongoDB/Mongoose, Redis/BullMQ, Socket.io, JWT em cookie HttpOnly.
+- `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória. Sem MongoDB, sem Redis, sem login.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion, Lucide.
 - `docs/ai/`: contexto operacional para agentes, MCPs e prompts repetíveis.
 - `.agents/skills/sync-sphere/`: skill local do projeto para reutilizar este contexto.
@@ -34,7 +34,18 @@ Codex e agentes do curso devem tratar estas regras como padrão de sessão. Cód
 
 ## Como Rodar
 
-Back-end:
+Fluxo local principal:
+
+```bash
+npm run setup
+cp backend/.env.example backend/.env
+# preencha backend/.env
+npm start
+```
+
+Abra `http://localhost:8000`.
+
+Back-end em desenvolvimento:
 
 ```bash
 cd backend
@@ -42,22 +53,24 @@ npm install
 npm run dev
 ```
 
-Front-end:
+Front-end em desenvolvimento:
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-Serviços esperados em desenvolvimento:
+Serviços esperados:
 
-- Front-end: `http://localhost:5173`
-- Back-end: `http://localhost:4001` por padrão do `.env.example`
-- API base esperada pelo front-end: `VITE_API_URL=http://localhost:4001/api/v1`; a alternativa em `frontend/src/services/api.js` tenta primeiro `http://localhost:4001/api/v1`.
-- MongoDB: `mongodb://localhost:27017/syncsphere`
-- Redis: `127.0.0.1:6379`
-- Spotify OAuth: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback`
+- Aplicação local empacotada: `http://localhost:8000`
+- Front-end Vite em desenvolvimento: `http://localhost:5173`
+- Back-end: `http://localhost:8000` por padrão do `.env.example`
+- API base esperada no Vite: `VITE_API_URL=http://localhost:8000/api/v1`; no app servido pelo back-end, `frontend/src/services/api.js` usa `/api/v1`.
+- Dados locais: arquivos cifrados em `backend/data/` (sem banco de dados externo).
+- Spotify OAuth: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback`
+- YouTube Music: `YTMUSIC_COOKIE`
 
 ## Convenções de Implementação
 
@@ -65,16 +78,16 @@ Serviços esperados em desenvolvimento:
 - Mantenha controllers finos; regras de negócio devem ficar em services/trabalhadores quando crescerem.
 - Valide payloads com Zod e middleware de validação.
 - Propague erros para `next(error)` e use `AppError` para erros operacionais.
-- Não coloque JWT em `localStorage`; a sessão deve continuar em cookie HttpOnly.
-- Tokens/cookies de terceiros devem ser criptografados antes de persistir.
+- Não reintroduza MongoDB, Redis, contas ou login: o projeto é local-first single-user e deve subir sem infraestrutura externa.
+- Persistência é local, em arquivos JSON cifrados (`backend/data/`, via `src/storage/`). Tokens/cookies de terceiros devem ser criptografados antes de persistir e `backend/data/` nunca deve ser versionado.
 - Integrações externas vivem em `/api/v1/integrations`; use essas rotas para status, Spotify OAuth e cookie do YouTube Music.
 - No front-end, centralize HTTP em `frontend/src/services/api.js` e estado de sessão em `useAuthStore`.
-- Use componentes existentes em `components/layout`, `components/auth`, `components/dashboard` antes de criar novos padrões.
+- Use componentes existentes em `components/layout`, `components/setup`, `components/dashboard` e `components/ui` antes de criar novos padrões.
 - Mantenha a UI dark premium com Tailwind e cores `spotify`, `youtube`, `darkBackground`, `surfaceCard`.
 
 ## Checklist Antes de Entregar Mudanças
 
-- Back-end: rode pelo menos `npm run dev` quando a mudança tocar bootstrap, rotas, banco, filas ou autenticação.
+- Back-end: rode pelo menos `npm run dev` quando a mudança tocar bootstrap, rotas, storage local ou fila.
 - Front-end: rode `npm run lint` e `npm run build` quando a mudança tocar UI/React.
 - Para mudanças de integração, valide cookies com `withCredentials`, CORS e porta configurada.
 - Atualize `docs/ai/` quando adicionar arquitetura, fluxos, MCPs, decisões ou prompts que devem ser reaproveitados.

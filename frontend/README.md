@@ -15,11 +15,20 @@ Interface React/Vite do SyncSphere. O front-end funciona como painel de migraç�
 
 ## Como Rodar
 
-Antes de abrir o front-end, suba o back-end em `http://localhost:4001` e valide:
+No uso local principal, o front-end é buildado e servido pelo back-end:
 
 ```bash
-curl http://localhost:4001/api/health
-curl http://localhost:4001/api/ready
+npm run setup
+npm start
+```
+
+Abra `http://localhost:8000`.
+
+Para desenvolver a UI com Vite, suba o back-end em `http://localhost:8000` e valide:
+
+```bash
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/ready
 ```
 
 Depois rode:
@@ -27,32 +36,34 @@ Depois rode:
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 Configure `VITE_API_URL` quando o back-end não estiver na porta padrão:
 
 ```env
-VITE_API_URL=http://localhost:4001/api/v1
+VITE_API_URL=http://localhost:8000/api/v1
 ```
 
 Portas esperadas:
 
-- Front-end: `http://localhost:5173`
-- API do back-end: `http://localhost:4001/api/v1`
-- Saúde do back-end: `http://localhost:4001/api/health`
-- Prontidão do back-end: `http://localhost:4001/api/ready`
+- Aplicação local empacotada: `http://localhost:8000`
+- Front-end Vite em desenvolvimento: `http://localhost:5173`
+- API do back-end: `http://localhost:8000/api/v1`
+- Saúde do back-end: `http://localhost:8000/api/health`
+- Prontidão do back-end: `http://localhost:8000/api/ready`
 
 ## Fluxo no Front-end
 
-1. Página inicial explica o fluxo local Spotify -> YouTube Music.
-2. Login cria/acessa um usuário local preservando sessão em cookie HttpOnly.
-3. Início mostra checklist de back-end, MongoDB, Redis, Spotify OAuth, `YTMUSIC_COOKIE`, seleção, fila e histórico.
-4. Integrações mostra back-end online/offline, Mongo/Redis, Spotify conectado/desconectado e cookie configurado/não configurado.
+1. Página inicial explica o fluxo local Spotify <-> YouTube Music.
+2. O painel abre direto, sem login (não há contas).
+3. Início mostra checklist de back-end, Spotify OAuth, `YTMUSIC_COOKIE`, seleção, fila e histórico.
+4. Integrações mostra back-end online/offline, Spotify conectado/desconectado e cookie configurado/não configurado.
 5. Guia local traz comandos copiáveis, variáveis de ambiente e solução de problemas.
 6. Seleção de playlists carrega Spotify via OAuth e permite escolher uma ou várias playlists.
-7. Migração usa `/transfer/start`, BullMQ e Socket.io.
-8. Histórico lista status, falhas de correspondência e playlist criada no YouTube Music.
+7. Migração usa `/transfer/start`, a fila local e Socket.io.
+8. Histórico lista status, falhas de correspondência e playlist criada no destino.
 
 ## Configuração Local Referenciada pela UI
 
@@ -70,7 +81,7 @@ Spotify OAuth em `backend/.env`:
 ```env
 SPOTIFY_CLIENT_ID=seu_client_id_spotify
 SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback
+SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback
 ```
 
 YouTube Music em `backend/.env`:
@@ -86,7 +97,7 @@ Use apenas valores demonstrativos em documentação, commits, issues e capturas 
 
 - Centralize HTTP em `src/services/api.js`.
 - Preserve `withCredentials` para cookies HttpOnly.
-- Use `src/store/useAuthStore.js` para estado de sessão enquanto o fluxo autenticado existir.
+- `src/store/useAuthStore.js` mantém apenas o usuário local fixo (não há login).
 - Reaproveite componentes em `src/components/ui`, `src/components/layout`, `src/components/setup` e `src/components/dashboard`.
 - Mantenha UI dark, responsiva, utilitária e legível.
 - Não adicione camada comercial ou linguagem de produto pago.
@@ -94,9 +105,8 @@ Use apenas valores demonstrativos em documentação, commits, issues e capturas 
 
 ## Solução de Problemas
 
-- Tela de login não autentica: confirme back-end online, `FRONTEND_URL` e cookie HttpOnly aceito pelo navegador.
-- Checklist mostra back-end offline: valide `VITE_API_URL` e `http://localhost:4001/api/health`.
-- Mongo/Redis pendente: confira `http://localhost:4001/api/ready`.
+- Painel não carrega dados: confirme back-end online, `FRONTEND_URL` e `VITE_API_URL`.
+- Checklist mostra back-end offline: valide `VITE_API_URL` e `http://localhost:8000/api/health`.
 - Spotify desconectado: revise credenciais e URI de redirecionamento no back-end e no painel do Spotify.
 - `YTMUSIC_COOKIE` pendente: reinicie o back-end depois de editar `.env` e clique em revalidar.
 

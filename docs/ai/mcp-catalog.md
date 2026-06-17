@@ -30,7 +30,7 @@ Uso: leitura e edição controlada do projeto.
 
 Escopo sugerido:
 
-- `/home/nicolasmotta/sync-sphere`
+- raiz local do repositório clonado, por exemplo `C:\Users\Nicolas\sync-sphere` no Windows ou `~/sync-sphere` em Linux/macOS.
 
 Por que usar: permite que o agente leia código, docs e implemente mudanças sem depender de colagens manuais.
 
@@ -40,31 +40,11 @@ Uso: diffs, histórico, status, commits e revisões.
 
 Observação: confirme branch, remoto e working tree antes de commits, pushes ou PRs.
 
-### mongodb
-
-Uso: inspecionar coleções, documentos de desenvolvimento e schemas reais.
-
-Escopo sugerido:
-
-- database: `syncsphere`
-- ambiente: desenvolvimento/local
-
-Cuidados: nunca exponha dados reais de usuários, tokens ou cookies. Prefira dados seed/fakes para debug com agentes.
-
-### redis
-
-Uso: diagnosticar filas BullMQ, tarefas pendentes, falhas e trabalhadores.
-
-Escopo sugerido:
-
-- host local `127.0.0.1`
-- porta `6379`
-
-Cuidados: evite limpar filas ou keys sem confirmar. Operações destrutivas devem ser explícitas.
+> Observação: o projeto é local-first e não usa banco de dados nem Redis. Os dados ficam em arquivos JSON cifrados em `backend/data/`, então não há MCP de MongoDB ou Redis. Para inspecionar dados locais, use o MCP `filesystem` (com cuidado, pois `data/` contém credenciais cifradas).
 
 ### browser/playwright
 
-Uso: validar UI real do Vite, rotas, fluxo de login, painel, responsividade e capturas de tela.
+Uso: validar UI real do Vite, rotas, painel, responsividade e capturas de tela.
 
 Por que usar: mudanças no front-end devem ser verificadas visualmente, não só por build/lint.
 
@@ -104,16 +84,7 @@ Use isto como checklist conceitual:
   "mcpServers": {
     "syncsphere-filesystem": {
       "purpose": "Read/write this workspace only",
-      "allowedRoots": ["/home/nicolasmotta/sync-sphere"]
-    },
-    "syncsphere-mongodb": {
-      "purpose": "Inspect local development MongoDB",
-      "database": "syncsphere"
-    },
-    "syncsphere-redis": {
-      "purpose": "Inspect BullMQ queues in local Redis",
-      "host": "127.0.0.1",
-      "port": 6379
+      "allowedRoots": ["<caminho-absoluto-para-sync-sphere>"]
     },
     "syncsphere-browser": {
       "purpose": "Rodar checagens locais de UI contra Vite e back-end"
@@ -124,10 +95,10 @@ Use isto como checklist conceitual:
 
 ## Política de Segredos
 
-- Nunca colocar `.env`, tokens Spotify, cookies do YouTube Music ou JWT em docs.
+- Nunca colocar `.env`, tokens Spotify, cookies do YouTube Music ou o conteúdo de `backend/data/` em docs.
 - Usar `.env.example` para formato e nomes de variáveis.
 - Em prompts para agentes, substituir valores sensíveis por placeholders.
-- MCPs de banco devem apontar para dev/local por padrão.
+- `backend/data/` contém credenciais cifradas e nunca deve ser versionado ou colado em docs.
 
 ## Quando Adicionar Um MCP Novo
 

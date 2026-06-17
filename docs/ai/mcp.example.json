@@ -6,25 +6,13 @@
     "syncsphere-filesystem": {
       "command": "REPLACE_WITH_FILESYSTEM_MCP_COMMAND",
       "args": [
-        "/home/nicolasmotta/sync-sphere"
+        "REPLACE_WITH_ABSOLUTE_PATH_TO_SYNC_SPHERE"
       ]
     },
     "syncsphere-git": {
       "command": "REPLACE_WITH_GIT_MCP_COMMAND",
       "args": [
-        "/home/nicolasmotta/sync-sphere"
-      ]
-    },
-    "syncsphere-mongodb-dev": {
-      "command": "REPLACE_WITH_MONGODB_MCP_COMMAND",
-      "args": [
-        "mongodb://localhost:27017/syncsphere"
-      ]
-    },
-    "syncsphere-redis-dev": {
-      "command": "REPLACE_WITH_REDIS_MCP_COMMAND",
-      "args": [
-        "redis://127.0.0.1:6379"
+        "REPLACE_WITH_ABSOLUTE_PATH_TO_SYNC_SPHERE"
       ]
     },
     "syncsphere-browser": {

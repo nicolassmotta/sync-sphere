@@ -1,36 +1,67 @@
 # SyncSphere
 
-SyncSphere é um migrador local e de código aberto de playlists do Spotify para o YouTube Music. Ele combina back-end Express, MongoDB, Redis/BullMQ, Socket.io e front-end React para guiar a configuração, escolher playlists, iniciar migrações e acompanhar histórico.
+SyncSphere é um migrador local e de código aberto de playlists entre Spotify e YouTube Music. Ele combina back-end Express, Socket.io e front-end React para guiar a configuração, escolher a direção, iniciar migrações e acompanhar o histórico.
 
-O escopo atual é local, com dependências explícitas e sem camada comercial.
+É **self-hosted single-user**: você clona, configura suas credenciais do Spotify e do YouTube Music, e usa na sua própria máquina. Não há contas, login, banco de dados, MongoDB, Redis ou serviços externos. Os dados ficam em arquivos locais cifrados e a fila roda no próprio processo.
 
 ## Fluxo Local
 
-1. Configure o back-end.
-2. Suba MongoDB e Redis.
+1. Instale dependências e gere o build do front-end com `npm run setup`.
+2. Configure o back-end (`backend/.env`).
 3. Configure Spotify OAuth.
 4. Configure `YTMUSIC_COOKIE`.
-5. Valide integrações no painel.
-6. Escolha uma ou mais playlists.
-7. Inicie a migração.
-8. Acompanhe progresso e histórico.
+5. Suba o servidor único com `npm start`.
+6. Abra `http://localhost:8000`.
+7. Valide integrações no painel.
+8. Escolha a direção da transferência.
+9. Escolha uma ou mais playlists do Spotify ou cole um link/ID do YouTube Music.
+10. Inicie a migração e acompanhe progresso/histórico.
 
 ## Arquitetura
 
-- `backend/`: Node.js + Express em ESM, MongoDB/Mongoose, Redis/BullMQ, Socket.io, JWT em cookie HttpOnly e Zod.
+- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion e Lucide.
 - `docs/ai/`: contexto operacional para agentes e decisões recorrentes do projeto.
 - `.agents/skills/sync-sphere/`: skill local usada por agentes que trabalham neste repositório.
 
+Sem MongoDB, sem Redis, sem contas: a aplicação sobe sem nenhuma dependência de infraestrutura externa.
+
 ## Requisitos
 
 - Node.js 20+
-- MongoDB local acessível por `mongodb://localhost:27017/syncsphere`
-- Redis local acessível por `127.0.0.1:6379`
-- App Spotify com OAuth configurado
+- App Spotify com OAuth configurado para leitura e criação de playlists
 - cookie do YouTube Music em `YTMUSIC_COOKIE`
 
-## 1. Back-end
+## 1. Uso Local em `localhost:8000`
+
+Na raiz do projeto:
+
+```bash
+npm run setup
+cp backend/.env.example backend/.env
+```
+
+No Windows PowerShell, use:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+```
+
+Preencha `backend/.env`, configure o callback do Spotify e inicie:
+
+```bash
+npm start
+```
+
+Depois abra:
+
+```text
+http://localhost:8000
+```
+
+O back-end serve a API, o Socket.io e o build React (`frontend/dist`) na mesma porta. Para desenvolvimento da UI com Vite, veja a seção de front-end.
+
+## 2. Back-end
 
 ```bash
 cd backend
@@ -42,47 +73,45 @@ npm run dev
 Variáveis principais em `backend/.env`:
 
 ```env
-PORT=4001
-FRONTEND_URL=http://localhost:5173
-JWT_SECRET=troque_este_valor_localmente
-# Gere um valor real com:
-# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-MONGO_URI=mongodb://localhost:27017/syncsphere
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+PORT=8000
+FRONTEND_URL=http://localhost:8000
 SPOTIFY_CLIENT_ID=seu_client_id_spotify
 SPOTIFY_CLIENT_SECRET=seu_client_secret_spotify
-SPOTIFY_REDIRECT_URI=http://localhost:4001/api/v1/integrations/spotify/callback
+SPOTIFY_REDIRECT_URI=http://localhost:8000/api/v1/integrations/spotify/callback
 YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
 ```
 
-Nunca publique `SPOTIFY_CLIENT_SECRET`, `JWT_SECRET`, `ENCRYPTION_KEY` ou `YTMUSIC_COOKIE`.
-
-## 2. MongoDB e Redis
-
-Use os serviços locais já instalados na sua máquina. Depois valide:
+A chave de criptografia das credenciais locais é gerada automaticamente em `backend/data/encryption.key` na primeira execução. Para fixar uma própria, defina `ENCRYPTION_KEY` (64 caracteres hexadecimais) no `.env`:
 
 ```bash
-curl http://localhost:4001/api/health
-curl http://localhost:4001/api/ready
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-`/api/ready` deve retornar `mongo: "up"` e `redis: "up"` antes de iniciar uma migração.
+Nunca publique `SPOTIFY_CLIENT_SECRET`, `ENCRYPTION_KEY` ou `YTMUSIC_COOKIE`. A pasta `backend/data/` é ignorada pelo Git.
+
+Valide que o back-end está no ar:
+
+```bash
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/ready
+```
+
+`/api/ready` retorna `storage: "local"` e `queue: "in-memory"`.
 
 ## 3. Spotify OAuth
 
 No painel de desenvolvedores do Spotify:
 
 - crie ou abra um app;
-- configure a URI de redirecionamento exatamente como `http://localhost:4001/api/v1/integrations/spotify/callback`;
+- configure a URI de redirecionamento exatamente como `http://localhost:8000/api/v1/integrations/spotify/callback`;
 - copie `SPOTIFY_CLIENT_ID` e `SPOTIFY_CLIENT_SECRET` para `backend/.env`;
 - reinicie o back-end;
-- conecte pelo painel do SyncSphere em `Integrações`.
+- conecte pelo painel do SyncSphere em `Integrações`;
+- reconecte o Spotify se a autorização antiga não incluir `playlist-modify-private`/`playlist-modify-public`, necessárias para YouTube Music -> Spotify.
 
 ## 4. Cookie do YouTube Music
 
-O destino usa `YTMUSIC_COOKIE` no back-end local.
+YouTube Music usa `YTMUSIC_COOKIE` no back-end local como origem ou destino.
 
 1. Abra `https://music.youtube.com` logado na conta de destino.
 2. Abra as ferramentas de desenvolvedor, aba Rede.
@@ -93,51 +122,62 @@ O destino usa `YTMUSIC_COOKIE` no back-end local.
 
 Use apenas valores demonstrativos em issues, docs, commits e capturas de tela.
 
-## 5. Front-end
+## 5. Front-end em Desenvolvimento
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 Se a API não estiver na porta padrão, configure:
 
 ```env
-VITE_API_URL=http://localhost:4001/api/v1
+VITE_API_URL=http://localhost:8000/api/v1
 ```
 
 Portas padrão:
 
-- Front-end: `http://localhost:5173`
-- API do back-end: `http://localhost:4001/api/v1`
-- Saúde: `http://localhost:4001/api/health`
-- Prontidão: `http://localhost:4001/api/ready`
+- Aplicação local empacotada: `http://localhost:8000`
+- Front-end Vite em desenvolvimento: `http://localhost:5173`
+- API do back-end: `http://localhost:8000/api/v1`
+- Saúde: `http://localhost:8000/api/health`
+- Prontidão: `http://localhost:8000/api/ready`
+
+O painel abre direto, sem tela de login.
 
 ## Painel
 
 O front-end inclui um tutorial embutido:
 
-- Início: checklist de back-end, MongoDB, Redis, Spotify OAuth, `YTMUSIC_COOKIE`, seleção, fila e histórico.
+- Início: checklist de back-end, Spotify OAuth, `YTMUSIC_COOKIE`, direção da transferência, seleção, fila e histórico.
 - Integrações: status técnico e ações para conectar Spotify ou revalidar cookie.
 - Guia local: comandos copiáveis, variáveis de ambiente e solução de problemas.
-- Histórico: transferências concluídas, falhas de correspondência e links criados no YouTube Music.
+- Histórico: transferências concluídas, falhas de correspondência, direção usada e links criados no YouTube Music ou Spotify.
+
+## Dados Locais
+
+- Credenciais do Spotify ficam cifradas em `backend/data/credentials.json`.
+- O histórico de transferências fica em `backend/data/transfers.json`.
+- A chave de criptografia fica em `backend/data/encryption.key` (gerada automaticamente).
+- Toda a pasta `backend/data/` é ignorada pelo Git. Para limpar o histórico: `npm run history:clear`.
 
 ## Segurança
 
-- O JWT fica em cookie HttpOnly; não use `localStorage` para sessão.
-- Axios deve manter `withCredentials`.
-- Tokens de integrações são criptografados antes de persistir.
-- Transferências longas continuam fora do ciclo HTTP de requisição/resposta, sempre via BullMQ/trabalhador.
+- Credenciais de integrações são criptografadas antes de persistir.
+- Axios mantém `withCredentials`.
+- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo.
 - Socket.io publica progresso para o painel.
+- Como tudo roda local, mantenha `backend/data/` e o `.env` fora de qualquer repositório público.
 
 ## Solução de Problemas
 
-- Front-end não conecta: confira `VITE_API_URL`, `FRONTEND_URL`, porta `4001` e CORS.
-- `/api/ready` mostra Mongo ou Redis offline: suba o serviço local e reinicie o back-end.
+- Front-end não conecta: confira `VITE_API_URL`, `FRONTEND_URL`, porta `8000` e CORS.
 - Spotify OAuth falha: confirme se `SPOTIFY_REDIRECT_URI` é idêntico no `.env` e no painel do Spotify.
 - YouTube Music fica pendente: preencha `YTMUSIC_COOKIE`, reinicie o back-end e revalide no painel.
 - Playlist não lista faixas: o Spotify pode bloquear playlists sem permissão de leitura; tente outra playlist ou reconecte OAuth.
+- YouTube Music -> Spotify falha ao criar destino: reconecte o Spotify para conceder os escopos de escrita.
 
 ## Verificação
 

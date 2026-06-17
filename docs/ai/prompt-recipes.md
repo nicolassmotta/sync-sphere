@@ -8,7 +8,7 @@ Use estes prompts como ponto de partida para tarefas frequentes. Ajuste o trecho
 Use o contexto do SyncSphere em AGENTS.md e docs/ai/project-context.md.
 Siga docs/ai/agent-tooling.md e docs/ai/skill-policy.md.
 Implemente [recurso] de ponta a ponta.
-Preserve JWT em cookie HttpOnly, Axios com withCredentials, controllers finos, validação Zod e fila BullMQ quando a tarefa for longa.
+Preserve o modelo local-first (sem contas/Mongo/Redis), Axios com withCredentials, controllers finos, validação Zod e fila local quando a tarefa for longa.
 Ao final, liste arquivos alterados e comandos de validação executados.
 ```
 
@@ -17,7 +17,7 @@ Ao final, liste arquivos alterados e comandos de validação executados.
 ```text
 Faça uma revisão de back-end no SyncSphere focada em bugs, segurança e regressões.
 Leia backend/src, AGENTS.md, docs/ai/project-context.md, docs/ai/agent-tooling.md e docs/ai/skill-policy.md.
-Priorize autenticação, cookies, CORS, validação, criptografia, logs, BullMQ e tratamento de erros.
+Priorize storage local cifrado, CORS, validação, criptografia, logs, fila local e tratamento de erros.
 Traga achados com arquivo/linha e severidade.
 ```
 
@@ -26,7 +26,7 @@ Traga achados com arquivo/linha e severidade.
 ```text
 Revise o front-end do SyncSphere.
 Leia frontend/src, AGENTS.md, docs/ai/project-context.md, docs/ai/agent-tooling.md e docs/ai/skill-policy.md.
-Procure problemas de fluxo de auth, rotas privadas, chamadas Axios, estados Zustand, responsividade e consistência visual com Tailwind.
+Procure problemas de rotas, chamadas Axios, estados Zustand, responsividade e consistência visual com Tailwind.
 Traga achados com arquivo/linha e severidade.
 ```
 
@@ -45,7 +45,7 @@ Valide com lint/build quando possível.
 Diagnostique o fluxo de transferência do SyncSphere.
 Leia backend/src/services/queueService.js, backend/src/workers/transferWorker.js, models relacionados e docs/ai/project-context.md.
 Verifique criação de tarefas, estados, retentativas, emissão Socket.io e persistência de falhas.
-Não limpe Redis/Mongo sem pedir confirmação.
+Não apague `backend/data/` (credenciais e histórico locais) sem pedir confirmação.
 ```
 
 ## Atualizar Contexto de IA

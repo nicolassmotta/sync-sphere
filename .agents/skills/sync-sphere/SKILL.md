@@ -1,6 +1,6 @@
 ---
 name: sync-sphere
-description: Orientações específicas para trabalhar no SyncSphere, app React/Vite + Node/Express para migrar playlists do Spotify para o YouTube Music. Use quando Codex precisar implementar, revisar, depurar, documentar ou planejar mudanças neste repositório, especialmente em tarefas envolvendo cookies de autenticação, MongoDB/Mongoose, filas Redis/BullMQ, progresso via Socket.io, integrações Spotify/YouTube Music, UI Tailwind, configuração MCP ou contexto reutilizável para agentes.
+description: Orientações específicas para trabalhar no SyncSphere, app React/Vite + Node/Express local-first (self-hosted single-user) para migrar playlists entre Spotify e YouTube Music. Use quando Codex precisar implementar, revisar, depurar, documentar ou planejar mudanças neste repositório, especialmente em tarefas envolvendo storage local cifrado, fila em memória, progresso via Socket.io, integrações Spotify/YouTube Music, UI Tailwind, configuração MCP ou contexto reutilizável para agentes.
 ---
 
 # Sync Sphere
@@ -21,9 +21,10 @@ Use esta skill para trabalhar no repositório SyncSphere com o contexto do proje
 ## Regras do Projeto
 
 - Mantenha o back-end em ESM.
-- Mantenha JWT em cookies HttpOnly; não mova tokens de autenticação para storage do navegador.
+- Modelo local-first: não reintroduza MongoDB, Redis, contas ou login. O app deve subir sem infraestrutura externa.
+- Persistência é local em arquivos JSON cifrados (`backend/data/`, via `src/storage/`); nunca versione `backend/data/`.
 - Mantenha requisições Axios com credenciais via `withCredentials`.
-- Mantenha transferências longas fora do caminho HTTP request/response; use trabalhadores BullMQ.
+- Mantenha transferências longas fora do caminho HTTP request/response; use a fila local + trabalhador.
 - Emita progresso de transferência via Socket.io quando o painel depender disso.
 - Valide entradas sensíveis com Zod e middleware de validação de rotas.
 - Criptografe credenciais de terceiros antes de persistir.
@@ -49,7 +50,7 @@ npm run lint
 npm run build
 ```
 
-Se uma mudança tocar integração, confira porta do back-end, `FRONTEND_URL`, `VITE_API_URL` do front-end, CORS, cookies, MongoDB e Redis em conjunto.
+Se uma mudança tocar integração, confira porta do back-end, `FRONTEND_URL`, `VITE_API_URL` do front-end, CORS e cookies de OAuth em conjunto.
 
 ## Referências
 
