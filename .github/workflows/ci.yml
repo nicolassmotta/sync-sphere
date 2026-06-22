@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    name: Testes, lint, build e smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Instalar dependências do back-end
+        run: npm ci --prefix backend
+
+      - name: Instalar dependências do front-end
+        run: npm ci --prefix frontend
+
+      - name: Testar back-end
+        run: npm test --prefix backend
+
+      - name: Validar front-end
+        run: |
+          npm run lint --prefix frontend
+          npm run build --prefix frontend
+
+      - name: Validar aplicação empacotada
+        env:
+          APP_ENV: production
+          DATA_DIR: ${{ runner.temp }}/sync-sphere-data
+          FRONTEND_URL: http://localhost:8000
+          NODE_ENV: production
+          PORT: 8000
+        run: |
+          npm start > "$RUNNER_TEMP/sync-sphere.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          ready=false
+          for attempt in {1..20}; do
+            if curl --fail --silent http://localhost:8000/api/ready > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != true ]; then
+            cat "$RUNNER_TEMP/sync-sphere.log"
+            exit 1
+          fi
+
+          curl --fail --silent http://localhost:8000/api/health > /dev/null
+          curl --fail --silent http://localhost:8000/api/ready > /dev/null
+          curl --fail --silent http://localhost:8000/ | grep --quiet '<div id="root"></div>'
