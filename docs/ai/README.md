@@ -8,6 +8,7 @@ Este diretório centraliza o contexto que normalmente teria de ser explicado de 
 - Para configurar comportamento de agentes: leia `agent-tooling.md` e `skill-policy.md`.
 - Para escolher MCPs: leia `mcp-catalog.md`.
 - Para pedir tarefas recorrentes com menos atrito: use `prompt-recipes.md`.
+- Para preparar e publicar versões: siga `release-process.md`.
 - Para agentes Codex/Claude/Copilot: comece por `AGENTS.md` na raiz e depois consulte estes arquivos.
 
 ## Manutenção

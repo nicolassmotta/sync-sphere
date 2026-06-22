@@ -3,6 +3,8 @@ import { jest } from '@jest/globals';
 const mockInsertMany = jest.fn();
 const mockAddTransferJob = jest.fn();
 const mockGetSpotifyPlaylistTracksPreview = jest.fn();
+const mockEnsureSpotifyDestinationReady = jest.fn();
+const mockGetYoutubeMusicPlaylistTracksPreview = jest.fn();
 
 jest.unstable_mockModule('../src/models/Transfer.js', () => ({
     default: {
@@ -16,12 +18,23 @@ jest.unstable_mockModule('../src/services/queueService.js', () => ({
 
 jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
     getSpotifyPlaylistTracksPreview: mockGetSpotifyPlaylistTracksPreview,
-    ensureSpotifyDestinationReady: jest.fn(),
+    ensureSpotifyDestinationReady: mockEnsureSpotifyDestinationReady,
     normalizeSpotifyPlaylistId: (input) => {
         const trimmed = String(input).trim();
         const match = trimmed.match(/playlist\/([a-zA-Z0-9]+)/);
         return match ? match[1] : trimmed.split('?')[0];
     },
+}));
+
+jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => ({
+    getYoutubeMusicPlaylistTracksPreview: mockGetYoutubeMusicPlaylistTracksPreview,
+    isYoutubeMusicCookieDestinationConfigured: () => Boolean(process.env.YTMUSIC_COOKIE?.trim()),
+    normalizeYoutubeMusicPlaylistId: (input) => {
+        const trimmed = String(input).trim();
+        const match = trimmed.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+        return match ? match[1] : trimmed.split('?')[0];
+    },
+    validateYoutubeMusicCookieDestinationConfig: jest.fn(),
 }));
 
 const { queuePlaylistTransfers } = await import('../src/services/transfer/startTransferService.js');
@@ -35,6 +48,13 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
             totalTracks: 10,
             returnedTracks: 1,
             tracks: [{ spotifyId: 'track-1', name: 'Música', artist: 'Artista' }],
+        });
+        mockEnsureSpotifyDestinationReady.mockResolvedValue(undefined);
+        mockGetYoutubeMusicPlaylistTracksPreview.mockResolvedValue({
+            id: 'youtube-playlist-1',
+            totalTracks: 10,
+            returnedTracks: 1,
+            tracks: [{ youtubeVideoId: 'video-1', name: 'Música', artist: 'Artista' }],
         });
         mockInsertMany.mockImplementation(async (docs) => docs.map((doc, index) => ({
             _id: `transfer-${index + 1}`,
@@ -98,5 +118,34 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
         expect(mockGetSpotifyPlaylistTracksPreview).not.toHaveBeenCalled();
         expect(mockInsertMany).not.toHaveBeenCalled();
         expect(mockAddTransferJob).not.toHaveBeenCalled();
+    });
+
+    it('normaliza playlist do YouTube Music e valida o Spotify antes de enfileirar o caminho inverso', async () => {
+        await queuePlaylistTransfers({
+            userId: 'user-1',
+            direction: 'youtube_to_spotify',
+            sourcePlaylistId: 'https://music.youtube.com/playlist?list=PLyoutube123',
+        });
+
+        expect(mockEnsureSpotifyDestinationReady).toHaveBeenCalledWith({ userId: 'user-1' });
+        expect(mockGetYoutubeMusicPlaylistTracksPreview).toHaveBeenCalledWith({
+            playlistId: 'PLyoutube123',
+            limit: 1,
+        });
+        expect(mockInsertMany).toHaveBeenCalledWith([
+            expect.objectContaining({
+                user: 'user-1',
+                sourcePlaylistId: 'PLyoutube123',
+                sourceProvider: 'youtubeMusic',
+                targetProvider: 'spotify',
+                direction: 'youtube_to_spotify',
+            }),
+        ]);
+        expect(mockAddTransferJob).toHaveBeenCalledWith(
+            'transfer-1',
+            'user-1',
+            'PLyoutube123',
+            'youtube_to_spotify'
+        );
     });
 });
