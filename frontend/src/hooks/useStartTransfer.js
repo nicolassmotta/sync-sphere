@@ -9,6 +9,7 @@ export const useStartTransfer = ({
     targetLabel,
     sourceReady,
     targetReady,
+    allowSameProvider = false,
     sourcePlaylistId,
     sourcePlaylistIds = [],
     setActiveTab,
@@ -23,7 +24,7 @@ export const useStartTransfer = ({
             toast.error(`Selecione ou cole uma playlist real do ${sourceLabel}.`);
             return;
         }
-        if (sourceProvider === targetProvider) {
+        if (sourceProvider === targetProvider && !allowSameProvider) {
             toast.error('Escolha plataformas diferentes para origem e destino.');
             return;
         }
@@ -57,6 +58,7 @@ export const useStartTransfer = ({
             onTransferFailed?.();
         }
     }, [
+        allowSameProvider,
         onBeforeStart,
         onTransferFailed,
         onTransferQueued,

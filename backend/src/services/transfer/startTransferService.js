@@ -28,7 +28,7 @@ const normalizeSourcePlaylistIds = ({ source, sourcePlaylistId, sourcePlaylistId
 };
 
 const ensureProvidersUsable = async ({ source, target, userId }) => {
-    if (source.id === target.id) {
+    if (source.id === target.id && !source.capabilities.sameProviderTransfer) {
         throw new AppError('Origem e destino precisam ser plataformas diferentes.', 400);
     }
     if (!source.capabilities.read) {

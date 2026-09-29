@@ -219,6 +219,13 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
                 </div>
                 {provider.auth?.type === 'oauth' && <OAuthActions provider={provider} onChanged={onChanged} />}
                 {provider.auth?.type === 'cookie' && <CookieCredentialForm provider={provider} onSaved={onChanged} />}
+                {provider.auth?.type === 'file' && (
+                    <p className="text-sm text-muted">
+                        Não precisa de conexão. {provider.importedPlaylists
+                            ? `${provider.importedPlaylists} arquivo(s) importado(s).`
+                            : 'Nenhum arquivo importado ainda.'}
+                    </p>
+                )}
             </div>
 
             {ui.envSnippet && (

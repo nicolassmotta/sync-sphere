@@ -65,7 +65,7 @@ describe('contratos de integrações e transferência do MVP', () => {
             .set('Authorization', buildAuthHeader());
 
         expect(response.status).toBe(200);
-        expect(response.body.data.integrations).toEqual({
+        expect(response.body.data.integrations).toEqual(expect.objectContaining({
             spotify: expect.objectContaining({
                 connected: true,
                 expiresAt: expect.any(String),
@@ -75,7 +75,7 @@ describe('contratos de integrações e transferência do MVP', () => {
                 authMethod: 'ytmusic-cookie',
                 expiresAt: null,
             }),
-        });
+        }));
     });
 
     it('GET /api/v1/integrations/status retorna YouTube Music desconectado sem cookie', async () => {
@@ -285,6 +285,12 @@ describe('contratos de integrações e transferência do MVP', () => {
             .send({ sourceProvider: 'spotify', targetProvider: 'spotify', sourcePlaylistId: 'PLyoutube123456' });
         expect(same.status).toBe(400);
         expect(same.body.message).toContain('plataformas diferentes');
+
+        const conversion = await request(app)
+            .post('/api/v1/transfer/start')
+            .set('Authorization', buildAuthHeader())
+            .send({ sourceProvider: 'file', targetProvider: 'file', sourcePlaylistId: 'import-0000000000' });
+        expect(conversion.status).toBe(202);
 
         const unknown = await request(app)
             .post('/api/v1/transfer/start')

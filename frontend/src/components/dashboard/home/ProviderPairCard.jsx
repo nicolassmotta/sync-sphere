@@ -55,14 +55,16 @@ const ProviderPairCard = ({ providers, sourceProvider, targetProvider, onChange 
     const sources = providers.filter((provider) => provider.capabilities?.read !== false);
     const targets = providers.filter((provider) => provider.capabilities?.write !== false);
 
+    const allowsSame = (id) => providers.find((provider) => provider.id === id)?.capabilities?.sameProviderTransfer;
+
     const selectSource = (id) => {
-        onChange(id === targetProvider
+        onChange(id === targetProvider && !allowsSame(id)
             ? { sourceProvider: id, targetProvider: sourceProvider }
             : { sourceProvider: id, targetProvider });
     };
 
     const selectTarget = (id) => {
-        onChange(id === sourceProvider
+        onChange(id === sourceProvider && !allowsSame(id)
             ? { sourceProvider: targetProvider, targetProvider: id }
             : { sourceProvider, targetProvider: id });
     };

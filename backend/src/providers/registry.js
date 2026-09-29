@@ -1,4 +1,5 @@
 import AppError from '../utils/AppError.js';
+import fileProvider from './file/index.js';
 import spotifyProvider from './spotify/index.js';
 import youtubeMusicProvider from './youtubeMusic/index.js';
 
@@ -22,7 +23,7 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - saveCredentials({ values }) quando auth.type === 'cookie'
  * - disconnect({ userId })
  */
-const PROVIDERS = [spotifyProvider, youtubeMusicProvider];
+const PROVIDERS = [spotifyProvider, youtubeMusicProvider, fileProvider];
 
 const PROVIDERS_BY_KEY = new Map(
     PROVIDERS.flatMap((provider) => [provider.id, ...(provider.aliases || [])].map((key) => [key, provider]))

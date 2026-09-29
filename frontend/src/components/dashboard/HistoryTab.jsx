@@ -10,8 +10,8 @@ import {
     XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../../services/api';
-import { getProviderLabel, getTransferProviders } from '../../constants/providers';
+import api, { resolveApiUrl } from '../../services/api';
+import { FILE_EXPORT_FORMATS, getProviderLabel, getTransferProviders } from '../../constants/providers';
 import { cn } from '../../utils/cn';
 import { formatTime } from '../../utils/formatDuration';
 import Button from '../ui/Button';
@@ -105,8 +105,22 @@ const TransferDetails = ({ item }) => {
                 {item.status === 'paused' && item.resumeAt && (
                     <div className="mb-2 text-yellow-300">Retomada automática às {formatTime(item.resumeAt)}.</div>
                 )}
-                {item.targetPlaylistUrl && (
+                {item.targetPlaylistUrl && getTransferProviders(item).targetProvider !== 'file' && (
                     <div className="mb-2 text-spotify">Playlist criada: {item.targetPlaylistUrl}</div>
+                )}
+                {item.targetPlaylistId && getTransferProviders(item).targetProvider === 'file' && (
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="text-spotify">Baixar arquivo:</span>
+                        {FILE_EXPORT_FORMATS.map(({ format, label }) => (
+                            <a
+                                key={format}
+                                href={resolveApiUrl(`/api/v1/integrations/file/exports/${item.targetPlaylistId}/download?format=${format}`)}
+                                className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-extrabold text-white hover:bg-white/15"
+                            >
+                                {label}
+                            </a>
+                        ))}
+                    </div>
                 )}
                 {item.targetPlaylistDescription && (
                     <div>Descrição: {item.targetPlaylistDescription}</div>
@@ -361,7 +375,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                         )}
                         {selectedLog.targetPlaylistUrl && (
                             <a
-                                href={selectedLog.targetPlaylistUrl}
+                                href={resolveApiUrl(selectedLog.targetPlaylistUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-spotify px-4 py-3 text-sm font-extrabold text-black transition-all hover:bg-spotify/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground"
