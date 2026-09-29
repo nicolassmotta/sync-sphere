@@ -22,10 +22,10 @@ const ProviderChip = ({ provider, active, onClick }) => (
             <span className="block truncate text-sm font-black text-white">{provider.label}</span>
             <span className={cn(
                 'mt-0.5 inline-flex items-center gap-1 text-xs font-bold',
-                provider.connected ? 'text-spotify' : 'text-amber-300'
+                provider.connected ? 'text-spotify' : provider.canRead ? 'text-sky-300' : 'text-amber-300'
             )}>
                 {provider.connected ? <CheckCircle2 size={12} /> : <CircleDashed size={12} />}
-                {provider.connected ? 'conectado' : 'pendente'}
+                {provider.connected ? 'conectado' : provider.canRead ? 'leitura pública' : 'pendente'}
             </span>
         </span>
     </button>

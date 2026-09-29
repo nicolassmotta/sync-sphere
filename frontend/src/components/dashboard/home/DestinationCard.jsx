@@ -10,11 +10,11 @@ const DestinationCard = ({
     onConfigureDestination,
     onReviewTransfer,
 }) => {
-    const providersReady = source.connected && target.connected;
+    const providersReady = source.canRead && target.canWrite;
 
-    const statusText = !source.connected
+    const statusText = !source.canRead
         ? `Conecte o ${source.label} para ler a playlist de origem.`
-        : target.connected
+        : target.canWrite
             ? `Destino ${target.label} pronto para receber playlists privadas.`
             : `Conecte o ${target.label} para criar playlists no destino.`;
 

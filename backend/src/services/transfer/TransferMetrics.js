@@ -13,6 +13,7 @@ const PLAYLIST_SETUP_MS = 3000;
 export const DEFAULT_PROVIDER_STATS = {
     youtubeMusic: { searchMs: 1500, insertChunkMs: 2000, chunkSize: 100 },
     spotify: { searchMs: 600, insertChunkMs: 800, chunkSize: 100 },
+    deezer: { searchMs: 450, insertChunkMs: 900, chunkSize: 100 },
     file: { searchMs: 5, insertChunkMs: 50, chunkSize: 100 },
 };
 

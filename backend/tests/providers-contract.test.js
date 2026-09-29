@@ -59,7 +59,8 @@ describe('registro de provedores', () => {
     it('encontra por id ou apelido', () => {
         expect(findProvider('youtube-music')?.id).toBe('youtubeMusic');
         expect(findProvider('spotify')?.id).toBe('spotify');
-        expect(findProvider('deezer')).toBeNull();
+        expect(findProvider('deezer')?.id).toBe('deezer');
+        expect(findProvider('napster')).toBeNull();
     });
 
     it('recusa plataforma desconhecida com 404', () => {

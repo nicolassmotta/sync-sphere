@@ -35,8 +35,8 @@ const ProviderPlaylistLinkCard = ({
 }) => {
     const loading = Boolean(preview?.loading);
     const hasPlaylist = Boolean(sourcePlaylistId?.trim());
-    const canPreview = hasPlaylist && source.connected && !loading;
-    const readyToReview = hasPlaylist && source.connected && target.connected;
+    const canPreview = hasPlaylist && source.canRead && !loading;
+    const readyToReview = hasPlaylist && source.canRead && target.canWrite;
 
     return (
         <div className="elevated-card p-6 lg:p-7">
@@ -53,7 +53,7 @@ const ProviderPlaylistLinkCard = ({
                 </div>
             </div>
 
-            {!source.connected && (
+            {!source.canRead && (
                 <ConnectNotice
                     provider={source}
                     text="A conexão permite ler a playlist de origem."
@@ -61,7 +61,7 @@ const ProviderPlaylistLinkCard = ({
                 />
             )}
 
-            {source.connected && !target.connected && (
+            {source.canRead && !target.canWrite && (
                 <ConnectNotice
                     provider={target}
                     text={`A conexão precisa permitir criar playlists privadas no ${target.label}.`}

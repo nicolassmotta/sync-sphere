@@ -50,8 +50,13 @@ const ChecklistItem = ({ detail, icon: Icon, state, title }) => (
     </li>
 );
 
+const isReady = (provider, role) => Boolean(role === 'source'
+    ? provider.canRead ?? provider.connected
+    : provider.canWrite ?? provider.connected);
+
 const describeConnection = (provider, role) => {
-    if (provider.connected) {
+    if (isReady(provider, role)) {
+        if (!provider.connected) return `${provider.label} lê playlists públicas sem login.`;
         return role === 'source'
             ? `${provider.label} conectado para ler playlists.`
             : `${provider.label} conectado para criar playlists.`;
@@ -95,13 +100,13 @@ const SetupChecklist = ({
             title: `Origem: ${sourceProvider.label}`,
             detail: describeConnection(sourceProvider, 'source'),
             icon: Plug,
-            state: sourceProvider.connected ? 'done' : 'pending',
+            state: isReady(sourceProvider, 'source') ? 'done' : 'pending',
         },
         {
             title: `Destino: ${targetProvider.label}`,
             detail: describeConnection(targetProvider, 'target'),
             icon: ShieldCheck,
-            state: targetProvider.connected ? 'done' : 'pending',
+            state: isReady(targetProvider, 'target') ? 'done' : 'pending',
         },
         {
             title: 'Playlist escolhida',

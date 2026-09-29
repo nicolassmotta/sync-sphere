@@ -34,6 +34,7 @@ Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em 
 |---|---|---|---|---|
 | Spotify | sim | sim | OAuth + PKCE (`SPOTIFY_CLIENT_ID`) | Lista as playlists da conta conectada. |
 | YouTube Music | sim | sim | Cookie colado no painel ou `YTMUSIC_COOKIE` | API não oficial; origem por link ou ID. |
+| Deezer | sim | sim | Nenhuma para ler playlists públicas; cookie `arl` (painel ou `DEEZER_ARL`) para listar suas playlists, ler privadas e criar | Busca exata por ISRC antes da busca por texto. Escrita usa o gateway interno do site (não oficial). |
 | Arquivo | sim | sim | Nenhuma | Importa CSV (Exportify e genérico), JSON, M3U/M3U8 e TXT "Artista - Título"; exporta nos mesmos formatos. Arquivo -> Arquivo converte formatos. |
 
 ## Requisitos
