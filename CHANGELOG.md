@@ -4,6 +4,13 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Plataforma TIDAL
+
+- Nova plataforma `tidal` pela API oficial v2 (JSON:API) com OAuth Authorization Code + PKCE e refresh automático do token.
+- Lê playlists (paginação por cursor, artistas e álbum em lote), busca por ISRC antes do texto, cria playlists "não listadas" e adiciona faixas em lotes de 50 com `onDuplicates: SKIP` para retomada segura.
+- `TIDAL_CLIENT_SECRET` opcional habilita Client Credentials para ler playlists públicas e buscar sem conectar a conta.
+- PKCE compartilhado em `modules/integrations/shared/pkceStore.js`.
+
 ### Plataforma Deezer
 
 - Nova plataforma `deezer`: lê playlists públicas e busca pela API aberta, sem login, com busca exata por ISRC antes da busca por texto.

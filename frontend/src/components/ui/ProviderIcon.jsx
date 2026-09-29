@@ -1,4 +1,4 @@
-import { AudioLines, FileMusic, Music } from 'lucide-react';
+import { AudioLines, FileMusic, Music, Waves } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { SpotifyIcon, YoutubeIcon } from './BrandIcons';
 
@@ -17,6 +17,7 @@ const ProviderIcon = ({ providerId, size = 'md', className }) => {
     if (providerId === 'spotify') return <SpotifyIcon className={cn(sizeClass, 'fill-spotify', className)} />;
     if (providerId === 'youtubeMusic') return <YoutubeIcon className={cn(sizeClass, 'fill-youtube', className)} />;
     if (providerId === 'deezer') return <AudioLines className={cn(sizeClass, 'text-[#A238FF]', className)} aria-hidden="true" />;
+    if (providerId === 'tidal') return <Waves className={cn(sizeClass, 'text-cyan-300', className)} aria-hidden="true" />;
     if (providerId === 'file') return <FileMusic className={cn(sizeClass, 'text-sky-300', className)} aria-hidden="true" />;
     return <Music className={cn(sizeClass, 'text-white/70', className)} aria-hidden="true" />;
 };

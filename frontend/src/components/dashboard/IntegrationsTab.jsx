@@ -86,7 +86,7 @@ const CookieCredentialForm = ({ provider, onSaved }) => {
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
                 tone={ui.tone}
-                placeholder={provider.connected ? 'Cole um novo cookie para substituir' : 'Cole o cabeçalho Cookie completo'}
+                placeholder={provider.connected ? 'Cole um novo valor para substituir' : field.placeholder || 'Cole o valor'}
                 hint="Fica cifrado em backend/data e tem prioridade sobre a variável do .env."
             />
             <div className="flex flex-wrap gap-2">
@@ -147,6 +147,7 @@ const OAuthActions = ({ provider, onChanged }) => {
     return (
         <Button
             onClick={provider.connected ? disconnect : connect}
+            disabled={!provider.connected && provider.configured === false}
             loading={loading}
             loadingLabel="Abrindo..."
             variant={provider.connected ? 'secondary' : ui.buttonVariant}
@@ -210,6 +211,12 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
                         ))}
                     </ol>
                 </div>
+            )}
+
+            {provider.configured === false && (
+                <Alert tone="warning" title="Falta configurar o back-end" className="mb-5">
+                    {`Defina as variáveis de ${provider.label} no backend/.env (veja abaixo) e reinicie o back-end antes de conectar.`}
+                </Alert>
             )}
 
             {ui.credentialWarning && (
