@@ -4,6 +4,13 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Plataforma Deezer
+
+- Nova plataforma `deezer`: lê playlists públicas e busca pela API aberta, sem login, com busca exata por ISRC antes da busca por texto.
+- Com o cookie `arl` (colado no painel ou `DEEZER_ARL`): lista as playlists da conta, lê privadas e cria playlists privadas pelo gateway do site.
+- Status das plataformas ganha `canRead`/`canWrite`: o painel permite Deezer como origem sem login.
+- Pontuação de candidatos compartilhada em `services/matching/scoreCandidate.js`, com ISRC e palavras em comum no artista.
+
 ### Plataforma Arquivo
 
 - Nova plataforma `file`: importa CSV (Exportify e genérico, com `,`/`;`/tab e cabeçalhos em português ou inglês), JSON, M3U/M3U8 e TXT como origem; como destino gera arquivo para baixar em CSV, JSON, M3U ou TXT pelo Histórico.

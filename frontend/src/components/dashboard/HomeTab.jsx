@@ -75,7 +75,9 @@ const HomeTab = ({
     refreshSourcePlaylists,
     setActiveTab
 }) => {
-    const listMode = Boolean(source.capabilities?.listUserPlaylists);
+    // Sem conta conectada, plataformas que leem por link (Deezer) mostram o campo de link.
+    const listMode = Boolean(source.capabilities?.listUserPlaylists)
+        && Boolean(source.connected || !source.capabilities?.readByLink);
     const [trackPreviews, setTrackPreviews] = useState({});
     const [linkPreview, setLinkPreview] = useState(null);
     const selectedPlaylistIdSet = useMemo(() => new Set(sourcePlaylistIds), [sourcePlaylistIds]);
@@ -100,7 +102,7 @@ const HomeTab = ({
     }, [linkPreview, selectedPlaylistIdSet, source.label, sourcePlaylistId, sourcePlaylistIds.length, sourcePlaylists]);
 
     const selectedCount = sourcePlaylistIds.length || (sourcePlaylistId ? 1 : 0);
-    const providersReady = Boolean(source.connected && target.connected);
+    const providersReady = Boolean(source.canRead && target.canWrite);
     const readyToTransfer = providersReady && selectedCount > 0;
 
     const selectedTrackCount = useMemo(

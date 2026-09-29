@@ -36,6 +36,20 @@ export const PROVIDER_UI = {
         envSnippet: `YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
 YTMUSIC_AUTH_USER=0`,
     },
+    deezer: {
+        label: 'Deezer',
+        tone: 'neutral',
+        buttonVariant: 'secondary',
+        accentGradient: 'via-[#A238FF]',
+        description: 'Origem ou destino. Playlists públicas e a busca funcionam sem login pela API aberta do Deezer, com busca exata por ISRC. Para listar suas playlists, ler privadas e criar playlists, cole o cookie arl.',
+        setupSteps: [
+            'Sem nada configurado: cole o link de uma playlist pública do Deezer como origem.',
+            'Para usar como destino: abra deezer.com logado, ferramentas de desenvolvedor, aba Aplicativo (Application) > Cookies > https://www.deezer.com.',
+            'Copie o valor do cookie "arl" (texto hexadecimal longo) e cole abaixo.',
+        ],
+        credentialWarning: 'O arl dá acesso à sua conta Deezer. Fica cifrado em backend/data; não compartilhe nem coloque em logs ou capturas de tela.',
+        envSnippet: 'DEEZER_ARL=cole_o_cookie_arl_de_deezer_com_aqui',
+    },
     file: {
         label: 'Arquivo',
         tone: 'neutral',

@@ -1,4 +1,5 @@
 import AppError from '../utils/AppError.js';
+import deezerProvider from './deezer/index.js';
 import fileProvider from './file/index.js';
 import spotifyProvider from './spotify/index.js';
 import youtubeMusicProvider from './youtubeMusic/index.js';
@@ -10,7 +11,8 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * Contrato:
  * - id, label, aliases, auth { type: 'oauth' | 'cookie' | 'none' | 'file', ... }
  * - capabilities { read, write, listUserPlaylists, readByLink, isrcSearch, setImage }
- * - getStatus({ userId }) -> { connected, authMethod, expiresAt }
+ * - getStatus({ userId }) -> { connected, canRead?, canWrite?, authMethod, expiresAt }
+ *   (`canRead`/`canWrite` valem `connected` quando omitidos; o Deezer lê playlists públicas sem login)
  * - ensureReadable({ userId }) / ensureWritable({ userId }): lançam AppError com o motivo
  * - normalizePlaylistId(input)
  * - listPlaylists({ userId }) quando `listUserPlaylists`
@@ -23,7 +25,7 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - saveCredentials({ values }) quando auth.type === 'cookie'
  * - disconnect({ userId })
  */
-const PROVIDERS = [spotifyProvider, youtubeMusicProvider, fileProvider];
+const PROVIDERS = [spotifyProvider, youtubeMusicProvider, deezerProvider, fileProvider];
 
 const PROVIDERS_BY_KEY = new Map(
     PROVIDERS.flatMap((provider) => [provider.id, ...(provider.aliases || [])].map((key) => [key, provider]))
@@ -48,3 +50,15 @@ export const describeProvider = (provider) => ({
     capabilities: provider.capabilities,
     playlistUrlExample: provider.playlistUrlExample,
 });
+
+/**
+ * Status com `canRead`/`canWrite` sempre preenchidos.
+ */
+export const getProviderStatus = async (provider, { userId }) => {
+    const status = await provider.getStatus({ userId });
+    return {
+        ...status,
+        canRead: status.canRead ?? status.connected,
+        canWrite: status.canWrite ?? status.connected,
+    };
+};

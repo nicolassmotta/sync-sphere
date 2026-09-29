@@ -87,7 +87,7 @@ const CookieCredentialForm = ({ provider, onSaved }) => {
                 onChange={(event) => setValue(event.target.value)}
                 tone={ui.tone}
                 placeholder={provider.connected ? 'Cole um novo cookie para substituir' : 'Cole o cabeçalho Cookie completo'}
-                hint="Fica cifrado em backend/data e substitui a variável do .env."
+                hint="Fica cifrado em backend/data e tem prioridade sobre a variável do .env."
             />
             <div className="flex flex-wrap gap-2">
                 <Button
@@ -159,10 +159,14 @@ const OAuthActions = ({ provider, onChanged }) => {
 };
 
 const describeStatus = (provider) => {
+    if (!provider.connected && provider.canRead) {
+        return 'Lê playlists públicas sem login. Cole a credencial para criar playlists.';
+    }
     if (!provider.connected) {
         return provider.auth?.type === 'cookie' ? 'Aguardando cookie' : 'Pendente de conexão';
     }
-    return credentialSourceLabels[provider.credentialSource] || 'Pronto para usar';
+    const source = credentialSourceLabels[provider.credentialSource] || 'Pronto para usar';
+    return provider.accountName ? `${source} · conta ${provider.accountName}` : source;
 };
 
 const ProviderIntegrationCard = ({ provider, onChanged }) => {
@@ -183,7 +187,11 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
                 <div className="min-w-0">
                     <h3 className="text-2xl font-bold text-white">{provider.label}</h3>
                     <div className="mt-2 flex flex-wrap gap-2">
-                        <StatusBadge status={provider.connected ? 'connected' : 'disconnected'} />
+                        {!provider.connected && provider.canRead ? (
+                            <StatusBadge status="connected" label="Leitura pública" tone="info" />
+                        ) : (
+                            <StatusBadge status={provider.connected ? 'connected' : 'disconnected'} />
+                        )}
                         {roles && <Badge tone="neutral">{roles}</Badge>}
                     </div>
                 </div>

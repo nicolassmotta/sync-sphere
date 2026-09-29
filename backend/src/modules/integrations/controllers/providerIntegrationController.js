@@ -1,6 +1,11 @@
 import AppError from '../../../utils/AppError.js';
 import logger from '../../../utils/logger.js';
-import { describeProvider, getProvider, listProviders } from '../../../providers/registry.js';
+import {
+    describeProvider,
+    getProvider,
+    getProviderStatus,
+    listProviders,
+} from '../../../providers/registry.js';
 import { resumeTransfersNeedingAuth } from '../../../services/transfer/transferQueueActions.js';
 
 const PLAYLIST_ROLES = ['source', 'destination'];
@@ -19,7 +24,7 @@ export const getIntegrationStatus = async (req, res, next) => {
     try {
         const providers = await Promise.all(listProviders().map(async (provider) => ({
             ...describeProvider(provider),
-            ...(await provider.getStatus({ userId: req.user._id })),
+            ...(await getProviderStatus(provider, { userId: req.user._id })),
             roles: getRoles(provider),
         })));
 
@@ -81,7 +86,7 @@ export const saveProviderCredentials = async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             message: `${provider.label} configurado.`,
-            data: { [provider.id]: await provider.getStatus({ userId: req.user._id }) },
+            data: { [provider.id]: await getProviderStatus(provider, { userId: req.user._id }) },
         });
     } catch (error) {
         next(error);
@@ -95,7 +100,7 @@ export const disconnectProvider = async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: { [provider.id]: await provider.getStatus({ userId: req.user._id }) },
+            data: { [provider.id]: await getProviderStatus(provider, { userId: req.user._id }) },
         });
     } catch (error) {
         next(error);
