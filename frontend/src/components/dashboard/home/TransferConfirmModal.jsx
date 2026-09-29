@@ -1,9 +1,30 @@
-import { ArrowRight, Link2 } from 'lucide-react';
+import { ArrowRight, Clock, Link2 } from 'lucide-react';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
 import TextField from '../../ui/TextField';
 import PlaylistArtwork from './PlaylistArtwork';
 import { formatTrackCount } from './formatTrackCount';
+import { formatEta } from '../../../utils/formatDuration';
+
+const EstimateNotice = ({ estimate, targetLabel }) => {
+    if (!estimate?.trackCount) return null;
+
+    return (
+        <div className="mb-5 rounded-lg border border-white/10 bg-black/30 p-3 text-xs font-semibold leading-5 text-white/70">
+            <p className="flex items-center gap-2 text-sm font-extrabold text-white">
+                <Clock size={15} className="text-spotify" />
+                {formatEta(estimate.etaSeconds)} para {formatTrackCount(estimate.trackCount)}
+            </p>
+            <p className="mt-1">
+                Cerca de {estimate.tracksPerMinute} faixas por minuto no {targetLabel}, com base nas últimas migrações.
+                {estimate.queueAheadSeconds > 0 && ` Antes dela, a fila ainda tem ${formatEta(estimate.queueAheadSeconds)} de trabalho.`}
+            </p>
+            <p className="mt-1 text-muted">
+                Se a plataforma limitar as buscas, a migração pausa e continua sozinha, sem perder faixas.
+            </p>
+        </div>
+    );
+};
 
 const TransferConfirmModal = ({
     isOpen,
@@ -16,6 +37,7 @@ const TransferConfirmModal = ({
     onStartTransfer,
     selectedCount,
     isTransferring,
+    estimate,
 }) => (
     <Modal
         isOpen={isOpen}
@@ -50,6 +72,8 @@ const TransferConfirmModal = ({
                 ))}
             </div>
         )}
+
+        <EstimateNotice estimate={estimate} targetLabel={targetLabel} />
 
         <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase text-spotify">
             <Link2 size={14} /> Colar link da playlist

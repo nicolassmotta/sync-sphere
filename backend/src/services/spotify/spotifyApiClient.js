@@ -24,7 +24,10 @@ export const fetchSpotifyJson = async (url, accessToken, fallbackMessage, option
             throw new SpotifyPlaylistAccessError(fallbackMessage);
         }
 
-        throw new Error(spotifyMessage || fallbackMessage || `Spotify respondeu HTTP ${response.status}.`);
+        const error = new Error(spotifyMessage || fallbackMessage || `Spotify respondeu HTTP ${response.status}.`);
+        error.status = response.status;
+        error.retryAfter = response.headers?.get?.('retry-after') ?? null;
+        throw error;
     }
 
     return data;

@@ -1,5 +1,6 @@
 import Transfer from '../models/Transfer.js';
 import { LOCAL_USER_ID } from '../models/User.js';
+import { getQueuePosition } from '../services/queueService.js';
 import { buildTransferSnapshot } from '../services/transfer/transferProgressSnapshot.js';
 import logger from '../utils/logger.js';
 
@@ -14,7 +15,7 @@ const subscribeToTransfer = async (socket, transferId) => {
         const transfer = await Transfer.findOne({
             _id: transferId,
             user: socket.userId,
-        }).select('_id status direction sourceProvider targetProvider lastMessage totalTracks processedTracks targetPlaylistUrl');
+        });
 
         if (!transfer) {
             socket.emit('transfer_error', { message: 'Transferência não encontrada para este usuário.' });
@@ -23,7 +24,9 @@ const subscribeToTransfer = async (socket, transferId) => {
 
         socket.join(`transfer:${transferId}`);
         socket.emit('transfer_subscribed', { transferId });
-        socket.emit('transfer_update', buildTransferSnapshot(transfer));
+        socket.emit('transfer_update', buildTransferSnapshot(transfer, {
+            queuePosition: getQueuePosition(transferId),
+        }));
     } catch {
         socket.emit('transfer_error', { message: 'Não foi possível assinar esta transferência.' });
     }

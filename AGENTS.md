@@ -8,7 +8,7 @@ SyncSphere é uma aplicação fullstack para migrar playlists entre Spotify e Yo
 
 ## Tecnologias e Estrutura
 
-- `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória. Sem MongoDB, sem Redis, sem login.
+- `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`. Sem MongoDB, sem Redis, sem login.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion, Lucide.
 - `docs/ai/`: contexto operacional para agentes, MCPs e prompts repetíveis.
 - `.agents/skills/sync-sphere/`: skill local do projeto para reutilizar este contexto.

@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
+## [Não publicado]
+
+### Progresso e fila de pendências
+
+- Painel de migração com tempo estimado, faixas por minuto, contadores (encontradas, não encontradas, na fila de retry) e últimas faixas analisadas.
+- Estimativa de duração antes de iniciar, baseada na velocidade medida nas migrações anteriores e na fila atual.
+- Estado por faixa persistido: pausas e novas tentativas continuam de onde pararam, sem refazer buscas.
+- Bloqueio de busca (429, captcha, cota) pausa a transferência com retomada automática; token ou cookie inválido deixa a transferência aguardando reconexão.
+- Faixas com falha temporária ganham rodadas automáticas e, depois do limite, ficam em "Pendências" no Histórico com botão para tentar de novo.
+- Fila persistida em `data/queue.json`: transferências não concluídas voltam sozinhas depois de reiniciar o servidor.
+- Novas rotas: `GET /transfer/estimate`, `GET /transfer/:id/tracks`, `POST /transfer/:id/retry`, `POST /transfer/:id/resume` e `POST /transfer/retry-all`.
+
 ## [1.0.0] - 2026-06-22
 
 ### Destaques

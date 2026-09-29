@@ -1,5 +1,15 @@
 import { queuePlaylistTransfers } from '../services/transfer/startTransferService.js';
-import { getOwnedTransfer, listOwnedTransfers } from '../services/transfer/transferQueryService.js';
+import {
+    estimateTransfer,
+    getOwnedTransfer,
+    listOwnedTransfers,
+    listTransferTracks,
+} from '../services/transfer/transferQueryService.js';
+import {
+    resumeTransfer,
+    retryAllTransfers,
+    retryTransfer,
+} from '../services/transfer/transferQueueActions.js';
 
 /**
  * @function startTransfer
@@ -70,6 +80,91 @@ export const listTransfers = async (req, res, next) => {
             data: {
                 transfers,
             },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getTransferTracks = async (req, res, next) => {
+    try {
+        const { counts, tracks } = await listTransferTracks({
+            transferId: req.params.transferId,
+            userId: req.user.id,
+            status: req.query.status,
+        });
+
+        res.status(200).json({
+            status: 'success',
+            results: tracks.length,
+            data: { counts, tracks },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const retryTransferTracks = async (req, res, next) => {
+    try {
+        const { transfer, requeued } = await retryTransfer({
+            transferId: req.params.transferId,
+            userId: req.user.id,
+        });
+
+        res.status(202).json({
+            status: 'success',
+            message: `${requeued} ${requeued === 1 ? 'faixa voltou' : 'faixas voltaram'} para a fila.`,
+            data: { transfer, requeued },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const retryAllTransferTracks = async (req, res, next) => {
+    try {
+        const result = await retryAllTransfers({ userId: req.user.id });
+
+        res.status(202).json({
+            status: 'success',
+            message: result.requeuedTracks
+                ? `${result.requeuedTracks} faixas de ${result.requeuedTransfers} playlists voltaram para a fila.`
+                : 'Nenhuma faixa pendente para tentar de novo.',
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const resumeTransferNow = async (req, res, next) => {
+    try {
+        const transfer = await resumeTransfer({
+            transferId: req.params.transferId,
+            userId: req.user.id,
+        });
+
+        res.status(202).json({
+            status: 'success',
+            message: 'Transferência retomada.',
+            data: { transfer },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getTransferEstimate = async (req, res, next) => {
+    try {
+        const estimate = await estimateTransfer({
+            userId: req.user.id,
+            direction: req.query.direction,
+            trackCount: Number(req.query.count) || 0,
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: { estimate },
         });
     } catch (error) {
         next(error);

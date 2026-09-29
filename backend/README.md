@@ -2,7 +2,7 @@
 
 O coração do SyncSphere. Esta aplicação Express.js lida com a lógica de migração bidirecional entre Spotify e YouTube Music sem exigir serviços externos.
 
-É **local-first single-user**: não há contas, login nem banco de dados. As credenciais e o histórico ficam em arquivos JSON cifrados em `backend/data/`, e as transferências rodam em uma fila em memória no próprio processo.
+É **local-first single-user**: não há contas, login nem banco de dados. As credenciais e o histórico ficam em arquivos JSON cifrados em `backend/data/`, e as transferências rodam em uma fila no próprio processo, persistida em `data/queue.json` para sobreviver a reinícios.
 
 ## Padrão de Arquitetura
 
@@ -12,7 +12,7 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
 - `src/models/`: acesso aos dados locais. `User.js` representa o único usuário local e guarda os tokens do Spotify; `Transfer.js` é o histórico de transferências. Ambos persistem via `src/storage/`.
 - `src/storage/`: armazenamento local em arquivos JSON cifrados (`jsonStore.js`).
 - `src/middlewares/`: tratamento de erros, validação e usuário local.
-- `src/services/queueService.js`: fila de transferências em memória (sem Redis).
+- `src/services/queueService.js`: fila de transferências local persistida (sem Redis), com reagendamento para pausas.
 - `src/workers/`: registra o processador da fila local.
 
 ## Configuração de Desenvolvimento Inicial
