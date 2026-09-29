@@ -4,6 +4,14 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Plataforma Apple Music
+
+- Nova plataforma `appleMusic`: lê playlists do catálogo (pela loja do link) e da biblioteca, busca por ISRC antes do texto, cria playlists na biblioteca e adiciona só faixas novas.
+- Oficial: developer token ES256 assinado com a chave MusicKit (`APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY[_PATH]`) e botão "Conectar com Apple Music" via MusicKit JS.
+- Sem conta de desenvolvedor: usa o token público do web player (lido do music.apple.com, com cache) e o cookie `media-user-token` colado no painel.
+- CSP do Helmet libera capas https (Spotify e demais) e o MusicKit JS.
+- Correção: textos longos no progresso não empurram mais o layout para fora da tela.
+
 ### Plataforma TIDAL
 
 - Nova plataforma `tidal` pela API oficial v2 (JSON:API) com OAuth Authorization Code + PKCE e refresh automático do token.

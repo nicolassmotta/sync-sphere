@@ -42,7 +42,7 @@ Mapa de arquivos:
 - `src/socket/transferSocket.js`: registra o usuário local no socket e controla inscrição em salas de transferência.
 - `src/routes/`: roteamento HTTP.
 - `src/controllers/`: entrada HTTP e orquestração imediata.
-- `src/providers/`: adaptadores de plataforma (`spotify/`, `youtubeMusic/`, `deezer/`, `tidal/`, `file/`) e `registry.js`, que documenta o contrato. Todo fluxo de integração e transferência passa pelo registro; não chame `spotifyService`/`youtubeMusicService` direto de controllers ou do processador.
+- `src/providers/`: adaptadores de plataforma (`spotify/`, `youtubeMusic/`, `deezer/`, `tidal/`, `appleMusic/`, `file/`) e `registry.js`, que documenta o contrato. Todo fluxo de integração e transferência passa pelo registro; não chame `spotifyService`/`youtubeMusicService` direto de controllers ou do processador.
 - `src/modules/integrations/`: `providerIntegrationController.js` (rotas genéricas `/integrations/:provider/...`) e utilitários de OAuth.
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.

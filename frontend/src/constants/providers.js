@@ -66,6 +66,22 @@ YTMUSIC_AUTH_USER=0`,
 # TIDAL_CLIENT_SECRET=opcional
 TIDAL_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/tidal/callback`,
     },
+    appleMusic: {
+        label: 'Apple Music',
+        tone: 'neutral',
+        buttonVariant: 'secondary',
+        accentGradient: 'via-[#FA2D48]',
+        description: 'Origem ou destino. Playlists do catálogo e a busca (com ISRC) funcionam sem configurar nada. Para listar sua biblioteca e criar playlists, conecte a conta.',
+        setupSteps: [
+            'Sem nada configurado: cole o link de uma playlist pública do Apple Music como origem.',
+            'Oficial: com conta Apple Developer, crie uma chave MusicKit, defina APPLE_TEAM_ID, APPLE_KEY_ID e APPLE_PRIVATE_KEY_PATH no backend/.env e use "Conectar com Apple Music".',
+            'Sem conta de desenvolvedor: abra music.apple.com logado, ferramentas de desenvolvedor > Aplicativo > Cookies e copie o valor de "media-user-token".',
+        ],
+        credentialWarning: 'O Music User Token dá acesso à sua biblioteca. Fica cifrado em backend/data; não compartilhe.',
+        envSnippet: `APPLE_TEAM_ID=seu_team_id
+APPLE_KEY_ID=id_da_chave_musickit
+APPLE_PRIVATE_KEY_PATH=/caminho/AuthKey_XXXXXXXXXX.p8`,
+    },
     file: {
         label: 'Arquivo',
         tone: 'neutral',

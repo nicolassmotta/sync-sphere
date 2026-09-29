@@ -42,22 +42,32 @@ const credentialSourceLabels = {
     env: 'Lido do backend/.env',
 };
 
-const CookieCredentialForm = ({ provider, onSaved }) => {
+const DEFAULT_FIELDS = [{ name: 'cookie', label: 'Cookie' }];
+
+/**
+ * Credenciais coladas no painel (cookie, token). Campos vêm do back-end
+ * (`auth.fields`); campos `optional` podem ficar vazios.
+ */
+const CredentialForm = ({ provider, onSaved }) => {
     const ui = getProviderUi(provider.id);
-    const [value, setValue] = useState('');
+    const fields = provider.auth?.fields?.length ? provider.auth.fields : DEFAULT_FIELDS;
+    const [values, setValues] = useState({});
     const [saving, setSaving] = useState(false);
     const [removing, setRemoving] = useState(false);
-    const field = provider.auth?.fields?.[0] || { name: 'cookie', label: 'Cookie' };
+    const requiredFilled = fields.every((field) => field.optional || values[field.name]?.trim());
 
     const save = async () => {
         setSaving(true);
         try {
-            await api.put(`/integrations/${provider.id}/credentials`, { values: { [field.name]: value.trim() } });
-            setValue('');
+            const payload = Object.fromEntries(
+                Object.entries(values).map(([name, value]) => [name, value.trim()]).filter(([, value]) => value)
+            );
+            await api.put(`/integrations/${provider.id}/credentials`, { values: payload });
+            setValues({});
             toast.success(`${provider.label} configurado.`);
             await onSaved();
         } catch (err) {
-            toast.error(err.response?.data?.message || `Não foi possível salvar o cookie do ${provider.label}.`);
+            toast.error(err.response?.data?.message || `Não foi possível salvar as credenciais do ${provider.label}.`);
         } finally {
             setSaving(false);
         }
@@ -67,10 +77,10 @@ const CookieCredentialForm = ({ provider, onSaved }) => {
         setRemoving(true);
         try {
             await api.delete(`/integrations/${provider.id}`);
-            toast.success('Cookie do painel removido.');
+            toast.success('Credencial do painel removida.');
             await onSaved();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Não foi possível remover o cookie.');
+            toast.error(err.response?.data?.message || 'Não foi possível remover a credencial.');
         } finally {
             setRemoving(false);
         }
@@ -78,27 +88,30 @@ const CookieCredentialForm = ({ provider, onSaved }) => {
 
     return (
         <div className="space-y-3">
-            <TextField
-                label={field.label}
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-                tone={ui.tone}
-                placeholder={provider.connected ? 'Cole um novo valor para substituir' : field.placeholder || 'Cole o valor'}
-                hint="Fica cifrado em backend/data e tem prioridade sobre a variável do .env."
-            />
+            {fields.map((field, index) => (
+                <TextField
+                    key={field.name}
+                    label={field.label}
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={values[field.name] || ''}
+                    onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                    tone={ui.tone}
+                    placeholder={provider.connected && !field.optional ? 'Cole um novo valor para substituir' : field.placeholder || 'Cole o valor'}
+                    hint={index === fields.length - 1 ? 'Fica cifrado em backend/data e tem prioridade sobre a variável do .env.' : undefined}
+                />
+            ))}
             <div className="flex flex-wrap gap-2">
                 <Button
                     onClick={save}
                     variant={ui.buttonVariant}
-                    disabled={!value.trim()}
+                    disabled={!requiredFilled}
                     loading={saving}
                     loadingLabel="Validando..."
                     leftIcon={<KeyRound size={16} />}
                 >
-                    Salvar cookie
+                    Salvar credencial
                 </Button>
                 {provider.credentialSource === 'panel' && (
                     <Button
@@ -113,6 +126,57 @@ const CookieCredentialForm = ({ provider, onSaved }) => {
                 )}
             </div>
         </div>
+    );
+};
+
+const MUSICKIT_SCRIPT = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
+
+const loadMusicKit = () => new Promise((resolve, reject) => {
+    if (window.MusicKit) {
+        resolve(window.MusicKit);
+        return;
+    }
+    document.addEventListener('musickitloaded', () => resolve(window.MusicKit), { once: true });
+    if (!document.querySelector(`script[src="${MUSICKIT_SCRIPT}"]`)) {
+        const script = document.createElement('script');
+        script.src = MUSICKIT_SCRIPT;
+        script.async = true;
+        script.onerror = () => reject(new Error('Não foi possível carregar o MusicKit JS da Apple.'));
+        document.head.appendChild(script);
+    }
+});
+
+/**
+ * Conexão oficial do Apple Music: o MusicKit JS abre o login da Apple e
+ * devolve o Music User Token, que vai para o back-end.
+ */
+const MusicKitConnect = ({ provider, onConnected }) => {
+    const [loading, setLoading] = useState(false);
+
+    const connect = async () => {
+        setLoading(true);
+        try {
+            const tokenResponse = await api.get(`/integrations/${provider.id}/developer-token`);
+            const MusicKit = await loadMusicKit();
+            const music = await MusicKit.configure({
+                developerToken: tokenResponse.data.data.token,
+                app: { name: 'SyncSphere', build: '2.0.0' },
+            });
+            const musicUserToken = await music.authorize();
+            await api.put(`/integrations/${provider.id}/credentials`, { values: { musicUserToken } });
+            toast.success(`${provider.label} conectado.`);
+            await onConnected();
+        } catch (err) {
+            toast.error(err.response?.data?.message || err.message || `Não foi possível conectar o ${provider.label}.`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Button onClick={connect} loading={loading} loadingLabel="Aguardando a Apple..." variant="inverse" fullWidth>
+            {provider.connected ? 'Reconectar com Apple Music' : 'Conectar com Apple Music'}
+        </Button>
     );
 };
 
@@ -233,7 +297,17 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
                     </p>
                 </div>
                 {provider.auth?.type === 'oauth' && <OAuthActions provider={provider} onChanged={onChanged} />}
-                {provider.auth?.type === 'cookie' && <CookieCredentialForm provider={provider} onSaved={onChanged} />}
+                {provider.musicKitAvailable && <MusicKitConnect provider={provider} onConnected={onChanged} />}
+                {provider.auth?.type === 'cookie' && (
+                    provider.musicKitAvailable ? (
+                        <details className="text-sm text-muted">
+                            <summary className="cursor-pointer font-bold text-white/70">Colar tokens manualmente</summary>
+                            <div className="mt-3"><CredentialForm provider={provider} onSaved={onChanged} /></div>
+                        </details>
+                    ) : (
+                        <CredentialForm provider={provider} onSaved={onChanged} />
+                    )
+                )}
                 {provider.auth?.type === 'file' && (
                     <p className="text-sm text-muted">
                         Não precisa de conexão. {provider.importedPlaylists
