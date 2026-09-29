@@ -164,13 +164,13 @@ const LiveFeed = ({ transfer }) => {
             {transfer.currentTrack && (
                 <p className="flex items-center gap-2 truncate text-xs font-bold text-white">
                     <Search size={14} className="shrink-0 animate-pulse text-sky-300" />
-                    <span className="truncate">{transfer.currentTrack.name} - {transfer.currentTrack.artist}</span>
+                    <span className="min-w-0 truncate">{transfer.currentTrack.name} - {transfer.currentTrack.artist}</span>
                 </p>
             )}
             {recentTracks.map((track) => (
                 <p key={track.index} className="flex items-center gap-2 text-xs font-semibold text-white/60">
                     {trackStatusIcons[track.status]}
-                    <span className="truncate">{track.name} - {track.artist}</span>
+                    <span className="min-w-0 truncate">{track.name} - {track.artist}</span>
                 </p>
             ))}
         </div>

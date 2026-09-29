@@ -17,7 +17,18 @@ import { notFound, errorHandler } from './middlewares/errorHandler.js';
 const app = express();
 
 // Middlewares globais de segurança.
-app.use(helmet()); // Blindagem padrão de cabeçalhos HTTP.
+// Blindagem padrão de cabeçalhos HTTP. A CSP libera capas de playlist
+// (imagens https) e o MusicKit JS da Apple, usado para conectar o Apple Music.
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            imgSrc: ["'self'", 'data:', 'https:'],
+            scriptSrc: ["'self'", 'https://js-cdn.music.apple.com'],
+            connectSrc: ["'self'", 'https://*.apple.com'],
+            frameSrc: ["'self'", 'https://*.apple.com'],
+        },
+    },
+}));
 
 // Configuração CORS para aceitar múltiplas origens locais, como Vite 5173/5174.
 app.use(cors(corsOptions));

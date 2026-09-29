@@ -41,6 +41,21 @@ export const getIntegrationStatus = async (req, res, next) => {
     }
 };
 
+/**
+ * Developer token para o MusicKit JS (Apple Music) autorizar a conta no navegador.
+ */
+export const getMusicKitDeveloperToken = async (req, res, next) => {
+    try {
+        const provider = getProvider(req.params.provider);
+        if (!provider.getMusicKitDeveloperToken) {
+            throw new AppError(`${provider.label} não usa MusicKit.`, 400);
+        }
+        res.status(200).json({ status: 'success', data: { token: provider.getMusicKitDeveloperToken() } });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const startProviderAuthorization = async (req, res, next) => {
     try {
         const provider = getProvider(req.params.provider);

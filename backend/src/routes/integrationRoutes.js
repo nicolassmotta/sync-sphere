@@ -2,6 +2,7 @@ import express from 'express';
 import {
     disconnectProvider,
     getIntegrationStatus,
+    getMusicKitDeveloperToken,
     getProviderPlaylistTracks,
     listProviderPlaylists,
     providerCallback,
@@ -32,6 +33,7 @@ router.delete('/file/imports/:importId', deleteImportedPlaylist);
 router.get('/file/exports/:exportId/download', downloadExport);
 
 router.get('/:provider/login', startProviderAuthorization);
+router.get('/:provider/developer-token', getMusicKitDeveloperToken);
 router.put('/:provider/credentials', validate(providerCredentialsSchema), saveProviderCredentials);
 router.delete('/:provider', disconnectProvider);
 router.get('/:provider/playlists', listProviderPlaylists);
