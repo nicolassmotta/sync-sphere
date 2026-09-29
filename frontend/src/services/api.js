@@ -78,3 +78,9 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+/**
+ * URLs devolvidas pelo back-end como caminho (`/api/v1/...`) viram absolutas,
+ * para funcionar também no Vite em outra porta.
+ */
+export const resolveApiUrl = (url) => (url && url.startsWith('/') ? `${API_ORIGIN}${url}` : url);

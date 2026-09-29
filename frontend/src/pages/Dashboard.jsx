@@ -177,6 +177,7 @@ const Dashboard = () => {
         targetLabel: target.label,
         sourceReady: Boolean(source.connected),
         targetReady: Boolean(target.connected),
+        allowSameProvider: Boolean(source.capabilities?.sameProviderTransfer),
         sourcePlaylistId,
         sourcePlaylistIds,
         setActiveTab,

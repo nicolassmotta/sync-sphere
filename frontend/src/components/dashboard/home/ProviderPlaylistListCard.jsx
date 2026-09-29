@@ -1,4 +1,5 @@
-import { ArrowRight, ListMusic, Loader2, RefreshCw } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowRight, ListMusic, Loader2, RefreshCw, Upload } from 'lucide-react';
 import Button from '../../ui/Button';
 import ProviderIcon from '../../ui/ProviderIcon';
 import PlaylistRow from './PlaylistRow';
@@ -23,7 +24,23 @@ const ProviderPlaylistListCard = ({
     onTogglePlaylist,
     onToggleTrackPreview,
     onOpenIntegrations,
-}) => (
+    onImportFile,
+    onDeletePlaylist,
+}) => {
+    const fileInputRef = useRef(null);
+    const [importing, setImporting] = useState(false);
+    const acceptsFiles = provider.auth?.type === 'file' && Boolean(onImportFile);
+
+    const handleFileChange = async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        setImporting(true);
+        await onImportFile(file);
+        setImporting(false);
+    };
+
+    return (
     <div className="elevated-card p-6 lg:p-7">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -40,6 +57,27 @@ const ProviderPlaylistListCard = ({
                 )}
             </div>
             <div className="flex flex-wrap gap-2">
+                {acceptsFiles && (
+                    <>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,.json,.m3u,.m3u8,.txt,text/csv,application/json,text/plain"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        <Button
+                            onClick={() => fileInputRef.current?.click()}
+                            variant="primary"
+                            size="sm"
+                            loading={importing}
+                            loadingLabel="Importando..."
+                            leftIcon={<Upload size={15} />}
+                        >
+                            Importar arquivo
+                        </Button>
+                    </>
+                )}
                 <Button
                     onClick={onRefreshPlaylists}
                     variant="secondary"
@@ -110,20 +148,26 @@ const ProviderPlaylistListCard = ({
                             selected={selectedPlaylistIdSet.has(playlist.id)}
                             onSelect={onTogglePlaylist}
                             onTogglePreview={onToggleTrackPreview}
+                            onDelete={onDeletePlaylist}
                         />
                     ))
                 ) : (
                     <div className="rounded-lg border border-white/10 bg-black/30 p-6">
                         <ListMusic className="mb-4 text-muted" size={24} />
-                        <h3 className="text-lg font-black text-white">Nenhuma playlist encontrada</h3>
+                        <h3 className="text-lg font-black text-white">
+                            {acceptsFiles ? 'Nenhum arquivo importado' : 'Nenhuma playlist encontrada'}
+                        </h3>
                         <p className="mt-2 text-sm leading-6 text-muted">
-                            Atualize a lista ou cole o link de uma playlist para continuar.
+                            {acceptsFiles
+                                ? 'Importe um CSV (Exportify e outros), JSON, M3U/M3U8 ou TXT com "Artista - Título" por linha.'
+                                : 'Atualize a lista ou cole o link de uma playlist para continuar.'}
                         </p>
                     </div>
                 )}
             </div>
         )}
     </div>
-);
+    );
+};
 
 export default ProviderPlaylistListCard;

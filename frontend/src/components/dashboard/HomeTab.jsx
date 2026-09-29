@@ -249,6 +249,34 @@ const HomeTab = ({
         await loadTrackPreview(playlistId, { open: true });
     }, [loadTrackPreview, trackPreviews]);
 
+    const importFile = useCallback(async (file) => {
+        try {
+            const content = await file.text();
+            const response = await api.post('/integrations/file/imports', content, {
+                params: { filename: file.name },
+                headers: { 'Content-Type': 'text/plain' },
+            });
+            const imported = response.data.data.playlist;
+            toast.success(response.data.message);
+            await refreshSourcePlaylists({ force: true, silent: true });
+            setSourcePlaylistId('');
+            setSourcePlaylistIds((currentIds) => [...new Set([...currentIds, imported.id])]);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível importar o arquivo.');
+        }
+    }, [refreshSourcePlaylists, setSourcePlaylistId, setSourcePlaylistIds]);
+
+    const deleteImportedPlaylist = useCallback(async (playlistId) => {
+        try {
+            await api.delete(`/integrations/file/imports/${playlistId}`);
+            setSourcePlaylistIds((currentIds) => currentIds.filter((id) => id !== playlistId));
+            await refreshSourcePlaylists({ force: true, silent: true });
+            toast.success('Arquivo removido.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível remover o arquivo.');
+        }
+    }, [refreshSourcePlaylists, setSourcePlaylistIds]);
+
     const handleManualPlaylistChange = useCallback((event) => {
         setSourcePlaylistIds([]);
         setSourcePlaylistId(event.target.value);
@@ -312,6 +340,7 @@ const HomeTab = ({
                 sourceLabel={source.label}
                 targetLabel={target.label}
                 playlistUrlExample={source.playlistUrlExample}
+                allowLink={source.capabilities?.readByLink !== false}
                 selectedPlaylists={selectedPlaylists}
                 sourcePlaylistId={sourcePlaylistId}
                 onManualPlaylistChange={handleManualPlaylistChange}
@@ -352,6 +381,8 @@ const HomeTab = ({
                             onTogglePlaylist={togglePlaylist}
                             onToggleTrackPreview={toggleTrackPreview}
                             onOpenIntegrations={() => setActiveTab('integrations')}
+                            onImportFile={source.auth?.type === 'file' ? importFile : undefined}
+                            onDeletePlaylist={source.auth?.type === 'file' ? deleteImportedPlaylist : undefined}
                         />
                     ) : (
                         <ProviderPlaylistLinkCard

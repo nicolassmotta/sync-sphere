@@ -36,7 +36,28 @@ export const PROVIDER_UI = {
         envSnippet: `YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
 YTMUSIC_AUTH_USER=0`,
     },
+    file: {
+        label: 'Arquivo',
+        tone: 'neutral',
+        buttonVariant: 'secondary',
+        accentGradient: 'via-sky-300',
+        description: 'Ponte para qualquer app: importe CSV (Exportify e outros), JSON, M3U/M3U8 ou TXT como origem, ou gere um arquivo como destino.',
+        setupSteps: [
+            'Não precisa de conexão.',
+            'Como origem: escolha Arquivo na aba Início e clique em "Importar arquivo".',
+            'CSV precisa de uma coluna de nome da faixa ("Track Name", "name", "title" ou "música"); artista, álbum, ISRC e duração são opcionais.',
+            'TXT: uma faixa por linha no formato "Artista - Título".',
+            'Como destino: ao terminar, baixe o resultado em CSV, JSON, M3U ou TXT pelo Histórico.',
+        ],
+    },
 };
+
+export const FILE_EXPORT_FORMATS = [
+    { format: 'csv', label: 'CSV' },
+    { format: 'json', label: 'JSON' },
+    { format: 'm3u', label: 'M3U' },
+    { format: 'txt', label: 'TXT' },
+];
 
 const GENERIC_UI = {
     tone: 'neutral',

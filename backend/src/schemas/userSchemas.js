@@ -51,7 +51,11 @@ export const transferStartSchema = z.object({
     }).refine((body) => body.sourcePlaylistId || body.sourcePlaylistIds?.length, {
         message: 'Selecione ao menos uma playlist de origem.',
         path: ['sourcePlaylistIds'],
-    }).refine((body) => !body.sourceProvider || body.sourceProvider !== body.targetProvider, {
+    }).refine((body) => (
+        !body.sourceProvider
+        || body.sourceProvider !== body.targetProvider
+        || findProvider(body.sourceProvider)?.capabilities.sameProviderTransfer
+    ), {
         message: 'Origem e destino precisam ser plataformas diferentes.',
         path: ['targetProvider'],
     })

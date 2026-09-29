@@ -4,6 +4,12 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Plataforma Arquivo
+
+- Nova plataforma `file`: importa CSV (Exportify e genérico, com `,`/`;`/tab e cabeçalhos em português ou inglês), JSON, M3U/M3U8 e TXT como origem; como destino gera arquivo para baixar em CSV, JSON, M3U ou TXT pelo Histórico.
+- Arquivo -> Arquivo converte formatos (ex.: CSV do Exportify em M3U).
+- Rotas `POST /integrations/file/imports`, `DELETE /integrations/file/imports/:id` e `GET /integrations/file/exports/:id/download?format=`.
+
 ### Arquitetura de provedores
 
 - Cada plataforma virou um adaptador em `backend/src/providers/` com contrato único (autenticação, capacidades, leitura, busca e destino); o processador, a validação de início e as rotas de integração funcionam para qualquer par origem/destino.

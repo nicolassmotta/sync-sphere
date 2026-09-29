@@ -32,6 +32,7 @@ const TransferConfirmModal = ({
     sourceLabel,
     targetLabel,
     playlistUrlExample,
+    allowLink = true,
     selectedPlaylists,
     sourcePlaylistId,
     onManualPlaylistChange,
@@ -76,15 +77,19 @@ const TransferConfirmModal = ({
 
         <EstimateNotice estimate={estimate} targetLabel={targetLabel} />
 
-        <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase text-spotify">
-            <Link2 size={14} /> Colar link da playlist
-        </p>
-        <TextField
-            label={`Link da playlist no ${sourceLabel}`}
-            value={sourcePlaylistId}
-            onChange={onManualPlaylistChange}
-            placeholder={playlistUrlExample || 'Link da playlist'}
-        />
+        {allowLink && (
+            <>
+                <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase text-spotify">
+                    <Link2 size={14} /> Colar link da playlist
+                </p>
+                <TextField
+                    label={`Link da playlist no ${sourceLabel}`}
+                    value={sourcePlaylistId}
+                    onChange={onManualPlaylistChange}
+                    placeholder={playlistUrlExample || 'Link da playlist'}
+                />
+            </>
+        )}
     </Modal>
 );
 
