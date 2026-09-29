@@ -12,6 +12,8 @@ import {
     getFrontendRedirect,
     verifyOAuthState,
 } from '../shared/oauthRedirect.js';
+import { resumeTransfersNeedingAuth } from '../../../services/transfer/transferQueueActions.js';
+import logger from '../../../utils/logger.js';
 
 const SPOTIFY_OAUTH_INTENT = 'spotify_oauth';
 
@@ -60,6 +62,10 @@ export const spotifyCallback = async (req, res, next) => {
         user.spotifyRefreshToken = tokenData.refresh_token || user.spotifyRefreshToken;
         user.spotifyTokenExpiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
         await user.save({ validateBeforeSave: false });
+
+        await resumeTransfersNeedingAuth({ userId: user._id }).catch((resumeError) => {
+            logger.warn(`[Spotify] Não foi possível retomar transferências após reconectar: ${resumeError.message}`);
+        });
 
         return res.redirect(getFrontendRedirect(
             { tab: 'integrations', spotify: 'connected' },

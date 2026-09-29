@@ -8,6 +8,7 @@ import { useStartTransfer } from '../hooks/useStartTransfer';
 import { useSpotifyPlaylists } from '../hooks/useSpotifyPlaylists';
 import { useTransferSocket } from '../hooks/useTransferSocket';
 import { TRANSFER_DIRECTIONS } from '../constants/transferDirections';
+import api from '../services/api';
 
 import DashboardLayout from '../components/layout/DashboardLayout';
 
@@ -15,6 +16,8 @@ const HomeTab = lazy(() => import('../components/dashboard/HomeTab'));
 const SettingsTab = lazy(() => import('../components/dashboard/SettingsTab'));
 const HistoryTab = lazy(() => import('../components/dashboard/HistoryTab'));
 const IntegrationsTab = lazy(() => import('../components/dashboard/IntegrationsTab'));
+
+const ACTIVE_TRANSFER_STATUSES = ['pending', 'processing', 'paused', 'needs_auth'];
 
 const DashboardTabFallback = () => (
     <div className="mx-auto grid min-h-[320px] w-full max-w-5xl place-items-center">
@@ -54,9 +57,46 @@ const Dashboard = () => {
         isTransferring,
         progress,
         progressMessage,
+        transfers,
         prepareTransferProgress,
         stopTransferProgress,
     } = useTransferSocket(transferIds);
+
+    // Depois de recarregar a página, volta a acompanhar o que ainda não terminou.
+    useEffect(() => {
+        let cancelled = false;
+
+        api.get('/transfer')
+            .then((response) => {
+                if (cancelled) return;
+                const activeIds = (response.data.data.transfers || [])
+                    .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
+                    .map((transfer) => transfer._id);
+                if (activeIds.length) {
+                    setTransferIds((currentIds) => (currentIds.length ? currentIds : activeIds));
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const followTransfers = useCallback((nextTransferIds) => {
+        const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        // Sempre um array novo: reconecta o socket mesmo se a transferência já estava na lista.
+        setTransferIds((currentIds) => [...new Set([...currentIds.map(String), ...ids])]);
+    }, []);
+
+    const resumeTransfer = useCallback(async (transferId) => {
+        try {
+            const response = await api.post(`/transfer/${transferId}/resume`);
+            toast.success(response.data.message || 'Transferência retomada.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível retomar a transferência.');
+        }
+    }, []);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -73,9 +113,14 @@ const Dashboard = () => {
         }
     }, [location.search, navigate, refreshIntegrations]);
 
+    // Nova migração entra na lista sem esconder as que ainda estão pausadas ou na fila.
     const handleTransferQueued = useCallback((nextTransferIds) => {
-        setTransferIds(Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds].filter(Boolean));
-    }, []);
+        const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        const stillActiveIds = transfers
+            .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
+            .map((transfer) => String(transfer.transferId));
+        setTransferIds([...new Set([...stillActiveIds, ...ids])]);
+    }, [transfers]);
 
     const handleBeforeTransferStart = useCallback(() => {
         setShowModal(false);
@@ -117,6 +162,8 @@ const Dashboard = () => {
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        transfers={transfers}
+                        onResumeTransfer={resumeTransfer}
                         startTransferProcess={startTransferProcess}
                         integrations={integrations}
                         integrationsLoading={integrationsLoading}
@@ -145,7 +192,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'history' && (
-                    <HistoryTab />
+                    <HistoryTab onTransfersQueued={followTransfers} />
                 )}
 
                 {activeTab === 'settings' && (

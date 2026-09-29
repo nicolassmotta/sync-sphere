@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { getTransferDirectionOption, TRANSFER_DIRECTIONS } from '../../constants/transferDirections';
 import api from '../../services/api';
+import { useTransferEstimate } from '../../hooks/useTransferEstimate';
 import Button from '../ui/Button';
 import FadeInPage from '../ui/FadeInPage';
 import SetupChecklist from '../setup/SetupChecklist';
@@ -44,6 +45,8 @@ const HomeTab = ({
     isTransferring,
     progress,
     progressMessage,
+    transfers,
+    onResumeTransfer,
     startTransferProcess,
     integrations,
     integrationsLoading,
@@ -92,6 +95,16 @@ const HomeTab = ({
     const readyToTransfer = isYoutubeToSpotify
         ? Boolean(youtubeReady && spotifyConnected && selectedCount > 0)
         : Boolean(youtubeReady && selectedCount > 0);
+
+    const selectedTrackCount = useMemo(
+        () => selectedPlaylists.reduce((sum, playlist) => sum + (Number(playlist.trackCount) || 0), 0),
+        [selectedPlaylists]
+    );
+    const transferEstimate = useTransferEstimate({
+        enabled: showModal,
+        direction: transferDirection,
+        trackCount: selectedTrackCount,
+    });
 
     useEffect(() => {
         setYoutubePlaylistPreview(null);
@@ -362,6 +375,7 @@ const HomeTab = ({
                 onStartTransfer={startTransferProcess}
                 selectedCount={selectedCount}
                 isTransferring={isTransferring}
+                estimate={transferEstimate}
             />
 
             <motion.div
@@ -431,6 +445,10 @@ const HomeTab = ({
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        transfers={transfers}
+                        onResume={onResumeTransfer}
+                        onOpenIntegrations={() => setActiveTab('integrations')}
+                        onOpenHistory={() => setActiveTab('history')}
                     />
                 </motion.aside>
             </motion.div>

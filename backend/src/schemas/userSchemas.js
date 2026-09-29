@@ -43,3 +43,28 @@ export const transferStartSchema = z.object({
         path: ['sourcePlaylistIds'],
     })
 });
+
+const transferIdParams = z.object({
+    transferId: z.string().min(1, 'Informe a transferência.').max(100),
+});
+
+export const transferIdSchema = z.object({
+    params: transferIdParams,
+});
+
+export const transferTracksSchema = z.object({
+    params: transferIdParams,
+    query: z.object({
+        status: z
+            .string()
+            .regex(/^(pending|matched|not_found|retry_queued|failed)(,(pending|matched|not_found|retry_queued|failed))*$/, 'Filtro de status inválido.')
+            .optional(),
+    }).passthrough(),
+});
+
+export const transferEstimateSchema = z.object({
+    query: z.object({
+        direction: z.enum(TRANSFER_DIRECTION_VALUES).optional(),
+        count: z.coerce.number().int().min(0).max(100000),
+    }).passthrough(),
+});

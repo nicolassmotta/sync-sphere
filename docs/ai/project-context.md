@@ -30,7 +30,7 @@ Diretório: `backend/`
 - Execução: Node.js com ESM.
 - Framework: Express.
 - Persistência: arquivos JSON cifrados em `backend/data/` (sem banco de dados).
-- Fila: em memória, no próprio processo (sem Redis/BullMQ).
+- Fila: no próprio processo, persistida em `data/queue.json` (sem Redis/BullMQ). Transferências não concluídas voltam para a fila no boot.
 - Tempo real: Socket.io acoplado ao servidor HTTP.
 - Autenticação: nenhuma. Existe um único usuário local implícito (`LOCAL_USER_ID = 'local'`), o dono da máquina.
 - Segurança: Helmet, CORS com credenciais, rate limit, Zod e criptografia das credenciais persistidas.
@@ -46,8 +46,8 @@ Mapa de arquivos:
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.
 - `src/schemas/`: schemas Zod.
-- `src/services/`: serviços reutilizáveis, como fila em memória e integrações externas.
-- `src/services/queueService.js`: fila de transferências em memória (`addTransferJob`, `registerTransferProcessor`).
+- `src/services/`: serviços reutilizáveis, como a fila local e integrações externas.
+- `src/services/queueService.js`: fila de transferências persistida (`addTransferJob`, `registerTransferProcessor`, `runTransferNow`, `getQueuePosition`). O processador pode devolver `{ rescheduleAt }` para o job voltar mais tarde.
 - `src/services/spotify/`: autenticação/token, cliente HTTP, erros, normalizadores e pontuação Spotify usados pela fachada `spotifyService.js`.
 - `src/services/youtubeMusic/`: autenticação por cookie, leitura/criação de playlist e pontuação de correspondência usados pela fachada `youtubeMusicService.js`.
 - `src/services/transfer/TransferProcessor.js`: orquestra a tarefa de migração bidirecional.
@@ -60,6 +60,10 @@ Mapa de arquivos:
 - `src/config/`: `paths.js` (DATA_DIR e `FRONTEND_DIST_DIR`), CORS e carregamento de ambiente.
 - `src/utils/`: logger, criptografia (chave em env ou auto-gerada em `data/encryption.key`) e erro customizado.
 - `src/errors/UnrecoverableError.js`: erro que sinaliza falha definitiva (a fila não tenta novamente).
+- `src/errors/providerErrors.js`: `classifyProviderError` (`rate_limited`, `auth`, `transient`, `not_found`, `permanent`), `TransferPausedError` e `TransferNeedsAuthError`.
+- `src/services/transfer/TransferTrackStore.js`: estado por faixa em `data/transfer-tracks-<id>.json` (`pending`, `matched`, `not_found`, `retry_queued`, `failed`).
+- `src/services/transfer/TransferMetrics.js`: média móvel do tempo de busca/inserção, ETA e estatísticas por plataforma em `data/provider-stats.json`.
+- `src/services/transfer/transferQueueActions.js`: retry de pendências, retomada manual, retomada após reconectar e recuperação no boot.
 
 ### Front-end
 

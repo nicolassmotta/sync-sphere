@@ -2,13 +2,14 @@ import ProgressPublisher from '../services/transfer/ProgressPublisher.js';
 import TrackMatcher from '../services/transfer/TrackMatcher.js';
 import TransferProcessor from '../services/transfer/TransferProcessor.js';
 import TransferRepository from '../services/transfer/TransferRepository.js';
-import { registerTransferProcessor } from '../services/queueService.js';
+import { recoverUnfinishedTransfers } from '../services/transfer/transferQueueActions.js';
+import { getQueuePosition, registerTransferProcessor } from '../services/queueService.js';
 import logger from '../utils/logger.js';
 
 /**
- * Inicializa o processamento das transferências usando a fila local em memória.
- * Mantém a emissão de progresso via Socket.io e o tratamento de falhas que
- * existia com o BullMQ.
+ * Inicializa o processamento das transferências usando a fila local
+ * persistida. Emite progresso via Socket.io e, no boot, devolve para a fila
+ * as transferências que não terminaram.
  */
 export const startWorker = (io) => {
     const repository = new TransferRepository();
@@ -16,6 +17,7 @@ export const startWorker = (io) => {
         publisher: new ProgressPublisher(io),
         repository,
         trackMatcher: new TrackMatcher(),
+        getQueuePosition,
     });
 
     registerTransferProcessor({
@@ -36,5 +38,9 @@ export const startWorker = (io) => {
         },
     });
 
-    logger.info('[Trabalhador] Fila local em memória pronta para processar transferências.');
+    recoverUnfinishedTransfers().catch((error) => {
+        logger.warn(`[Trabalhador] Não foi possível recuperar transferências pendentes: ${error.message}`);
+    });
+
+    logger.info('[Trabalhador] Fila local pronta para processar transferências.');
 };

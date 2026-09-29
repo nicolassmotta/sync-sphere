@@ -19,7 +19,7 @@ SyncSphere é um migrador local e de código aberto de playlists entre Spotify e
 
 ## Arquitetura
 
-- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória.
+- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion e Lucide.
 - `docs/ai/`: contexto operacional para agentes e decisões recorrentes do projeto.
 - `.agents/skills/sync-sphere/`: skill local usada por agentes que trabalham neste repositório.
@@ -96,7 +96,7 @@ curl http://localhost:8000/api/health
 curl http://localhost:8000/api/ready
 ```
 
-`/api/ready` retorna `storage: "local"` e `queue: "in-memory"`.
+`/api/ready` retorna `storage: "local"` e `queue: "local-persistent"`.
 
 ## 3. Spotify OAuth
 
@@ -168,7 +168,9 @@ O front-end inclui um tutorial embutido:
 
 - Credenciais de integrações são criptografadas antes de persistir.
 - Axios mantém `withCredentials`.
-- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo.
+- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo que sobrevive a reinícios.
+- Cada faixa tem estado próprio. Se o YouTube Music limitar as buscas ou um token expirar, a transferência pausa (ou espera a reconexão) e continua de onde parou, sem refazer buscas.
+- O painel mostra tempo estimado, faixas por minuto, contadores e as últimas faixas analisadas. Faixas que falharam ficam em "Pendências" no Histórico, com botão para tentar de novo.
 - Socket.io publica progresso para o painel.
 - Como tudo roda local, mantenha `backend/data/` e o `.env` fora de qualquer repositório público.
 

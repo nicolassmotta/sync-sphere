@@ -53,7 +53,7 @@ app.get('/api/ready', (req, res) => {
         status: 'ready',
         dependencies: {
             storage: 'local',
-            queue: 'in-memory',
+            queue: 'local-persistent',
         },
         env: {
             nodeEnv,
