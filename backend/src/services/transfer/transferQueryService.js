@@ -1,6 +1,6 @@
 import Transfer from '../../models/Transfer.js';
 import AppError from '../../utils/AppError.js';
-import { getTransferDirectionProviders } from '../../constants/transferDirections.js';
+import { resolveTransferProviders } from '../../constants/transferDirections.js';
 import { getSearchConcurrency } from './TrackMatcher.js';
 import { estimateTransferSeconds, getProviderStats } from './TransferMetrics.js';
 import { loadTransferTracks, summarizeTransferTracks } from './TransferTrackStore.js';
@@ -43,8 +43,8 @@ const ACTIVE_STATUSES = new Set(['pending', 'processing', 'paused']);
  * Estimativa antes de iniciar: tempo das faixas novas mais o que ainda falta
  * nas transferências que já estão na fila.
  */
-export const estimateTransfer = async ({ userId, direction, trackCount }) => {
-    const { targetProvider } = getTransferDirectionProviders(direction);
+export const estimateTransfer = async ({ userId, direction, targetProvider: requestedTarget, trackCount }) => {
+    const { targetProvider } = resolveTransferProviders({ direction, targetProvider: requestedTarget });
     const concurrency = getSearchConcurrency();
     const activeTransfers = (await Transfer.find({ user: userId }))
         .filter((transfer) => ACTIVE_STATUSES.has(transfer.status));

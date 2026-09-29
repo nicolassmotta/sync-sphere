@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import { getProviderLabel, getTransferProviders } from '../../constants/providers';
 import { cn } from '../../utils/cn';
 import { formatTime } from '../../utils/formatDuration';
 import Button from '../ui/Button';
@@ -31,9 +32,10 @@ const formatDate = (date) => {
     }).format(new Date(date));
 };
 
-const getDirectionLabel = (item) => (
-    item.direction === 'youtube_to_spotify' ? 'YouTube -> Spotify' : 'Spotify -> YouTube'
-);
+const getDirectionLabel = (item) => {
+    const { sourceProvider, targetProvider } = getTransferProviders(item);
+    return `${getProviderLabel(sourceProvider)} -> ${getProviderLabel(targetProvider)}`;
+};
 
 const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0);
 

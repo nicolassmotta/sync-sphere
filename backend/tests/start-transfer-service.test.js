@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { buildSpotifyServiceMock, buildYoutubeMusicServiceMock } from './helpers/serviceMocks.js';
 
 const mockInsertMany = jest.fn();
 const mockAddTransferJob = jest.fn();
@@ -16,25 +17,13 @@ jest.unstable_mockModule('../src/services/queueService.js', () => ({
     addTransferJob: mockAddTransferJob,
 }));
 
-jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
+jest.unstable_mockModule('../src/services/spotifyService.js', () => buildSpotifyServiceMock({
     getSpotifyPlaylistTracksPreview: mockGetSpotifyPlaylistTracksPreview,
     ensureSpotifyDestinationReady: mockEnsureSpotifyDestinationReady,
-    normalizeSpotifyPlaylistId: (input) => {
-        const trimmed = String(input).trim();
-        const match = trimmed.match(/playlist\/([a-zA-Z0-9]+)/);
-        return match ? match[1] : trimmed.split('?')[0];
-    },
 }));
 
-jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => ({
+jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => buildYoutubeMusicServiceMock({
     getYoutubeMusicPlaylistTracksPreview: mockGetYoutubeMusicPlaylistTracksPreview,
-    isYoutubeMusicCookieDestinationConfigured: () => Boolean(process.env.YTMUSIC_COOKIE?.trim()),
-    normalizeYoutubeMusicPlaylistId: (input) => {
-        const trimmed = String(input).trim();
-        const match = trimmed.match(/[?&]list=([a-zA-Z0-9_-]+)/);
-        return match ? match[1] : trimmed.split('?')[0];
-    },
-    validateYoutubeMusicCookieDestinationConfig: jest.fn(),
 }));
 
 const { queuePlaylistTransfers } = await import('../src/services/transfer/startTransferService.js');
@@ -84,7 +73,9 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
                 sourcePlaylistId: 'playlist123',
             }),
         ]);
-        expect(mockAddTransferJob).toHaveBeenCalledWith('transfer-1', 'user-1', 'playlist123', 'spotify_to_youtube');
+        expect(mockAddTransferJob).toHaveBeenCalledWith('transfer-1', 'user-1', 'playlist123', 'spotify_to_youtube', {
+            lane: 'youtubeMusic',
+        });
     });
 
     it('não cria transferência nem tarefa quando o Spotify bloqueia as faixas', async () => {
@@ -112,7 +103,7 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
             sourcePlaylistId: 'playlist123',
         })).rejects.toMatchObject({
             statusCode: 400,
-            message: 'Configure YTMUSIC_COOKIE no backend/.env para criar playlists no YouTube Music.',
+            message: 'Configure o cookie do YouTube Music em Integrações (ou YTMUSIC_COOKIE no backend/.env) para criar playlists no YouTube Music.',
         });
 
         expect(mockGetSpotifyPlaylistTracksPreview).not.toHaveBeenCalled();
@@ -145,7 +136,8 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
             'transfer-1',
             'user-1',
             'PLyoutube123',
-            'youtube_to_spotify'
+            'youtube_to_spotify',
+            { lane: 'spotify' }
         );
     });
 });

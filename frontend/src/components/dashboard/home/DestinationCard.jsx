@@ -1,40 +1,31 @@
 import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { TRANSFER_DIRECTIONS } from '../../../constants/transferDirections';
 import Button from '../../ui/Button';
-import { SpotifyIcon, YoutubeIcon } from '../../ui/BrandIcons';
+import ProviderIcon from '../../ui/ProviderIcon';
 
 const DestinationCard = ({
-    transferDirection,
-    spotifyReady,
-    youtubeReady,
+    source,
+    target,
     selectedCount,
     readyToTransfer,
     onConfigureDestination,
     onReviewTransfer,
 }) => {
-    const youtubeToSpotify = transferDirection === TRANSFER_DIRECTIONS.YOUTUBE_TO_SPOTIFY;
-    const targetLabel = youtubeToSpotify ? 'Spotify' : 'YouTube Music';
-    const targetReady = youtubeToSpotify ? spotifyReady : youtubeReady;
-    const sourceReady = youtubeToSpotify ? youtubeReady : true;
-    const Icon = youtubeToSpotify ? SpotifyIcon : YoutubeIcon;
-    const iconClassName = youtubeToSpotify ? 'h-8 w-8 fill-spotify' : 'h-8 w-8 fill-youtube';
+    const providersReady = source.connected && target.connected;
 
-    const statusText = !sourceReady
-        ? 'Configure YTMUSIC_COOKIE para ler a playlist de origem.'
-        : targetReady
-            ? `Destino ${targetLabel} pronto para receber playlists privadas.`
-            : youtubeToSpotify
-                ? 'Conecte o Spotify com OAuth para criar playlists no destino.'
-                : 'Configure YTMUSIC_COOKIE no backend/.env, reinicie a API e valide o status.';
+    const statusText = !source.connected
+        ? `Conecte o ${source.label} para ler a playlist de origem.`
+        : target.connected
+            ? `Destino ${target.label} pronto para receber playlists privadas.`
+            : `Conecte o ${target.label} para criar playlists no destino.`;
 
     return (
         <div className="elevated-card p-6">
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <p className="text-xs font-bold uppercase text-white/40">Destino</p>
-                    <h3 className="mt-1 text-xl font-black text-white">{targetLabel}</h3>
+                    <h3 className="mt-1 text-xl font-black text-white">{target.label}</h3>
                 </div>
-                <Icon className={iconClassName} />
+                <ProviderIcon providerId={target.id} size="lg" />
             </div>
 
             <div className="rounded-lg border border-white/10 bg-black/30 p-4">
@@ -47,13 +38,13 @@ const DestinationCard = ({
                 </div>
                 <p className="mb-4 text-sm leading-6 text-muted">{statusText}</p>
                 <Button
-                    onClick={!targetReady || !sourceReady ? onConfigureDestination : onReviewTransfer}
+                    onClick={providersReady ? onReviewTransfer : onConfigureDestination}
                     variant={readyToTransfer ? 'primary' : 'secondary'}
-                    disabled={targetReady && sourceReady && !selectedCount}
+                    disabled={providersReady && !selectedCount}
                     fullWidth
                     rightIcon={<ArrowRight size={17} />}
                 >
-                    {readyToTransfer ? 'Revisar e iniciar' : targetReady && sourceReady ? 'Selecione playlists' : 'Ver configuração'}
+                    {readyToTransfer ? 'Revisar e iniciar' : providersReady ? 'Selecione playlists' : 'Ver configuração'}
                 </Button>
             </div>
         </div>

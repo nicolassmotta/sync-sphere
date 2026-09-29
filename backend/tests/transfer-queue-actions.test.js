@@ -61,7 +61,7 @@ describe('ações de fila sobre transferências', () => {
         ]);
         expect(transfer.status).toBe('pending');
         expect(mockAddTransferJob).toHaveBeenCalledWith(
-            transfer._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'retry', runAfter: null }
+            transfer._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'retry', runAfter: null, lane: 'youtubeMusic' }
         );
     });
 
@@ -93,10 +93,10 @@ describe('ações de fila sobre transferências', () => {
         await recoverUnfinishedTransfers();
 
         expect(mockAddTransferJob).toHaveBeenCalledWith(
-            paused._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'full', runAfter: resumeAt }
+            paused._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'full', runAfter: resumeAt, lane: 'youtubeMusic' }
         );
         expect(mockAddTransferJob).toHaveBeenCalledWith(
-            running._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'full', runAfter: null }
+            running._id, 'local', 'playlist-1', 'spotify_to_youtube', { mode: 'full', runAfter: null, lane: 'youtubeMusic' }
         );
     });
 });

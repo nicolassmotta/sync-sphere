@@ -4,6 +4,16 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Arquitetura de provedores
+
+- Cada plataforma virou um adaptador em `backend/src/providers/` com contrato único (autenticação, capacidades, leitura, busca e destino); o processador, a validação de início e as rotas de integração funcionam para qualquer par origem/destino.
+- Rotas genéricas `/integrations/:provider/...`; as URLs antigas do Spotify e do YouTube Music continuam válidas.
+- `POST /transfer/start` aceita `sourceProvider` e `targetProvider`, mantendo `direction` para compatibilidade.
+- Cookie do YouTube Music pode ser colado no painel (cifrado em `data/provider-credentials.json`), sem editar `.env` nem reiniciar.
+- Fila com uma raia por plataforma de destino: bloqueio em uma plataforma não trava migrações para outra.
+- Faixas do Spotify passam a guardar ISRC.
+- Painel escolhe origem e destino entre as plataformas registradas; aba Integrações gerada a partir do back-end.
+
 ### Progresso e fila de pendências
 
 - Painel de migração com tempo estimado, faixas por minuto, contadores (encontradas, não encontradas, na fila de retry) e últimas faixas analisadas.

@@ -6,18 +6,8 @@ import {
     TransferNeedsAuthError,
     TransferPausedError,
 } from '../../errors/providerErrors.js';
-import { TRANSFER_DIRECTIONS } from '../../constants/transferDirections.js';
-import {
-    createSpotifyDestinationClient,
-    createSpotifySearchClient,
-    getSpotifyPlaylistSnapshot,
-    SpotifyPlaylistAccessError,
-} from '../spotifyService.js';
-import {
-    createYoutubeMusicSearchClient,
-    createYoutubeMusicCookieDestinationClient,
-    getYoutubeMusicPlaylistSnapshot,
-} from '../youtubeMusicService.js';
+import { resolveTransferProviders, TRANSFER_DIRECTIONS } from '../../constants/transferDirections.js';
+import { getProvider } from '../../providers/registry.js';
 import logger from '../../utils/logger.js';
 import { getPauseDelayMs } from './TrackMatcher.js';
 import TransferMetrics from './TransferMetrics.js';
@@ -42,43 +32,34 @@ const buildDescription = (sourceLabel) => (playlist) => {
 };
 
 /**
- * O que muda entre os sentidos da migração. O fluxo em `TransferProcessor` é
- * o mesmo para todos: ler origem, buscar no destino, criar playlist, inserir.
+ * Monta o fluxo da transferência a partir dos provedores de origem e destino.
+ * O processamento é o mesmo para qualquer par: ler origem, buscar no
+ * destino, criar playlist, inserir.
  */
-const DIRECTION_CONFIGS = {
-    [TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE]: {
-        sourceLabel: 'Spotify',
-        targetLabel: 'YouTube Music',
-        targetProvider: 'youtubeMusic',
-        stage: 'youtube-matching',
-        imageStage: 'youtube-playlist-image',
-        noConfidentMatchReason: 'Nenhum resultado confiável encontrado no YouTube Music.',
-        loadSource: ({ playlistId, userId }) => getSpotifyPlaylistSnapshot({ playlistId, userId }),
-        createSearchClient: () => createYoutubeMusicSearchClient(),
-        createDestinationClient: ({ userId }) => createYoutubeMusicCookieDestinationClient({ userId }),
-        getMatchId: (match) => match?.videoId,
-        addTracks: (client, { playlistId, ids }) => client.addVideosToPlaylist({ playlistId, videoIds: ids }),
-        buildDescription: buildDescription('Spotify'),
-    },
-    [TRANSFER_DIRECTIONS.YOUTUBE_TO_SPOTIFY]: {
-        sourceLabel: 'YouTube Music',
-        targetLabel: 'Spotify',
-        targetProvider: 'spotify',
-        stage: 'spotify-matching',
-        imageStage: 'spotify-playlist-image',
-        noConfidentMatchReason: 'Nenhum resultado confiável encontrado no Spotify.',
-        loadSource: ({ playlistId }) => getYoutubeMusicPlaylistSnapshot({ playlistId }),
-        createSearchClient: ({ userId }) => createSpotifySearchClient({ userId }),
-        createDestinationClient: ({ userId }) => createSpotifyDestinationClient({ userId }),
-        getMatchId: (match) => match?.uri,
-        addTracks: (client, { playlistId, ids }) => client.addTracksToPlaylist({ playlistId, trackUris: ids }),
-        buildDescription: buildDescription('YouTube Music'),
-    },
-};
+const buildTransferConfig = ({ transferRecord, direction }) => {
+    const providers = resolveTransferProviders({
+        sourceProvider: transferRecord?.sourceProvider,
+        targetProvider: transferRecord?.targetProvider,
+        direction: transferRecord?.direction || direction,
+    });
+    const source = getProvider(providers.sourceProvider);
+    const target = getProvider(providers.targetProvider);
 
-const getDirectionConfig = (direction) => (
-    DIRECTION_CONFIGS[direction] || DIRECTION_CONFIGS[TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE]
-);
+    return {
+        sourceLabel: source.label,
+        targetLabel: target.label,
+        targetProvider: target.id,
+        stage: `${target.id}-matching`,
+        noConfidentMatchReason: `Nenhum resultado confiável encontrado no ${target.label}.`,
+        searchDelayMs: target.getSearchDelayMs?.(),
+        loadSource: ({ playlistId, userId }) => source.getPlaylistSnapshot({ playlistId, userId }),
+        createSearchClient: ({ userId }) => target.createSearchClient({ userId }),
+        createDestinationClient: ({ userId }) => target.createDestinationClient({ userId }),
+        getMatchId: target.getMatchId,
+        addTracks: (client, { playlistId, ids }) => client.addTracks({ playlistId, ids }),
+        buildDescription: buildDescription(source.label),
+    };
+};
 
 const permanentError = (message) => {
     const error = new Error(message);
@@ -163,14 +144,14 @@ export default class TransferProcessor {
             direction: jobDirection = TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE,
         } = job.data;
         let transferRecord;
-        let config = getDirectionConfig(jobDirection);
+        let config = { sourceLabel: 'origem', targetLabel: 'destino' };
 
         logger.info(`[Trabalhador] Iniciando tarefa ${job.id} para transferência ${transferId} (${jobDirection}).`);
 
         try {
             transferRecord = await this.repository.getTransferForProcessing(transferId);
             await this.repository.getUserWithTransferSecrets(userId);
-            config = getDirectionConfig(transferRecord.direction || jobDirection);
+            config = buildTransferConfig({ transferRecord, direction: jobDirection });
 
             return await this.run({ transferId, userId, sourcePlaylistId, transferRecord, config });
         } catch (error) {
@@ -189,7 +170,7 @@ export default class TransferProcessor {
             }
 
             logger.error(`[Trabalhador] Falha crítica na transferência ${transferId}: ${error.message}`);
-            const isPermanentTransferError = error instanceof SpotifyPlaylistAccessError
+            const isPermanentTransferError = error?.name === 'SpotifyPlaylistAccessError'
                 || error?.isPermanentTransferError
                 || classifyProviderError(error) === ERROR_KINDS.PERMANENT;
 
@@ -282,6 +263,7 @@ export default class TransferProcessor {
                 providerLabel: config.targetLabel,
                 noConfidentMatchReason: config.noConfidentMatchReason,
                 pauseCount: transferRecord.pauseCount || 0,
+                delayMs: config.searchDelayMs,
                 metrics,
                 onTrackStart: (track) => {
                     live.currentTrack = { index: track.index, name: track.name, artist: track.artist };

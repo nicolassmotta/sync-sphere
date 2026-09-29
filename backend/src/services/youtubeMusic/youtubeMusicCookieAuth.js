@@ -1,5 +1,10 @@
 import crypto from 'crypto';
 import { Cookie } from 'tough-cookie';
+import {
+    clearProviderCredentials,
+    getProviderCredentials,
+    setProviderCredentials,
+} from '../../storage/credentialStore.js';
 
 export const YTMUSIC_ORIGIN = 'https://music.youtube.com';
 
@@ -25,6 +30,21 @@ export const normalizeCookieHeader = (cookieHeader = '') => {
         .filter(Boolean)
         .map((part) => part.replace(/^([^=]+)=["'](.*)["']$/, '$1=$2'))
         .join('; ');
+};
+
+const CREDENTIALS_KEY = 'youtubeMusic';
+
+/**
+ * Cookie em uso: o colado no painel vence o `YTMUSIC_COOKIE` do `.env`.
+ */
+export const getYoutubeMusicCookie = () => (
+    getProviderCredentials(CREDENTIALS_KEY)?.cookie || process.env.YTMUSIC_COOKIE || ''
+);
+
+export const getYoutubeMusicCookieSource = () => {
+    if (getProviderCredentials(CREDENTIALS_KEY)?.cookie) return 'panel';
+    if (process.env.YTMUSIC_COOKIE?.trim()) return 'env';
+    return null;
 };
 
 export const buildYoutubeMusicAuthError = (message) => {
@@ -68,26 +88,26 @@ const getYoutubeMusicCookieValidation = (cookieHeader) => {
     };
 };
 
-export const validateYoutubeMusicCookieDestinationConfig = () => {
-    const cookieHeader = normalizeCookieHeader(process.env.YTMUSIC_COOKIE);
+export const validateYoutubeMusicCookieDestinationConfig = (cookie = getYoutubeMusicCookie()) => {
+    const cookieHeader = normalizeCookieHeader(cookie);
     if (!cookieHeader) {
-        throw buildYoutubeMusicAuthError('Configure YTMUSIC_COOKIE para usar o destino não oficial do YouTube Music.');
+        throw buildYoutubeMusicAuthError('Configure o cookie do YouTube Music em Integrações (ou YTMUSIC_COOKIE no backend/.env).');
     }
 
     const validation = getYoutubeMusicCookieValidation(cookieHeader);
     if (!validation.valid) {
         throw buildYoutubeMusicAuthError(
-            `YTMUSIC_COOKIE incompleto: faltando ${validation.missing.join(' e ')}. O back-end leu ${validation.cookieCount} cookie(s); copie o cabeçalho Cookie completo de uma requisição logada em music.youtube.com.`
+            `Cookie do YouTube Music incompleto: faltando ${validation.missing.join(' e ')}. O back-end leu ${validation.cookieCount} cookie(s); copie o cabeçalho Cookie completo de uma requisição logada em music.youtube.com.`
         );
     }
 };
 
 export const buildSapisidAuthorization = (cookieHeader) => {
-    validateYoutubeMusicCookieDestinationConfig();
+    validateYoutubeMusicCookieDestinationConfig(cookieHeader);
     const sapisid = getSapisidFromCookie(cookieHeader);
     if (!sapisid) {
         throw buildYoutubeMusicAuthError(
-            'YTMUSIC_COOKIE foi lido, mas não contém __Secure-3PAPISID, __Secure-1PAPISID ou SAPISID. Copie o cabeçalho Cookie completo de uma requisição logada em music.youtube.com.'
+            'O cookie do YouTube Music foi lido, mas não contém __Secure-3PAPISID, __Secure-1PAPISID ou SAPISID. Copie o cabeçalho Cookie completo de uma requisição logada em music.youtube.com.'
         );
     }
 
@@ -139,4 +159,14 @@ export const hydrateCookieJarForMusicDomains = (ytmusic, cookieHeader) => {
             ytmusic.cookiejar.setCookieSync(musicCookie, 'https://music.youtube.com/');
         }
     }
+};
+
+export const saveYoutubeMusicCookie = (cookie) => {
+    const normalized = normalizeCookieHeader(cookie);
+    validateYoutubeMusicCookieDestinationConfig(normalized);
+    setProviderCredentials(CREDENTIALS_KEY, { cookie: normalized });
+};
+
+export const clearYoutubeMusicCookie = () => {
+    clearProviderCredentials(CREDENTIALS_KEY);
 };

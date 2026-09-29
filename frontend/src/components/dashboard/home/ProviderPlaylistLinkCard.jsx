@@ -1,0 +1,111 @@
+import { ArrowRight, Link2, Loader2, RefreshCw } from 'lucide-react';
+import Button from '../../ui/Button';
+import TextField from '../../ui/TextField';
+import ProviderIcon from '../../ui/ProviderIcon';
+import { getProviderUi } from '../../../constants/providers';
+import PlaylistTrackPreview from './PlaylistTrackPreview';
+
+const ConnectNotice = ({ provider, text, onOpenIntegrations }) => (
+    <div className="mb-5 rounded-lg border border-white/10 bg-black/30 p-5">
+        <h3 className="text-lg font-black text-white">Conecte o {provider.label}</h3>
+        <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
+        <Button
+            onClick={onOpenIntegrations}
+            variant={getProviderUi(provider.id).buttonVariant}
+            className="mt-5"
+            rightIcon={<ArrowRight size={16} />}
+        >
+            Abrir integrações
+        </Button>
+    </div>
+);
+
+/**
+ * Origem por link ou ID, para plataformas que não listam playlists da conta.
+ */
+const ProviderPlaylistLinkCard = ({
+    source,
+    target,
+    preview,
+    sourcePlaylistId,
+    onLoadPreview,
+    onOpenIntegrations,
+    onPlaylistChange,
+    onReviewTransfer,
+}) => {
+    const loading = Boolean(preview?.loading);
+    const hasPlaylist = Boolean(sourcePlaylistId?.trim());
+    const canPreview = hasPlaylist && source.connected && !loading;
+    const readyToReview = hasPlaylist && source.connected && target.connected;
+
+    return (
+        <div className="elevated-card p-6 lg:p-7">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p className="text-sm font-bold uppercase text-white/40">Escolha a origem</p>
+                    <h2 className="mt-2 text-2xl font-black text-white">Playlist do {source.label}</h2>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
+                        Cole o link ou ID da playlist. A prévia lê as primeiras faixas antes de criar a tarefa na fila.
+                    </p>
+                </div>
+                <div className="grid h-12 w-12 place-items-center rounded-lg border border-white/10 bg-white/[0.045]">
+                    <ProviderIcon providerId={source.id} size="md" />
+                </div>
+            </div>
+
+            {!source.connected && (
+                <ConnectNotice
+                    provider={source}
+                    text="A conexão permite ler a playlist de origem."
+                    onOpenIntegrations={onOpenIntegrations}
+                />
+            )}
+
+            {source.connected && !target.connected && (
+                <ConnectNotice
+                    provider={target}
+                    text={`A conexão precisa permitir criar playlists privadas no ${target.label}.`}
+                    onOpenIntegrations={onOpenIntegrations}
+                />
+            )}
+
+            <div className="space-y-4">
+                <TextField
+                    label={`Link ou ID da playlist no ${source.label}`}
+                    value={sourcePlaylistId}
+                    onChange={onPlaylistChange}
+                    tone={getProviderUi(source.id).tone}
+                    leadingIcon={<Link2 size={18} />}
+                    placeholder={source.playlistUrlExample || 'Link da playlist'}
+                />
+
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        onClick={onLoadPreview}
+                        variant="secondary"
+                        disabled={!canPreview}
+                        leftIcon={loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                    >
+                        Pré-visualizar
+                    </Button>
+                    <Button
+                        onClick={onReviewTransfer}
+                        variant={readyToReview ? 'primary' : 'secondary'}
+                        disabled={!readyToReview}
+                        rightIcon={<ArrowRight size={16} />}
+                    >
+                        Revisar transferência
+                    </Button>
+                </div>
+            </div>
+
+            {preview && (
+                <div className="mt-5">
+                    <PlaylistTrackPreview preview={preview} />
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ProviderPlaylistLinkCard;

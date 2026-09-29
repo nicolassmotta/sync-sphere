@@ -11,7 +11,7 @@ import PlaylistArtwork from './PlaylistArtwork';
 import PlaylistTrackPreview from './PlaylistTrackPreview';
 import { formatTrackCount } from './formatTrackCount';
 
-const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePreview }) => {
+const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, selected, onSelect, onTogglePreview }) => {
     const visibleTrackCount = preview?.totalTracks || playlist.trackCount;
     const unavailable = Boolean(preview?.blocked);
     const checking = Boolean(preview?.loading && !preview?.open);
@@ -29,7 +29,7 @@ const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePrevi
                     <span className="min-w-0">
                         <span className="block truncate text-sm font-extrabold text-white">{playlist.name}</span>
                         <span className="mt-1 block truncate text-xs font-semibold text-muted">
-                            {playlist.ownerName || 'Spotify'} · {formatTrackCount(visibleTrackCount)}
+                            {playlist.ownerName || providerLabel} · {formatTrackCount(visibleTrackCount)}
                         </span>
                     </span>
                 </button>
@@ -53,7 +53,7 @@ const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePrevi
                         target="_blank"
                         rel="noreferrer"
                         className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                        aria-label={`Abrir ${playlist.name} no Spotify`}
+                        aria-label={`Abrir ${playlist.name} no ${providerLabel}`}
                     >
                         <ExternalLink size={15} />
                     </a>
