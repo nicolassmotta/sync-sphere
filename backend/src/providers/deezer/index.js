@@ -92,7 +92,7 @@ const deezerProvider = {
         type: 'cookie',
         method: 'deezer-arl',
         optionalForRead: true,
-        fields: [{ name: 'arl', label: 'Cookie arl de deezer.com', secret: true }],
+        fields: [{ name: 'arl', label: 'Cookie arl de deezer.com', placeholder: 'Cole o valor do cookie arl', secret: true }],
     },
     capabilities: {
         read: true,

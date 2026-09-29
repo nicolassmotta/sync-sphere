@@ -2,6 +2,7 @@ import AppError from '../utils/AppError.js';
 import deezerProvider from './deezer/index.js';
 import fileProvider from './file/index.js';
 import spotifyProvider from './spotify/index.js';
+import tidalProvider from './tidal/index.js';
 import youtubeMusicProvider from './youtubeMusic/index.js';
 
 /**
@@ -25,7 +26,7 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - saveCredentials({ values }) quando auth.type === 'cookie'
  * - disconnect({ userId })
  */
-const PROVIDERS = [spotifyProvider, youtubeMusicProvider, deezerProvider, fileProvider];
+const PROVIDERS = [spotifyProvider, youtubeMusicProvider, deezerProvider, tidalProvider, fileProvider];
 
 const PROVIDERS_BY_KEY = new Map(
     PROVIDERS.flatMap((provider) => [provider.id, ...(provider.aliases || [])].map((key) => [key, provider]))

@@ -38,7 +38,12 @@ const youtubeMusicProvider = {
     auth: {
         type: 'cookie',
         method: 'ytmusic-cookie',
-        fields: [{ name: 'cookie', label: 'Cabeçalho Cookie de music.youtube.com', secret: true }],
+        fields: [{
+            name: 'cookie',
+            label: 'Cabeçalho Cookie de music.youtube.com',
+            placeholder: 'Cole o cabeçalho Cookie completo',
+            secret: true,
+        }],
     },
     capabilities: {
         read: true,

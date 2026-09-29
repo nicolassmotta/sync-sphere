@@ -50,6 +50,22 @@ YTMUSIC_AUTH_USER=0`,
         credentialWarning: 'O arl dá acesso à sua conta Deezer. Fica cifrado em backend/data; não compartilhe nem coloque em logs ou capturas de tela.',
         envSnippet: 'DEEZER_ARL=cole_o_cookie_arl_de_deezer_com_aqui',
     },
+    tidal: {
+        label: 'TIDAL',
+        tone: 'neutral',
+        buttonVariant: 'inverse',
+        accentGradient: 'via-cyan-300',
+        description: 'Origem ou destino pela API oficial do TIDAL (OAuth + PKCE), com busca exata por ISRC. Playlists criadas ficam como "não listadas": só abre quem tiver o link.',
+        setupSteps: [
+            'Crie um app em developer.tidal.com e copie o Client ID para TIDAL_CLIENT_ID no backend/.env.',
+            'Cadastre a Redirect URI http://127.0.0.1:8000/api/v1/integrations/tidal/callback no app.',
+            'Opcional: TIDAL_CLIENT_SECRET permite ler playlists públicas e buscar sem conectar a conta.',
+            'Reinicie o back-end e clique em "Conectar TIDAL".',
+        ],
+        envSnippet: `TIDAL_CLIENT_ID=seu_client_id_tidal
+# TIDAL_CLIENT_SECRET=opcional
+TIDAL_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/tidal/callback`,
+    },
     file: {
         label: 'Arquivo',
         tone: 'neutral',
