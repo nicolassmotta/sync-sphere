@@ -5,7 +5,7 @@ import api from '../services/api';
  * Estimativa de duração antes de iniciar, baseada na velocidade medida nas
  * migrações anteriores e no que já está na fila.
  */
-export const useTransferEstimate = ({ enabled, direction, trackCount }) => {
+export const useTransferEstimate = ({ enabled, targetProvider, trackCount }) => {
     const [estimate, setEstimate] = useState(null);
 
     useEffect(() => {
@@ -15,7 +15,7 @@ export const useTransferEstimate = ({ enabled, direction, trackCount }) => {
         }
 
         let cancelled = false;
-        api.get('/transfer/estimate', { params: { direction, count: trackCount } })
+        api.get('/transfer/estimate', { params: { targetProvider, count: trackCount } })
             .then((response) => {
                 if (!cancelled) setEstimate(response.data.data.estimate);
             })
@@ -26,7 +26,7 @@ export const useTransferEstimate = ({ enabled, direction, trackCount }) => {
         return () => {
             cancelled = true;
         };
-    }, [enabled, direction, trackCount]);
+    }, [enabled, targetProvider, trackCount]);
 
     return estimate;
 };

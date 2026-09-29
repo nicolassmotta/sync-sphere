@@ -24,6 +24,8 @@ export const startTransfer = async (req, res, next) => {
         const { transfers, playlistIds } = await queuePlaylistTransfers({
             userId: req.user._id,
             direction: req.body.direction,
+            sourceProvider: req.body.sourceProvider,
+            targetProvider: req.body.targetProvider,
             sourcePlaylistId: req.body.sourcePlaylistId,
             sourcePlaylistIds: req.body.sourcePlaylistIds,
         });
@@ -159,6 +161,7 @@ export const getTransferEstimate = async (req, res, next) => {
         const estimate = await estimateTransfer({
             userId: req.user.id,
             direction: req.query.direction,
+            targetProvider: req.query.targetProvider,
             trackCount: Number(req.query.count) || 0,
         });
 

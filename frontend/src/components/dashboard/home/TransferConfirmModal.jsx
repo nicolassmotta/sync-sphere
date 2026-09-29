@@ -29,8 +29,9 @@ const EstimateNotice = ({ estimate, targetLabel }) => {
 const TransferConfirmModal = ({
     isOpen,
     onClose,
-    sourceLabel = 'Spotify',
-    targetLabel = 'YouTube Music',
+    sourceLabel,
+    targetLabel,
+    playlistUrlExample,
     selectedPlaylists,
     sourcePlaylistId,
     onManualPlaylistChange,
@@ -82,9 +83,7 @@ const TransferConfirmModal = ({
             label={`Link da playlist no ${sourceLabel}`}
             value={sourcePlaylistId}
             onChange={onManualPlaylistChange}
-            placeholder={sourceLabel === 'YouTube Music'
-                ? 'https://music.youtube.com/playlist?list=PL...'
-                : 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}
+            placeholder={playlistUrlExample || 'Link da playlist'}
         />
     </Modal>
 );

@@ -9,7 +9,7 @@ const workflowSteps = [
     {
         label: '2',
         title: 'Integrações',
-        text: 'Spotify OAuth e YTMUSIC_COOKIE validam origem e destino.',
+        text: 'Conecte a plataforma de origem e a de destino na aba Integrações.',
     },
     {
         label: '3',
@@ -18,7 +18,7 @@ const workflowSteps = [
     },
 ];
 
-const WorkflowCard = ({ sourceLabel = 'Spotify', targetLabel = 'YouTube Music' }) => (
+const WorkflowCard = ({ sourceLabel, targetLabel }) => (
     <div className="elevated-card p-6">
         <div className="mb-6 flex items-center justify-between">
             <div>

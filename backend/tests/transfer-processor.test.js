@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { buildSpotifyServiceMock, buildYoutubeMusicServiceMock } from './helpers/serviceMocks.js';
 
 const mockGetSpotifyPlaylistSnapshot = jest.fn();
 const mockCreateSpotifySearchClient = jest.fn();
@@ -7,22 +8,13 @@ const mockCreateYoutubeMusicSearchClient = jest.fn();
 const mockCreateYoutubeMusicCookieDestinationClient = jest.fn();
 const mockGetYoutubeMusicPlaylistSnapshot = jest.fn();
 
-class MockSpotifyPlaylistAccessError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'SpotifyPlaylistAccessError';
-        this.isPermanentTransferError = true;
-    }
-}
-
-jest.unstable_mockModule('../src/services/spotifyService.js', () => ({
+jest.unstable_mockModule('../src/services/spotifyService.js', () => buildSpotifyServiceMock({
     getSpotifyPlaylistSnapshot: mockGetSpotifyPlaylistSnapshot,
-    SpotifyPlaylistAccessError: MockSpotifyPlaylistAccessError,
     createSpotifySearchClient: mockCreateSpotifySearchClient,
     createSpotifyDestinationClient: mockCreateSpotifyDestinationClient,
 }));
 
-jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => ({
+jest.unstable_mockModule('../src/services/youtubeMusicService.js', () => buildYoutubeMusicServiceMock({
     createYoutubeMusicSearchClient: mockCreateYoutubeMusicSearchClient,
     createYoutubeMusicCookieDestinationClient: mockCreateYoutubeMusicCookieDestinationClient,
     getYoutubeMusicPlaylistSnapshot: mockGetYoutubeMusicPlaylistSnapshot,

@@ -35,6 +35,7 @@ export const normalizeSpotifyTrackItems = (items) => {
             artist: track.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown',
             album: track.album?.name || '',
             durationMs: track.duration_ms || 0,
+            isrc: track.external_ids?.isrc || null,
             uri: track.uri,
         });
     }

@@ -29,7 +29,8 @@ const isEligible = (track) => (
 
 export default class TrackMatcher {
     constructor({
-        delayMs = Number(process.env.YT_MUSIC_SEARCH_DELAY_MS || 250),
+        // `null`: usa o atraso da plataforma de destino (`getSearchDelayMs`).
+        delayMs = null,
         minMatchScore = 45,
         searchConcurrency = getSearchConcurrency(),
         maxTrackAttempts = clampConcurrency(process.env.MAX_TRACK_ATTEMPTS, { max: 20, fallback: 5 }),
@@ -80,12 +81,14 @@ export default class TrackMatcher {
         providerLabel = 'YouTube Music',
         noConfidentMatchReason = NO_CONFIDENT_MATCH_REASON,
         pauseCount = 0,
+        delayMs: providerDelayMs,
         metrics,
         onTrackStart,
         onTrackDone,
         onCheckpoint,
     }) {
         const eligibleTracks = tracks.filter(isEligible);
+        const delayMs = this.delayMs ?? providerDelayMs ?? 0;
         const checkpointEvery = Math.max(5, this.searchConcurrency * 2);
         let halt = null;
         let completedSinceCheckpoint = 0;
@@ -101,7 +104,7 @@ export default class TrackMatcher {
 
             onTrackStart?.(track);
             const startedAt = this.now();
-            if (this.delayMs > 0) await wait(this.delayMs);
+            if (delayMs > 0) await wait(delayMs);
 
             try {
                 const match = await this.search(searchClient, track);

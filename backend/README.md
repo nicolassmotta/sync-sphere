@@ -78,8 +78,7 @@ O fluxo usa Authorization Code + PKCE, então não há `SPOTIFY_CLIENT_SECRET`.
 
 1. Abra `https://music.youtube.com` no navegador e entre na conta usada como origem ou destino.
 2. Copie o cabeçalho `Cookie` completo de uma requisição autenticada para `music.youtube.com`.
-3. Cole o valor em `YTMUSIC_COOKIE` no `backend/.env`.
-4. Reinicie o back-end.
+3. Cole na aba Integrações do painel (fica cifrado em `data/provider-credentials.json`) ou em `YTMUSIC_COOKIE` no `backend/.env` e reinicie o back-end. O cookie do painel tem prioridade.
 
 Observações:
 

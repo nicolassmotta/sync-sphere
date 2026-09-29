@@ -96,4 +96,31 @@ describe('fila local persistida', () => {
         expect(onFailed).toHaveBeenCalledWith(expect.objectContaining({ id: expect.any(String) }), unrecoverable);
         expect(readStore('queue.json', [])).toHaveLength(0);
     });
+
+    it('processa raias de destinos diferentes em paralelo', async () => {
+        let releaseYoutube;
+        const process = jest.fn((job) => {
+            if (job.lane === 'youtubeMusic') {
+                return new Promise((resolve) => {
+                    releaseYoutube = () => resolve({ status: 'completed' });
+                });
+            }
+            return Promise.resolve({ status: 'completed' });
+        });
+
+        queue.registerTransferProcessor({ process });
+        await queue.addTransferJob('yt-1', 'local', 'p', undefined, { lane: 'youtubeMusic' });
+        await queue.addTransferJob('yt-2', 'local', 'p', undefined, { lane: 'youtubeMusic' });
+        await queue.addTransferJob('sp-1', 'local', 'p', undefined, { lane: 'spotify' });
+        await flush();
+
+        expect(process.mock.calls.map(([job]) => job.data.transferId)).toEqual(['yt-1', 'sp-1']);
+        expect(queue.getQueuePosition('yt-1')).toBe(0);
+        expect(queue.getQueuePosition('yt-2')).toBe(1);
+
+        releaseYoutube();
+        await flush();
+        await flush();
+        expect(process.mock.calls.map(([job]) => job.data.transferId)).toContain('yt-2');
+    });
 });

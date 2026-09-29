@@ -21,7 +21,7 @@ const enqueue = (transfer, { mode = 'full', runAfter = null } = {}) => addTransf
     transfer.user,
     transfer.sourcePlaylistId,
     transfer.direction,
-    { mode, runAfter }
+    { mode, runAfter, lane: transfer.targetProvider }
 );
 
 const requeueFailedTracks = (transferId) => {

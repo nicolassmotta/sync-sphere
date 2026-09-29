@@ -1,26 +1,30 @@
 import express from 'express';
-import { getIntegrationStatus } from '../modules/integrations/controllers/integrationStatusController.js';
 import {
-    disconnectSpotify,
-    getSpotifyAuthorization,
-    getSpotifyPlaylistTracks,
-    getSpotifyPlaylists,
-    spotifyCallback,
-} from '../modules/integrations/controllers/spotifyIntegrationController.js';
-import { getYoutubeMusicPlaylistTracks } from '../modules/integrations/controllers/youtubeMusicIntegrationController.js';
+    disconnectProvider,
+    getIntegrationStatus,
+    getProviderPlaylistTracks,
+    listProviderPlaylists,
+    providerCallback,
+    saveProviderCredentials,
+    startProviderAuthorization,
+} from '../modules/integrations/controllers/providerIntegrationController.js';
 import { protect } from '../middlewares/authMiddleware.js';
+import { validate } from '../middlewares/validateMiddleware.js';
+import { providerCredentialsSchema } from '../schemas/userSchemas.js';
 
 const router = express.Router();
 
-router.get('/spotify/callback', spotifyCallback);
+// Callback OAuth vem do navegador, redirecionado pela plataforma.
+router.get('/:provider/callback', providerCallback);
 
 router.use(protect);
 
 router.get('/status', getIntegrationStatus);
-router.get('/spotify/login', getSpotifyAuthorization);
-router.get('/spotify/playlists', getSpotifyPlaylists);
-router.get('/spotify/playlists/:playlistId/tracks', getSpotifyPlaylistTracks);
-router.delete('/spotify', disconnectSpotify);
-router.get('/youtube-music/playlist-tracks', getYoutubeMusicPlaylistTracks);
+router.get('/:provider/login', startProviderAuthorization);
+router.put('/:provider/credentials', validate(providerCredentialsSchema), saveProviderCredentials);
+router.delete('/:provider', disconnectProvider);
+router.get('/:provider/playlists', listProviderPlaylists);
+router.get('/:provider/playlists/:playlistId/tracks', getProviderPlaylistTracks);
+router.get('/:provider/playlist-tracks', getProviderPlaylistTracks);
 
 export default router;
