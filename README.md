@@ -1,232 +1,116 @@
-# SyncSphere
+<div align="center">
+  <img src="frontend/public/favicon.svg" alt="Logo do SyncSphere" width="80" height="80" />
+  <h1>SyncSphere</h1>
+  <p><strong>Suas playlists entre plataformas, na sua máquina.</strong></p>
+  <p>Spotify · YouTube Music · Deezer · TIDAL · Apple Music · SoundCloud · Arquivo</p>
+  <p>
+    <a href="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml"><img src="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI: testes, lint, build e verificação da aplicação" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-1DB954" alt="Licença MIT" /></a>
+    <a href="docs/integrations.md"><img src="https://img.shields.io/badge/plataformas-7-FF0033" alt="Sete plataformas" /></a>
+  </p>
+  <p><a href="#comece-em-poucos-passos">Começar</a> · <a href="docs/README.md">Documentação</a> · <a href="CONTRIBUTING.md">Contribuir</a> · <a href="docs/media-kit.md">Divulgar</a></p>
+</div>
 
-Versão 1.1.0 em preparação. Consulte as [notas da versão](docs/releases/v1.1.0.md) e o [plano das fases](docs/roadmap.md).
+SyncSphere migra referências e metadados de playlists entre serviços de música e arquivos. Escolha origem e destino, acompanhe a transferência em tempo real e revise as músicas que precisarem de uma escolha manual.
 
-SyncSphere é um migrador local e de código aberto de playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e arquivos CSV, JSON, M3U ou TXT. O painel guia a configuração, permite escolher origem e destino e acompanha progresso, retomadas e revisão de músicas não encontradas.
+Você hospeda o aplicativo no próprio computador. A fila, o histórico e as credenciais ficam em armazenamento local cifrado. O painel abre diretamente, sem conta do SyncSphere, banco de dados ou Redis.
 
-É **self-hosted single-user**: você clona e usa na sua própria máquina, configurando apenas as plataformas escolhidas. A conversão entre arquivos e a leitura pública de algumas plataformas funcionam sem conectar uma conta. Os dados ficam em arquivos locais cifrados e a fila persiste no próprio processo, sem banco de dados nem Redis.
+![Página inicial do SyncSphere com apresentação dos provedores e fluxo local](docs/assets/overview.jpg)
 
-## Fluxo Local
+*Captura do aplicativo em uma instalação de demonstração. O fluxo Arquivo -> Arquivo funciona sem conectar serviços de música.*
 
-1. Instale dependências e gere o build do front-end com `npm run setup`.
-2. Configure o back-end (`backend/.env`).
-3. Suba o servidor único com `npm start`.
-4. Abra `http://localhost:8000`.
-5. Em Integrações, conecte as plataformas necessárias ao seu fluxo.
-6. Escolha origem e destino.
-7. Selecione uma playlist da conta, cole seu link/ID ou importe um arquivo.
-8. Inicie a migração e acompanhe progresso e histórico. Revise manualmente as faixas não encontradas quando necessário.
+> Esta documentação acompanha a `main`, com a versão **1.1.0 preparada e ainda não publicada**. A versão publicada está em [Releases](https://github.com/nicolassmotta/sync-sphere/releases). Veja as [notas da 1.1.0](docs/releases/v1.1.0.md).
 
-## Arquitetura
+## Por que usar
 
-Para contribuir, consulte [CONTRIBUTING.md](CONTRIBUTING.md). Relatos de segurança seguem [SECURITY.md](SECURITY.md).
+- **Escolha o fluxo:** sete provedores com leitura e escrita, conforme as credenciais e o catálogo disponíveis.
+- **Comece sem contas:** importe uma playlist e converta entre CSV, JSON, M3U/M3U8 e TXT.
+- **Acompanhe cada faixa:** progresso, tempo estimado, pausas automáticas, reconexão e pendências.
+- **Evite buscas repetidas:** correspondências confiáveis ficam em cache cifrado por sete dias.
+- **Revise o resultado:** ajuste título e artista, confira uma alternativa e confirme a inserção no Histórico.
+- **Retome com cuidado:** os destinos comparam quantidades antes de inserir; o armazenamento local usa substituição atômica de arquivos.
 
-- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`.
-- `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion e Lucide.
-- `docs/ai/`: contexto operacional para agentes e decisões recorrentes do projeto.
-- `.agents/skills/sync-sphere/`: skill local usada por agentes que trabalham neste repositório.
+## Comece em poucos passos
 
-Sem MongoDB, sem Redis, sem contas: a aplicação sobe sem nenhuma dependência de infraestrutura externa.
-
-## Plataformas
-
-Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em `backend/src/providers/registry.js`. O painel permite escolher pares diferentes de origem e destino, além de Arquivo -> Arquivo para converter formatos. A disponibilidade de leitura e escrita depende das credenciais e do catálogo de cada serviço.
-
-| Plataforma | Origem | Destino | Autenticação | Observações |
-|---|---|---|---|---|
-| Spotify | sim | sim | OAuth + PKCE (`SPOTIFY_CLIENT_ID`) | Lista as playlists da conta conectada. |
-| YouTube Music | sim | sim | Cookie colado no painel ou `YTMUSIC_COOKIE` | API não oficial; origem por link ou ID de music.youtube.com ou youtube.com. A playlist criada também aparece no YouTube. |
-| Deezer | sim | sim | Nenhuma para ler playlists públicas; cookie `arl` (painel ou `DEEZER_ARL`) para listar suas playlists, ler privadas e criar | Busca exata por ISRC antes da busca por texto. Escrita usa o gateway interno do site (não oficial). |
-| TIDAL | sim | sim | OAuth + PKCE (`TIDAL_CLIENT_ID`; `TIDAL_CLIENT_SECRET` opcional para ler sem login) | API oficial v2. Busca por ISRC. Playlists criadas como "não listadas" (a API não cria privadas). |
-| Apple Music | sim | sim | Nenhuma para ler playlists do catálogo; conta via MusicKit (chave `APPLE_*`) ou cookie `media-user-token` para biblioteca e escrita | Busca por ISRC. Sem chave MusicKit usa o token público do web player (não oficial). |
-| SoundCloud | sim | sim | Nenhuma para ler playlists públicas; cookie `oauth_token` (painel ou `SOUNDCLOUD_OAUTH_TOKEN`) para escrever | API do site (a oficial exige Artist Pro). Catálogo com muito upload de terceiros: só aceita faixa do mesmo artista. |
-| Arquivo | sim | sim | Nenhuma | Importa CSV (Exportify e genérico), JSON, M3U/M3U8 e TXT "Artista - Título"; exporta nos mesmos formatos. Arquivo -> Arquivo converte formatos. |
-
-## Requisitos
-
-- Node.js 20+
-- Credenciais apenas das plataformas que você pretende conectar, conforme a tabela acima.
-- Para Spotify: app com OAuth configurado. Para YouTube Music: cookie colado em Integrações ou definido em `YTMUSIC_COOKIE`.
-
-Apps Spotify em modo de desenvolvimento exigem Premium na conta proprietária do app e têm restrições para playlists de terceiros. Consulte o [guia oficial do Spotify](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).
-
-## 1. Uso Local em `localhost:8000`
-
-Na raiz do projeto:
+Tenha Git e Node.js com npm instalados. Recomendamos **Node.js 22 ou 24 LTS**; o requisito técnico atual é Node.js 20+. Consulte as [versões do Node.js](https://nodejs.org/en/about/previous-releases).
 
 ```bash
+git clone https://github.com/nicolassmotta/sync-sphere.git
+cd sync-sphere
 npm run setup
 cp backend/.env.example backend/.env
+npm start
 ```
 
-No Windows PowerShell, use:
+No PowerShell, substitua a cópia por:
 
 ```powershell
 Copy-Item backend/.env.example backend/.env
 ```
 
-Preencha `backend/.env` conforme as plataformas escolhidas e inicie:
+Abra **[http://localhost:8000](http://localhost:8000)**. Para testar agora, escolha **Arquivo** como origem e destino, importe [a playlist de exemplo](docs/examples/playlist.csv), selecione-a e inicie a transferência. O Histórico oferece o download nos formatos disponíveis.
+
+Para migrar entre serviços, configure apenas as plataformas escolhidas em **Integrações**. O [guia de instalação](docs/getting-started.md) mostra o passo a passo completo.
+
+## Plataformas e conexão
+
+| Plataforma | Leitura | Escrita | O que configurar |
+|---|---|---|---|
+| Spotify | Conta conectada; links sujeitos às permissões da API | Conta conectada | App Spotify, Client ID e OAuth com PKCE |
+| YouTube Music | Cookie da conta; link de YouTube Music ou YouTube | Cookie da conta | Cabeçalho Cookie completo, colado no painel |
+| Deezer | Playlists públicas sem login; conta e privadas com cookie | Cookie da conta | `arl` para operações autenticadas |
+| TIDAL | OAuth; leitura pública com configuração de app compatível | OAuth | App TIDAL e autorização da conta |
+| Apple Music | Catálogo público; biblioteca com autorização | Biblioteca autorizada | MusicKit ou token da conta pelo fluxo alternativo |
+| SoundCloud | Playlists públicas sem login; conta com token | Token da conta | `oauth_token` para operações autenticadas |
+| Arquivo | CSV, JSON, M3U/M3U8 e TXT | Os mesmos formatos | Nenhuma credencial |
+
+Confira autenticação, privacidade e limites no [guia das integrações](docs/integrations.md).
+
+## O que esperar das migrações
+
+A correspondência depende do catálogo do destino. O aplicativo compara metadados e usa ISRC quando o provedor o suporta. Algumas músicas podem precisar de revisão manual ou ficar sem correspondência.
+
+- Spotify e TIDAL usam APIs oficiais nos seus adaptadores. YouTube Music e SoundCloud usam APIs do site. Deezer combina leitura pública com gateway não oficial; Apple Music oferece MusicKit e um fluxo alternativo não oficial.
+- As escritas reais em **Deezer, TIDAL, Apple Music e SoundCloud** ainda precisam de confirmação com credenciais de conta. Os testes automatizados dessas escritas usam respostas simuladas.
+- Faixas recuperadas depois entram no fim das playlists remotas. Arquivos exportados seguem a ordem das faixas resolvidas da origem.
+- A criptografia protege os arquivos locais; acesso ao aplicativo e à máquina precisa ser protegido. Veja [SECURITY.md](SECURITY.md).
+
+Os [limites documentados](docs/usage.md#limites-atuais) ajudam a escolher o tamanho e o destino de cada transferência.
+
+## Documentação
+
+| Quero… | Guia |
+|---|---|
+| Instalar e testar sem conectar uma conta | [Primeiros passos](docs/getting-started.md) |
+| Conectar uma plataforma | [Integrações](docs/integrations.md) |
+| Configurar portas, credenciais e fila | [Configuração](docs/configuration.md) |
+| Migrar, retomar ou revisar uma faixa | [Como usar](docs/usage.md) |
+| Preparar um arquivo de playlist | [Formatos de arquivo](docs/file-formats.md) |
+| Resolver um erro | [Solução de problemas](docs/troubleshooting.md) |
+| Entender o código e a API local | [Arquitetura](docs/architecture.md) · [API](docs/api.md) |
+| Contribuir ou acompanhar as fases | [Contribuição](CONTRIBUTING.md) · [Plano das fases](docs/roadmap.md) |
+| Apresentar o projeto | [Materiais de divulgação](docs/media-kit.md) |
+
+## Desenvolvimento
 
 ```bash
-npm start
-```
-
-Depois abra:
-
-```text
-http://localhost:8000
-```
-
-O back-end serve a API, o Socket.io e o build React (`frontend/dist`) na mesma porta. Para desenvolvimento da UI com Vite, veja a seção de front-end.
-
-## 2. Back-end
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-Variáveis principais em `backend/.env`:
-
-```env
-PORT=8000
-FRONTEND_URL=http://localhost:8000
-SPOTIFY_CLIENT_ID=seu_client_id_spotify
-YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
-```
-
-O Spotify usa OAuth Authorization Code + PKCE: configure apenas `SPOTIFY_CLIENT_ID` no `.env`. Não há `SPOTIFY_CLIENT_SECRET`. Se precisar sobrescrever o callback padrão, defina também `SPOTIFY_REDIRECT_URI`.
-
-A chave de criptografia das credenciais locais é gerada automaticamente em `backend/data/encryption.key` na primeira execução. Para fixar uma própria, defina `ENCRYPTION_KEY` (64 caracteres hexadecimais) no `.env`:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Nunca publique `ENCRYPTION_KEY` ou `YTMUSIC_COOKIE`. A pasta `backend/data/` é ignorada pelo Git. O Client ID do Spotify não é segredo; com PKCE não há Client Secret.
-
-Valide que o back-end está no ar:
-
-```bash
-curl http://localhost:8000/api/health
-curl http://localhost:8000/api/ready
-```
-
-`/api/ready` retorna `storage: "local"` e `queue: "local-persistent"`.
-
-## 3. Spotify OAuth
-
-No painel de desenvolvedores (`https://developer.spotify.com/dashboard`):
-
-- crie ou abra um app;
-- em "Redirect URIs", cadastre exatamente `http://127.0.0.1:8000/api/v1/integrations/spotify/callback` (o Spotify exige o IP de loopback `127.0.0.1`, não `localhost`);
-- copie o `Client ID` para `SPOTIFY_CLIENT_ID` em `backend/.env` (não precisa de Client Secret);
-- reinicie o back-end e conecte pelo painel em `Integrações`;
-- reconecte o Spotify se a autorização antiga não incluir `playlist-modify-private`/`playlist-modify-public`, necessárias para YouTube Music -> Spotify.
-
-> Observação: um app Spotify novo nasce em "Development Mode" e só permite até 25 contas adicionadas manualmente no painel. Para liberar para qualquer pessoa, peça o "Extended Quota Mode" na revisão do Spotify.
-
-## 4. Cookie do YouTube Music
-
-YouTube Music usa o cookie da sua sessão no navegador como origem ou destino.
-
-1. Abra `https://music.youtube.com` logado na conta que vai usar.
-2. Abra as ferramentas de desenvolvedor, aba Rede.
-3. Clique em uma requisição para `music.youtube.com`.
-4. Copie o cabeçalho `Cookie` completo.
-5. Cole na aba `Integrações` do painel e clique em `Salvar cookie`. O cookie fica cifrado em `backend/data/` e vale na hora, sem reiniciar.
-
-Alternativa: cole em `YTMUSIC_COOKIE` no `backend/.env` e reinicie o back-end. O cookie salvo pelo painel tem prioridade sobre o do `.env`.
-
-Use apenas valores demonstrativos em issues, docs, commits e capturas de tela.
-
-## 5. Front-end em Desenvolvimento
-
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-Se a API não estiver na porta padrão, configure:
-
-```env
-VITE_API_URL=http://localhost:8000/api/v1
-```
-
-Portas padrão:
-
-- Aplicação local empacotada: `http://localhost:8000`
-- Front-end Vite em desenvolvimento: `http://localhost:5173`
-- API do back-end: `http://localhost:8000/api/v1`
-- Saúde: `http://localhost:8000/api/health`
-- Prontidão: `http://localhost:8000/api/ready`
-
-O painel abre direto, sem tela de login.
-
-## Painel
-
-O front-end inclui um tutorial embutido:
-
-- Início: checklist de back-end, Spotify OAuth, `YTMUSIC_COOKIE`, direção da transferência, seleção, fila e histórico.
-- Integrações: status técnico e ações para conectar Spotify ou revalidar cookie.
-- Guia local: comandos copiáveis, variáveis de ambiente e solução de problemas.
-- Histórico: transferências concluídas, falhas de correspondência, direção usada e links criados no YouTube Music ou Spotify.
-
-## Dados Locais
-
-- Credenciais do Spotify ficam cifradas em `backend/data/credentials.json`.
-- O histórico de transferências fica em `backend/data/transfers.json`.
-- A chave de criptografia fica em `backend/data/encryption.key` (gerada automaticamente).
-- Toda a pasta `backend/data/` é ignorada pelo Git. Para limpar o histórico: `npm run history:clear`.
-
-## Segurança
-
-- Credenciais de integrações são criptografadas antes de persistir.
-- Axios mantém `withCredentials`.
-- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo que sobrevive a reinícios.
-- Cada faixa tem estado próprio. Se o YouTube Music limitar as buscas ou um token expirar, a transferência pausa (ou espera a reconexão) e continua de onde parou, sem refazer buscas.
-- Novas transferências reutilizam correspondências confiáveis encontradas anteriormente no mesmo destino. O cache é cifrado em `backend/data/match-cache.json`, expira em sete dias e guarda até 5.000 entradas. Versões e durações diferentes são tratadas separadamente. Faixas não encontradas voltam a ser buscadas.
-- Para revisar uma faixa não encontrada, abra `Histórico > Ver detalhes > Não encontradas > Escolher alternativa`. Ajuste título e artista, busque e confira o resultado antes de confirmar. A música será acrescentada ao fim da playlist existente. A revisão fica disponível depois que a transferência terminar; propostas expiram em dez minutos.
-- Antes de inserir faixas, os destinos comparam as quantidades esperadas com o conteúdo atual da playlist. Isso preserva repetições intencionais e evita reenviar ocorrências já presentes numa retomada. Se não for possível ler o destino, a inserção é interrompida. Faixas recuperadas depois entram no fim das playlists remotas; arquivos exportados seguem a ordem da origem.
-- O painel mostra tempo estimado, faixas por minuto, contadores e as últimas faixas analisadas. Faixas que falharam ficam em "Pendências" no Histórico, com botão para tentar de novo.
-- Socket.io publica progresso para o painel.
-- Como tudo roda local, mantenha `backend/data/` e o `.env` fora de qualquer repositório público.
-
-## Solução de Problemas
-
-- Front-end não conecta: confira `VITE_API_URL`, `FRONTEND_URL`, porta `8000` e CORS.
-- Spotify OAuth falha: confirme se `SPOTIFY_CLIENT_ID` está no `.env` e se `SPOTIFY_REDIRECT_URI` é idêntico no `.env` e no painel do Spotify.
-- YouTube Music fica pendente: cole o cookie em `Integrações` (ou preencha `YTMUSIC_COOKIE` e reinicie o back-end).
-- Playlist não lista faixas: o Spotify pode bloquear playlists sem permissão de leitura; tente outra playlist ou reconecte OAuth.
-- YouTube Music -> Spotify falha ao criar destino: reconecte o Spotify para conceder os escopos de escrita.
-
-## Verificação
-
-Back-end:
-
-```bash
-cd backend
+npm ci --prefix backend
+npm ci --prefix frontend
 npm test
-```
-
-Front-end:
-
-```bash
-cd frontend
 npm run lint
 npm run build
 ```
 
+Para desenvolvimento com atualização automática, use `npm run dev:backend` e `npm run dev:frontend` em terminais separados. Os detalhes de portas e CORS estão no [guia de contribuição](CONTRIBUTING.md).
+
+O CI executa testes do backend, lint e build do frontend e uma verificação da aplicação empacotada. Os testes de integrações externas usam respostas simuladas e diretórios temporários isolados.
+
+## Participar
+
+Encontrou um problema? Abra uma [issue](https://github.com/nicolassmotta/sync-sphere/issues/new/choose) com passos para reproduzir e exemplos sem credenciais. Para propor uma mudança, consulte [CONTRIBUTING.md](CONTRIBUTING.md). Relatos de vulnerabilidades seguem [SECURITY.md](SECURITY.md).
+
+Se o projeto for útil, uma estrela no repositório e o compartilhamento do [material de divulgação](docs/media-kit.md) ajudam outras pessoas a encontrá-lo.
+
 ## Licença
 
-MIT. Veja `LICENSE`.
-
-## Contexto para Agentes
-
-Agentes devem começar por `AGENTS.md` e, quando precisarem de mais contexto, consultar `docs/ai/project-context.md`, `docs/ai/agent-tooling.md` e `docs/ai/skill-policy.md`.
-
-Regra prática: se uma decisão arquitetural precisar ser repetida para outro agente, registre em `docs/ai/`.
+[MIT](LICENSE), por Nicolas Cardoso Motta. Os nomes dos serviços identificam as integrações disponíveis; o SyncSphere é um projeto independente.

@@ -1,110 +1,32 @@
-# Catálogo de MCPs
+# Catálogo de ferramentas e MCPs
 
-Este catálogo descreve quais MCPs fazem sentido para o SyncSphere. Ele não guarda segredos nem substitui configurações locais do cliente de IA.
+Este catálogo é opcional e descreve capacidades úteis para manutenção do SyncSphere. Ele não declara que servidores estão instalados em todas as máquinas. A configuração pertence ao ambiente de quem contribui, não ao aplicativo.
 
-## MCPs Configurados no Codex Local
+## Escolher uma capacidade
 
-### rube
+| Capacidade | Uso no projeto | Escopo |
+|---|---|---|
+| Filesystem | Código, documentos e exemplos locais | Raiz do repositório e arquivos necessários à tarefa. |
+| Git | Status, diff, histórico e commits | Repositório atual; conferir branch e alterações existentes. |
+| Context7 | Contratos atuais de bibliotecas e SDKs | Consultar documentação oficial antes de adotar uma API nova. |
+| GitHub | PRs, issues e CI | Remoto `nicolassmotta/sync-sphere`, quando autorizado pela tarefa. |
+| Navegador | UI, responsividade, uploads e capturas | Preferir `agent-browser` quando disponível e usar sessão própria. |
+| Figma | Design de referência fornecido | Somente o arquivo conectado e relevante ao pedido. |
 
-Status: opcional no ambiente local do agente.
+CLI e ferramentas nativas podem atender ao mesmo fluxo sem MCP. O projeto usa armazenamento local, então não precisa de servidor de banco de dados ou Redis.
 
-- URL: `https://rube.app/mcp`
-- Comando de verificação: `codex mcp list`
-- Uso: habilita automações e ferramentas da Composio/Rube, especialmente skills importadas de `ComposioHQ/awesome-codex-skills`.
-- Observação: uma sessão já aberta pode precisar ser reiniciada para enxergar ferramentas MCP recém-adicionadas.
+## Configuração opcional
 
-## Ferramentas Locais para Agentes
+[mcp.example.json](mcp.example.json) é um modelo conceitual com placeholders. Substitua comandos e caminhos de acordo com o cliente e os servidores efetivamente instalados. Não é uma configuração pronta para copiar e executar sem ajustes.
 
-As ferramentas abaixo ficam em `agent-repos/`, ignoradas pelo Git, para consulta e instalação local:
+Conectores externos, como Rube/Composio, são opcionais e não fazem parte da execução do SyncSphere. Configure-os apenas quando uma tarefa exigir essa capacidade e houver autorização para seu uso.
 
-- `agent-repos/caveman`: referência para respostas mais curtas e objetivas.
-- `agent-repos/rtk`: referência para compactar saídas de comandos via CLI/hook.
+## Segurança e manutenção
 
-Veja `docs/ai/agent-tooling.md` para política de uso, instalação e alternativa quando a ferramenta não estiver disponível.
+- Mantenha acesso a arquivos limitado ao necessário.
+- Nunca inclua `.env`, credenciais reais ou conteúdo de `backend/data/` em configurações compartilhadas ou exemplos.
+- Use dados demonstrativos para navegador e capturas públicas.
+- Confirmar a existência de uma ferramenta não autoriza envio de mensagens, publicação ou alterações em serviços externos.
+- Registre novos usos recorrentes e seus limites neste catálogo, mantendo as configurações específicas da máquina fora do Git.
 
-## MCPs Recomendados para o Projeto
-
-### filesystem
-
-Uso: leitura e edição controlada do projeto.
-
-Escopo sugerido:
-
-- raiz local do repositório clonado, por exemplo `C:\Users\Nicolas\sync-sphere` no Windows ou `~/sync-sphere` em Linux/macOS.
-
-Por que usar: permite que o agente leia código, docs e implemente mudanças sem depender de colagens manuais.
-
-### git
-
-Uso: diffs, histórico, status, commits e revisões.
-
-Observação: confirme branch, remoto e working tree antes de commits, pushes ou PRs.
-
-> Observação: o projeto é local-first e não usa banco de dados nem Redis. Os dados ficam em arquivos JSON cifrados em `backend/data/`, então não há MCP de MongoDB ou Redis. Para inspecionar dados locais, use o MCP `filesystem` (com cuidado, pois `data/` contém credenciais cifradas).
-
-### browser/playwright
-
-Uso: validar UI real do Vite, rotas, painel, responsividade e capturas de tela.
-
-Por que usar: mudanças no front-end devem ser verificadas visualmente, não só por build/lint.
-
-### figma
-
-Uso: quando houver design em Figma, componentes, design system ou pedido de implementar layout 1:1.
-
-Cuidados: só usar quando o arquivo/design for mencionado ou conectado. Mantenha tokens de cor e componentes alinhados ao Tailwind.
-
-### github
-
-Uso: issues, PRs, revisões e automações, se o projeto for publicado em GitHub.
-
-Cuidados: não assumir remoto existente. Confirmar antes de criar PR, issue ou fluxo de automação.
-
-### rube/composio
-
-Uso: automações externas via Composio/Rube e suporte a muitas skills do repo `ComposioHQ/awesome-codex-skills`.
-
-Configuração no Codex:
-
-```bash
-codex mcp add rube --url https://rube.app/mcp
-codex mcp login rube
-```
-
-Cuidados: confirme quais ferramentas/integrações serão usadas antes de executar ações em apps externos.
-
-## Modelo de Configuração
-
-Cada cliente de IA usa um formato próprio. Veja também `docs/ai/mcp.example.json` como template copiável com placeholders.
-
-Use isto como checklist conceitual:
-
-```json
-{
-  "mcpServers": {
-    "syncsphere-filesystem": {
-      "purpose": "Read/write this workspace only",
-      "allowedRoots": ["<caminho-absoluto-para-sync-sphere>"]
-    },
-    "syncsphere-browser": {
-      "purpose": "Rodar checagens locais de UI contra Vite e back-end"
-    }
-  }
-}
-```
-
-## Política de Segredos
-
-- Nunca colocar `.env`, tokens Spotify, cookies do YouTube Music ou o conteúdo de `backend/data/` em docs.
-- Usar `.env.example` para formato e nomes de variáveis.
-- Em prompts para agentes, substituir valores sensíveis por placeholders.
-- `backend/data/` contém credenciais cifradas e nunca deve ser versionado ou colado em docs.
-
-## Quando Adicionar Um MCP Novo
-
-Adicione ao catálogo quando:
-
-- virar parte recorrente do fluxo de trabalho;
-- reduzir colagem manual de contexto;
-- der ao agente acesso verificável a uma fonte de verdade;
-- tiver limites claros de permissão e dados.
+As referências de Caveman/RTK ficam em `agent-repos/`, ignoradas pelo Git. Veja [agent-tooling.md](agent-tooling.md) e [skill-policy.md](skill-policy.md).

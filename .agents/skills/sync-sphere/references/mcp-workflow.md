@@ -6,9 +6,9 @@ MCPs recomendados:
 
 - filesystem para a raiz local do repositório clonado;
 - git depois que o projeto estiver inicializado como repositório;
-- browser/playwright para verificação de UI;
+- `agent-browser` para abrir, interagir e capturar UI, quando disponível; navegador via MCP apenas como alternativa adequada ao ambiente;
 - figma apenas quando um arquivo de design fizer parte da tarefa;
-- github apenas depois que existir remoto.
+- GitHub para o remoto público do SyncSphere, confirmando branch e working tree antes de alterações.
 
 O projeto é local-first e não usa MongoDB nem Redis, então não há MCP de banco ou de fila.
 

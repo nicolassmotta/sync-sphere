@@ -21,7 +21,7 @@ import {
 } from '../components/setup/localSetupContent';
 
 const quickSnippets = setupSnippets.filter((snippet) => (
-    ['Aplicação local', 'Spotify OAuth', 'YouTube Music cookie', 'Front-end Vite'].includes(snippet.title)
+    ['Aplicação local', 'Spotify OAuth (PKCE)', 'YouTube Music cookie', 'Front-end Vite'].includes(snippet.title)
 ));
 
 const Landing = () => {
@@ -43,7 +43,7 @@ const Landing = () => {
                         </span>
                         <span className="min-w-0">
                             <span className="block text-lg font-extrabold text-white">SyncSphere</span>
-                            <span className="block truncate text-xs font-semibold text-muted">local Spotify &lt;-&gt; YouTube Music</span>
+                            <span className="block truncate text-xs font-semibold text-muted">playlists entre plataformas, localmente</span>
                         </span>
                     </button>
 
@@ -70,10 +70,10 @@ const Landing = () => {
                                 código aberto local
                             </Badge>
                             <h1 className="mt-5 text-4xl font-black leading-tight text-white md:text-6xl">
-                                SyncSphere: migrador local Spotify &lt;-&gt; YouTube Music
+                                Suas playlists entre plataformas, na sua máquina.
                             </h1>
                             <p className="mt-5 max-w-2xl text-base leading-8 text-muted md:text-lg">
-                                Rode o back-end, conecte o Spotify por OAuth, configure o YTMUSIC_COOKIE, escolha a direção e acompanhe a migração pelo painel. Sem contas, banco de dados ou serviços externos.
+                                Escolha entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. Acompanhe cada faixa, retome transferências e revise o resultado. Os dados ficam cifrados na sua instalação local.
                             </p>
 
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -165,7 +165,7 @@ const Landing = () => {
                             </p>
                             <h2 className="text-3xl font-black text-white">O painel continua o tutorial.</h2>
                             <p className="mt-3 text-sm leading-7 text-muted">
-                                A aba Início mostra checklist de back-end, Spotify, YTMUSIC_COOKIE, direção, seleção, fila e histórico.
+                                A aba Início orienta a configuração, a escolha dos provedores e a seleção de playlists. Você pode experimentar a conversão entre arquivos sem conectar contas.
                             </p>
                         </div>
 
@@ -173,10 +173,10 @@ const Landing = () => {
                             {[
                                 'Back-end online/offline via /api/health',
                                 'Dados e fila locais (sem banco externo)',
-                                'Spotify OAuth conectado/desconectado',
-                                'YTMUSIC_COOKIE configurado/não configurado',
+                                'Sete provedores e configuração por plataforma',
+                                'Conversão CSV, JSON, M3U e TXT sem contas',
                                 'Progresso em tempo real via Socket.io',
-                                'Histórico de migrações, direção e falhas',
+                                'Histórico, pendências e revisão manual de faixas',
                             ].map((item) => (
                                 <div key={item} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/35 p-4">
                                     <CheckCircle2 size={17} className="shrink-0 text-spotify" />

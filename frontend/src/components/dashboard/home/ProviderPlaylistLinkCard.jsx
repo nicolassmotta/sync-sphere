@@ -64,7 +64,7 @@ const ProviderPlaylistLinkCard = ({
             {source.canRead && !target.canWrite && (
                 <ConnectNotice
                     provider={target}
-                    text={`A conexão precisa permitir criar playlists privadas no ${target.label}.`}
+                    text={`A conexão precisa permitir criar playlists no ${target.label}.`}
                     onOpenIntegrations={onOpenIntegrations}
                 />
             )}

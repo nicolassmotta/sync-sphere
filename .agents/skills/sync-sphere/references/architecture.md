@@ -1,6 +1,6 @@
 # Referência de Arquitetura do SyncSphere
 
-SyncSphere migra playlists entre Spotify e YouTube Music. É local-first single-user: sem contas, sem banco de dados e sem Redis. Dados em arquivos cifrados (`backend/data/`) e fila local persistida.
+SyncSphere migra playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. É local-first single-user: sem contas locais, sem banco de dados e sem Redis. Dados em arquivos cifrados (`backend/data/`) e fila local persistida. O guia público está em `docs/architecture.md`; o contexto detalhado de manutenção fica em `docs/ai/project-context.md`.
 
 Back-end:
 
@@ -17,6 +17,9 @@ Back-end:
 - `backend/src/services/youtubeMusic`: autenticação por cookie do YouTube Music e pontuação de correspondência usadas por `youtubeMusicService.js`.
 - `backend/src/services/transfer`: casos de uso de transferência, processador do trabalhador, estado por faixa (`TransferTrackStore`), métricas/ETA (`TransferMetrics`), ações de fila (`transferQueueActions`), snapshots de progresso, repositório e correspondência.
 - `backend/src/storage`: armazenamento local em arquivos JSON cifrados.
+- `backend/src/services/matching/MatchCache.js`: cache cifrado com validade de sete dias.
+- `backend/src/services/transfer/manualMatchService.js`: propostas manuais com validade de dez minutos, confirmação e reenfileiramento.
+- `backend/src/services/transfer/reconcileTrackIds.js`: quantidades esperadas e existentes para preservar repetições em retomadas.
 - `backend/src/workers`: registra o processador da fila local.
 - `backend/src/models`: acesso aos dados locais (`User` = usuário local, `Transfer` = histórico).
 - `backend/src/schemas`: validação Zod.
@@ -29,6 +32,7 @@ Front-end:
 - `frontend/src/components/dashboard`: abas do painel.
 - `frontend/src/components/dashboard/home`: subcomponentes da aba Início (`ProviderPairCard`, `ProviderPlaylistListCard`, `ProviderPlaylistLinkCard`).
 - `frontend/src/constants/providers.js`: visual e textos de ajuda por plataforma; a lista vem de `GET /integrations/status`.
+- `frontend/src/components/dashboard/ManualTrackReview.jsx`: busca ajustada e confirmação de alternativa no Histórico.
 - `frontend/src/components/layout`: estrutura do app.
 
 Preserve:

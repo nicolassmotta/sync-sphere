@@ -4,6 +4,15 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Documentação e apresentação
+
+- README reorganizado com apresentação visual, instalação rápida, demonstração sem contas e navegação dos guias públicos.
+- Guias de integrações, configuração, uso, formatos, diagnóstico, arquitetura e API alinhados ao código atual.
+- Materiais de divulgação, capturas demonstrativas e playlist de exemplo adicionados.
+- Requisitos do Spotify atualizados com referência oficial e recomendação de Node.js LTS suportado.
+- Credenciais opcionais vazias no `.env.example` para começar pelo fluxo Arquivo sem falsas conexões.
+- Guia embutido e contexto de manutenção atualizados para os sete provedores e a fila persistida.
+
 ## [1.1.0] - Em preparação
 
 ### Preparação da versão

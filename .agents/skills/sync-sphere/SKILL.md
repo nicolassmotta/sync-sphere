@@ -1,9 +1,9 @@
 ---
 name: sync-sphere
-description: Orientações específicas para trabalhar no SyncSphere, app React/Vite + Node/Express local-first (self-hosted single-user) para migrar playlists entre Spotify e YouTube Music. Use quando Codex precisar implementar, revisar, depurar, documentar ou planejar mudanças neste repositório, especialmente em tarefas envolvendo storage local cifrado, fila em memória, progresso via Socket.io, integrações Spotify/YouTube Music, UI Tailwind, configuração MCP ou contexto reutilizável para agentes.
+description: Implementar, revisar, depurar e documentar o SyncSphere, app React/Vite e Node/Express para migrar playlists entre provedores de música e arquivos, com armazenamento cifrado, fila persistida, Socket.io e revisão manual. Use em tarefas deste repositório.
 ---
 
-# Sync Sphere
+# SyncSphere
 
 ## Visão Geral
 
@@ -17,6 +17,7 @@ Use esta skill para trabalhar no repositório SyncSphere com o contexto do proje
 4. Leia `docs/ai/mcp-catalog.md` quando a tarefa precisar de MCPs ou ferramentas externas.
 5. Leia `docs/ai/prompt-recipes.md` quando a tarefa for um fluxo recorrente.
 6. Use os scripts do subprojeto relevante antes de inventar comandos.
+7. Para documentação pública, use `docs/README.md` como índice e preserve os guias de instalação, integração, uso e divulgação. Capturas devem usar dados demonstrativos e informar respostas externas simuladas quando aplicável.
 
 ## Regras do Projeto
 

@@ -4,13 +4,14 @@ Use este arquivo como briefing inicial para qualquer agente/assistente trabalhan
 
 ## Identidade do Produto
 
-SyncSphere é uma aplicação fullstack para migrar playlists entre plataformas de música (hoje Spotify e YouTube Music, com arquitetura de provedores para adicionar outras). É open-source self-hosted single-user: a pessoa clona, configura credenciais e usa localmente. O produto combina conexões com serviços de música, fila local para transferências e painel React para acompanhar progresso. Não há contas, login nem banco de dados.
+SyncSphere é uma aplicação fullstack para migrar playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. É open-source self-hosted single-user: a pessoa clona, configura as plataformas escolhidas e usa localmente. O produto combina conexões com serviços de música, fila persistida e painel React com progresso e revisão manual. Não há contas locais, login próprio nem banco de dados.
 
 ## Tecnologias e Estrutura
 
 - `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`. Sem MongoDB, sem Redis, sem login.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion, Lucide.
 - `docs/ai/`: contexto operacional para agentes, MCPs e prompts repetíveis.
+- `docs/README.md`: índice público de instalação, uso, integrações, configuração, formatos, solução de problemas, arquitetura, API e divulgação. Mantenha-o alinhado aos guias.
 - `.agents/skills/sync-sphere/`: skill local do projeto para reutilizar este contexto.
 - `agent-repos/`: clones locais opcionais de ferramentas para agentes. Atualmente usado para `caveman` e `rtk`; mantenha ignorado pelo Git e registre decisões em `docs/ai/agent-tooling.md`.
 

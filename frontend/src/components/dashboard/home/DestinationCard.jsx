@@ -15,7 +15,7 @@ const DestinationCard = ({
     const statusText = !source.canRead
         ? `Conecte o ${source.label} para ler a playlist de origem.`
         : target.canWrite
-            ? `Destino ${target.label} pronto para receber playlists privadas.`
+            ? `Destino ${target.label} pronto para receber as faixas selecionadas.`
             : `Conecte o ${target.label} para criar playlists no destino.`;
 
     return (

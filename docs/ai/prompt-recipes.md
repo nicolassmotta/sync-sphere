@@ -55,3 +55,12 @@ Atualize a documentação de contexto de IA do SyncSphere.
 Quando encontrar nova decisão arquitetural, comando, MCP, ferramenta de agente, prompt recorrente ou convenção, registre em docs/ai e ajuste AGENTS.md se for orientação de entrada.
 Mantenha os textos curtos, práticos e sem segredos.
 ```
+
+## Atualizar Documentação Pública
+
+```text
+Atualize os guias do SyncSphere em docs/README.md e os documentos que a mudança afeta.
+Confira scripts, variáveis e contratos no código. Preserve a distinção entre respostas externas simuladas e validação real em conta.
+Use dados demonstrativos em exemplos e capturas. Confira links locais, instalação e o formato dos arquivos de exemplo.
+Atualize o contexto de manutenção apenas quando houver uma decisão relevante para reutilizar.
+```
