@@ -9,6 +9,5 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '0'.repeat(64);
 
 // Dados locais dos testes vão para um diretório temporário descartável.
-const testDataDir = path.join(os.tmpdir(), 'syncsphere-test-data');
-fs.mkdirSync(testDataDir, { recursive: true });
+const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'syncsphere-test-'));
 process.env.DATA_DIR = testDataDir;

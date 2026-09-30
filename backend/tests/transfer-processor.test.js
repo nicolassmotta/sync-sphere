@@ -153,6 +153,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         expect(destinationClient.addVideosToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-playlist-1',
             videoIds: ['video-1', 'video-2'],
+            expectedIds: ['video-1', 'video-2'],
         });
         expect(transferRecord).toMatchObject({
             status: 'completed',
@@ -195,6 +196,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         expect(destinationClient.addVideosToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-existing',
             videoIds: ['youtube-video-1', 'youtube-video-1'],
+            expectedIds: ['youtube-video-1', 'youtube-video-1'],
         });
         expect(transferRecord.status).toBe('completed');
     });
@@ -267,6 +269,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         expect(destinationClient.addVideosToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-playlist-1',
             videoIds: ['video-1', 'video-2'],
+            expectedIds: ['video-1', 'video-2'],
         });
         expect(transferRecord.status).toBe('completed');
     });
@@ -285,6 +288,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         expect(destinationClient.addVideosToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-playlist-1',
             videoIds: ['video-1'],
+            expectedIds: ['video-1'],
         });
         expect(result.status).toBe('paused');
         expect(result.rescheduleAt.getTime()).toBe(NOW + 30_000);
@@ -353,6 +357,7 @@ describe('TransferProcessor: YouTube Music para Spotify', () => {
         expect(destinationClient.addTracksToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-playlist-1',
             trackUris: ['spotify:track:1'],
+            expectedIds: ['spotify:track:1'],
         });
         expect(transferRecord).toMatchObject({
             status: 'completed',

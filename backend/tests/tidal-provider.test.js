@@ -155,7 +155,7 @@ describe('provedor TIDAL', () => {
         expect(fetchUrl(2).pathname).toBe(`/v2/searchResults/${encodeURIComponent('Garota de Ipanema Tom Jobim')}/relationships/tracks`);
     });
 
-    it('cria playlist e adiciona em lotes de 50 ignorando duplicadas', async () => {
+    it('cria playlist e adiciona em lotes de 50 preservando repetições', async () => {
         connect();
         global.fetch
             .mockResolvedValueOnce(response({ data: { id: 'pl-1', type: 'playlists' } }, { status: 201 }))
@@ -170,9 +170,9 @@ describe('provedor TIDAL', () => {
         expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
             data: { type: 'playlists', attributes: { name: 'Migrada', description: 'SyncSphere', accessType: 'UNLISTED' } },
         });
-        const addBodies = global.fetch.mock.calls.slice(1).map(([, init]) => JSON.parse(init.body));
-        expect(addBodies.map((body) => body.data.length)).toEqual([50, 50, 20]);
-        expect(addBodies[0].meta).toEqual({ onDuplicates: 'SKIP' });
+        const addBodies = global.fetch.mock.calls.filter(([, init]) => init.method === 'POST').slice(1).map(([, init]) => JSON.parse(init.body));
+        expect(addBodies.map((body) => body.data.length)).toEqual([50, 50, 21]);
+        expect(addBodies[0].meta).toEqual({ onDuplicates: 'ADD' });
         expect(addBodies[0].data[0]).toEqual({ id: '0', type: 'tracks' });
     });
 
@@ -194,5 +194,24 @@ describe('provedor TIDAL', () => {
 
         process.env.TIDAL_CLIENT_SECRET = 'secret';
         await expect(tidalProvider.getStatus()).resolves.toMatchObject({ canRead: true, canWrite: false });
+    });
+
+    it('reconcilia ocorrências após escrita parcial sem duplicar numa segunda execução', async () => {
+        connect();
+        const existing = ['1'];
+        global.fetch.mockImplementation(async (_url, init) => {
+            if (init.method === 'POST') {
+                const body = JSON.parse(init.body);
+                expect(body.meta.onDuplicates).toBe('ADD');
+                existing.push(...body.data.map((track) => track.id));
+                return response({ links: {} });
+            }
+            return response({ data: existing.map((id) => ({ id, type: 'tracks' })), links: {} });
+        });
+        const ids = ['1', '2', '1'];
+        await tidalProvider.createDestinationClient().addTracks({ playlistId: 'lista', ids, expectedIds: ids });
+        await tidalProvider.createDestinationClient().addTracks({ playlistId: 'lista', ids, expectedIds: ids });
+        expect(existing).toEqual(ids);
+        expect(global.fetch.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(1);
     });
 });

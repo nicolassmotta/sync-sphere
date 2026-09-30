@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from '../../services/transfer/reconcileTrackIds.js';
 import AppError from '../../utils/AppError.js';
 import {
     clearProviderCredentials,
@@ -240,10 +241,12 @@ const soundcloudProvider = {
             },
 
             // A API substitui a lista inteira: junta as atuais com as novas.
-            async addTracks({ playlistId, ids }) {
+            async addTracks({ playlistId, ids, expectedIds }) {
                 const current = await soundcloudRequest(`/playlists/${playlistId}`, { oauthToken });
                 const currentIds = (current?.tracks || []).map((track) => String(track.id));
-                const merged = [...new Set([...currentIds, ...ids.map(String)])].slice(0, PLAYLIST_MAX_ITEMS);
+                const pending = getMissingTrackIds({ ids: ids.map(String), existingIds: currentIds, expectedIds });
+                const merged = [...currentIds, ...pending];
+                if (merged.length > PLAYLIST_MAX_ITEMS) throw new AppError(`A playlist excede o limite de ${PLAYLIST_MAX_ITEMS} faixas do SoundCloud.`, 400);
                 if (merged.length === currentIds.length) return;
 
                 await soundcloudRequest(`/playlists/${playlistId}`, {

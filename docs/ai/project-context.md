@@ -46,6 +46,7 @@ Mapa de arquivos:
 - `src/modules/integrations/`: `providerIntegrationController.js` (rotas genéricas `/integrations/:provider/...`) e utilitários de OAuth.
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.
+- Escritas no storage usam temporário exclusivo com permissão `0600`, `fsync` e `rename` no mesmo diretório para evitar truncar o estado anterior durante uma falha de processo.
 - `src/storage/credentialStore.js`: credenciais coladas no painel (ex.: cookie do YouTube Music) em `data/provider-credentials.json`.
 - `src/schemas/`: schemas Zod.
 - `src/services/`: serviços reutilizáveis, como a fila local e integrações externas.
@@ -57,6 +58,7 @@ Mapa de arquivos:
 - `src/services/transfer/TrackMatcher.js`: executa correspondência faixa a faixa.
 - `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache.
 - `src/services/transfer/manualMatchService.js`: revisão manual de `not_found` e `failed` em transferências terminadas. Busca por título/artista ajustados, sem ISRC da origem; guarda proposta com UUID e validade de dez minutos. Confirmação aceita apenas o UUID persistido, marca a faixa como `matched`/`manual` e reenfileira para inserção. Bloqueia revisão concorrente ou com job existente. Rotas `POST /transfer/:transferId/tracks/:trackIndex/search` e `/confirm`, com validação Zod.
+- `src/services/transfer/reconcileTrackIds.js`: reconciliação por quantidade de ocorrências. `addTracks` recebe `ids` pendentes e `expectedIds` com todas as faixas resolvidas, incluindo já inseridas. Adaptadores devem consultar o destino antes de escrever, preservando repetições e pulando ocorrências já presentes. Arquivo reconstrói a lista esperada; destinos remotos acrescentam o que falta.
 - `src/services/transfer/ProgressPublisher.js`: publica eventos Socket.io por transferência.
 - `src/services/transfer/TransferRepository.js`: encapsula leitura/escrita de transferência e usuário para tarefas.
 - `src/services/transfer/transferProgressSnapshot.js`: calcula snapshot inicial de progresso usado no Socket.io.

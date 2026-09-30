@@ -86,7 +86,7 @@ it('confirma a proposta do servidor e insere apenas a nova escolha na playlist e
     searchBestMatch.mockClear();
     await processor.process({ id: 'manual-job', data: { transferId: transfer._id, userId: 'local', sourcePlaylistId: 'source' } });
     expect(searchBestMatch).not.toHaveBeenCalled();
-    expect(addTracks).toHaveBeenCalledWith({ playlistId: 'existing', ids: ['manual'] });
+    expect(addTracks).toHaveBeenCalledWith({ playlistId: 'existing', ids: ['manual'], expectedIds: ['original', 'manual'] });
     expect(loadTransferTracks(transfer._id).every((track) => track.inserted)).toBe(true);
 });
 

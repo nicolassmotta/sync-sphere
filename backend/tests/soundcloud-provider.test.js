@@ -132,7 +132,7 @@ describe('provedor SoundCloud', () => {
 
         expect(JSON.parse(global.fetch.mock.calls[0][1].body).playlist).toMatchObject({ title: 'Migrada', sharing: 'private', tracks: [] });
         expect(global.fetch.mock.calls[2][1].method).toBe('PUT');
-        expect(JSON.parse(global.fetch.mock.calls[2][1].body)).toEqual({ playlist: { tracks: [1, 2, 3] } });
+        expect(JSON.parse(global.fetch.mock.calls[2][1].body)).toEqual({ playlist: { tracks: [1, 2, 3, 2] } });
         expect(destination.getPlaylistUrl('900')).toBe('https://soundcloud.com/nicolas/sets/migrada');
     });
 });

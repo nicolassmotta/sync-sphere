@@ -146,7 +146,7 @@ describe('provedor Deezer', () => {
         expect(JSON.parse(createInit.body)).toEqual({ title: 'Minha', status: 1, description: 'Migrada', songs: [] });
 
         const [, addInit] = global.fetch.mock.calls[4];
-        expect(JSON.parse(addInit.body)).toEqual({ PLAYLIST_ID: '9001', songs: [[12, 0]], offset: -1 });
+        expect(JSON.parse(addInit.body)).toEqual({ PLAYLIST_ID: '9001', songs: [[12, 0], [12, 0]], offset: -1 });
         expect(destination.getPlaylistUrl('9001')).toBe('https://www.deezer.com/playlist/9001');
     });
 

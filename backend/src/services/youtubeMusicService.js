@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from './transfer/reconcileTrackIds.js';
 import YTMusic from 'ytmusic-api';
 import {
     applyAuthHeaders,
@@ -240,11 +241,10 @@ export const createYoutubeMusicCookieDestinationClient = () => ({
 
     setPlaylistImage: null,
 
-    async addVideosToPlaylist({ playlistId, videoIds }) {
+    async addVideosToPlaylist({ playlistId, videoIds, expectedIds }) {
         const ytmusic = await createAuthenticatedClient();
-        const existingVideos = await ytmusic.getPlaylistVideos(playlistId).catch(() => []);
-        const existingVideoIds = new Set(existingVideos.map((video) => video.videoId).filter(Boolean));
-        const pendingVideoIds = [...new Set(videoIds)].filter((videoId) => !existingVideoIds.has(videoId));
+        const existingVideos = await ytmusic.getPlaylistVideos(playlistId);
+        const pendingVideoIds = getMissingTrackIds({ ids: videoIds, existingIds: existingVideos.map((video) => video.videoId), expectedIds });
         const chunkSize = getAddChunkSize();
 
         for (let index = 0; index < pendingVideoIds.length; index += chunkSize) {
@@ -264,7 +264,6 @@ export const createYoutubeMusicCookieDestinationClient = () => ({
                 'YouTube Music recusou a inserção de faixas pelo endpoint não oficial.'
             );
 
-            chunk.forEach((videoId) => existingVideoIds.add(videoId));
         }
     },
 

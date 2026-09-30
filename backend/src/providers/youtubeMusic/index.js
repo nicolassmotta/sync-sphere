@@ -88,7 +88,7 @@ const youtubeMusicProvider = {
         const client = createYoutubeMusicCookieDestinationClient({ userId });
         return {
             createPlaylist: (args) => client.createPlaylist(args),
-            addTracks: ({ playlistId, ids }) => client.addVideosToPlaylist({ playlistId, videoIds: ids }),
+            addTracks: ({ playlistId, ids, expectedIds }) => client.addVideosToPlaylist({ playlistId, videoIds: ids, expectedIds }),
             getPlaylistUrl: (playlistId) => client.getPlaylistUrl(playlistId),
             setPlaylistImage: client.setPlaylistImage,
         };
