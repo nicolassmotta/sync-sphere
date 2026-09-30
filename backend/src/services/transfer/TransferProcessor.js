@@ -9,6 +9,8 @@ import {
 import { resolveTransferProviders, TRANSFER_DIRECTIONS } from '../../constants/transferDirections.js';
 import { getProvider } from '../../providers/registry.js';
 import logger from '../../utils/logger.js';
+import MatchCache from '../matching/MatchCache.js';
+import { getProviderCredentials } from '../../storage/credentialStore.js';
 import { getPauseDelayMs } from './TrackMatcher.js';
 import TransferMetrics from './TransferMetrics.js';
 import { buildTransferSnapshot, TRANSFER_PHASES } from './transferProgressSnapshot.js';
@@ -74,6 +76,7 @@ export default class TransferProcessor {
         trackMatcher,
         trackStore = { load: loadTransferTracks, save: saveTransferTracks },
         createMetrics = (options) => new TransferMetrics(options),
+        createMatchCache = (options) => new MatchCache(options),
         getQueuePosition = () => null,
         now = () => Date.now(),
     }) {
@@ -82,6 +85,7 @@ export default class TransferProcessor {
         this.trackMatcher = trackMatcher;
         this.trackStore = trackStore;
         this.createMetrics = createMetrics;
+        this.createMatchCache = createMatchCache;
         this.getQueuePosition = getQueuePosition;
         this.now = now;
         this.live = new Map();
@@ -238,6 +242,12 @@ export default class TransferProcessor {
     async run({ transferId, userId, sourcePlaylistId, transferRecord, config }) {
         const tracks = await this.loadTracks({ transferId, userId, sourcePlaylistId, transferRecord, config });
         const live = this.getLive(transferId);
+        const credentials = getProviderCredentials(config.targetProvider) || {};
+        const matchCache = config.targetProvider === 'file' ? null : this.createMatchCache({
+            scope: [config.targetProvider, userId,
+                credentials.storefront || process.env.APPLE_MUSIC_STOREFRONT || 'br',
+                credentials.countryCode || process.env.TIDAL_COUNTRY_CODE || 'BR'],
+        });
         const metrics = this.createMetrics({
             provider: config.targetProvider,
             concurrency: this.trackMatcher.searchConcurrency,
@@ -265,6 +275,7 @@ export default class TransferProcessor {
                 pauseCount: transferRecord.pauseCount || 0,
                 delayMs: config.searchDelayMs,
                 metrics,
+                matchCache,
                 onTrackStart: (track) => {
                     live.currentTrack = { index: track.index, name: track.name, artist: track.artist };
                     transferRecord.lastMessage = `Procurando no ${config.targetLabel}: ${track.name} - ${track.artist}`;

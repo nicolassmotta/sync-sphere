@@ -83,6 +83,7 @@ export default class TrackMatcher {
         pauseCount = 0,
         delayMs: providerDelayMs,
         metrics,
+        matchCache,
         onTrackStart,
         onTrackDone,
         onCheckpoint,
@@ -104,11 +105,13 @@ export default class TrackMatcher {
 
             onTrackStart?.(track);
             const startedAt = this.now();
-            if (delayMs > 0) await wait(delayMs);
 
             try {
-                const match = await this.search(searchClient, track);
-                const matchId = getMatchId(match);
+                const cached = matchCache?.get(track);
+                const cacheHit = Boolean(cached?.targetId && cached.matchScore >= this.minMatchScore);
+                if (!cacheHit && delayMs > 0) await wait(delayMs);
+                const match = cacheHit ? cached : await this.search(searchClient, track);
+                const matchId = cacheHit ? cached.targetId : getMatchId(match);
 
                 if (!matchId || match.matchScore < this.minMatchScore) {
                     track.status = TRACK_STATUS.NOT_FOUND;
@@ -121,8 +124,10 @@ export default class TrackMatcher {
                     track.matchScore = match.matchScore;
                     track.errorKind = null;
                     track.lastError = null;
+                    track.matchSource = cacheHit ? 'cache' : 'search';
+                    if (!cacheHit) matchCache?.set(track, { targetId: matchId, matchScore: match.matchScore });
                 }
-                metrics?.recordSearch(this.now() - startedAt);
+                if (!cacheHit) metrics?.recordSearch(this.now() - startedAt);
             } catch (error) {
                 const kind = classifyProviderError(error);
                 track.errorKind = kind;

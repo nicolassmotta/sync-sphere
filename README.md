@@ -185,6 +185,7 @@ O front-end inclui um tutorial embutido:
 - Axios mantém `withCredentials`.
 - Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo que sobrevive a reinícios.
 - Cada faixa tem estado próprio. Se o YouTube Music limitar as buscas ou um token expirar, a transferência pausa (ou espera a reconexão) e continua de onde parou, sem refazer buscas.
+- Novas transferências reutilizam correspondências confiáveis encontradas anteriormente no mesmo destino. O cache é cifrado em `backend/data/match-cache.json`, expira em sete dias e guarda até 5.000 entradas. Versões e durações diferentes são tratadas separadamente. Faixas não encontradas voltam a ser buscadas.
 - O painel mostra tempo estimado, faixas por minuto, contadores e as últimas faixas analisadas. Faixas que falharam ficam em "Pendências" no Histórico, com botão para tentar de novo.
 - Socket.io publica progresso para o painel.
 - Como tudo roda local, mantenha `backend/data/` e o `.env` fora de qualquer repositório público.
