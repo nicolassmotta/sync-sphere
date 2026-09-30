@@ -120,8 +120,8 @@ const fileProvider = {
     createDestinationClient() {
         return {
             createPlaylist: async ({ title, description }) => createExport({ title, description }).id,
-            addTracks: async ({ playlistId, ids }) => {
-                appendExportTracks(playlistId, ids.map(decodeTrack).filter(Boolean));
+            addTracks: async ({ playlistId, ids, expectedIds }) => {
+                appendExportTracks(playlistId, ids.map(decodeTrack).filter(Boolean), expectedIds?.map(decodeTrack).filter(Boolean));
             },
             getPlaylistUrl: (playlistId) => getExportDownloadPath(playlistId),
             setPlaylistImage: null,

@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from './transfer/reconcileTrackIds.js';
 import { mapWithConcurrency } from '../utils/concurrency.js';
 import {
     buildSpotifyAuthorizationUrl,
@@ -372,17 +373,9 @@ const sanitizeSpotifyPlaylistDescription = (description) => (
     String(description || '').replace(/<[^>]*>/g, '').trim()
 );
 
-const getSpotifyCurrentUserProfile = async (accessToken) => (
+const createSpotifyPlaylist = async ({ accessToken, title, description }) => (
     fetchSpotifyJson(
-        'https://api.spotify.com/v1/me',
-        accessToken,
-        'Falha ao consultar o perfil do Spotify.'
-    )
-);
-
-const createSpotifyPlaylist = async ({ accessToken, userId, title, description }) => (
-    fetchSpotifyJson(
-        `https://api.spotify.com/v1/users/${encodeURIComponent(userId)}/playlists`,
+        'https://api.spotify.com/v1/me/playlists',
         accessToken,
         'Falha ao criar playlist no Spotify.',
         {
@@ -400,8 +393,8 @@ const createSpotifyPlaylist = async ({ accessToken, userId, title, description }
 );
 
 const getSpotifyPlaylistExistingTrackUris = async ({ accessToken, playlistId }) => {
-    const existingTrackUris = new Set();
-    let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&fields=items(track(uri)),next`;
+    const existingTrackUris = [];
+    let nextUrl = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items?limit=100&fields=items(item(uri)),next`;
 
     while (nextUrl) {
         const page = await fetchSpotifyJson(
@@ -411,7 +404,8 @@ const getSpotifyPlaylistExistingTrackUris = async ({ accessToken, playlistId }) 
         );
 
         for (const item of page.items || []) {
-            if (item.track?.uri) existingTrackUris.add(item.track.uri);
+            const uri = item.item?.uri || item.track?.uri;
+            if (uri) existingTrackUris.push(uri);
         }
 
         nextUrl = page.next;
@@ -420,18 +414,16 @@ const getSpotifyPlaylistExistingTrackUris = async ({ accessToken, playlistId }) 
     return existingTrackUris;
 };
 
-const addSpotifyTracksToPlaylist = async ({ accessToken, playlistId, trackUris }) => {
+const addSpotifyTracksToPlaylist = async ({ accessToken, playlistId, trackUris, expectedIds }) => {
     const existingTrackUris = await getSpotifyPlaylistExistingTrackUris({ accessToken, playlistId });
-    const pendingTrackUris = [...new Set(trackUris)].filter((trackUri) => (
-        trackUri && !existingTrackUris.has(trackUri)
-    ));
+    const pendingTrackUris = getMissingTrackIds({ ids: trackUris, existingIds: existingTrackUris, expectedIds });
 
     for (let index = 0; index < pendingTrackUris.length; index += SPOTIFY_ADD_TRACK_CHUNK_SIZE) {
         const uris = pendingTrackUris.slice(index, index + SPOTIFY_ADD_TRACK_CHUNK_SIZE);
         if (!uris.length) continue;
 
         await fetchSpotifyJson(
-            `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+            `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items`,
             accessToken,
             'Falha ao adicionar faixas na playlist do Spotify.',
             {
@@ -443,7 +435,6 @@ const addSpotifyTracksToPlaylist = async ({ accessToken, playlistId, trackUris }
             }
         );
 
-        uris.forEach((uri) => existingTrackUris.add(uri));
     }
 };
 
@@ -496,14 +487,8 @@ export const createSpotifyDestinationClient = ({ userId }) => {
 
         async createPlaylist({ title, description }) {
             const accessToken = await getAccessToken();
-            const profile = await getSpotifyCurrentUserProfile(accessToken);
-            if (!profile?.id) {
-                throw new Error('Spotify não retornou o ID do usuário conectado.');
-            }
-
             const playlist = await createSpotifyPlaylist({
                 accessToken,
-                userId: profile.id,
                 title,
                 description,
             });
@@ -517,9 +502,9 @@ export const createSpotifyDestinationClient = ({ userId }) => {
 
         setPlaylistImage: null,
 
-        async addTracksToPlaylist({ playlistId, trackUris }) {
+        async addTracksToPlaylist({ playlistId, trackUris, expectedIds }) {
             const accessToken = await getAccessToken();
-            await addSpotifyTracksToPlaylist({ accessToken, playlistId, trackUris });
+            await addSpotifyTracksToPlaylist({ accessToken, playlistId, trackUris, expectedIds });
         },
 
         getPlaylistUrl(playlistId) {

@@ -22,7 +22,8 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - getPlaylistSnapshot({ playlistId, userId }) -> { id, name, description, imageUrl, totalTracks, tracks }
  * - getPlaylistPreview({ playlistId, userId, limit })
  * - createSearchClient({ userId }) -> { searchBestMatch({ track }) } e getMatchId(match)
- * - createDestinationClient({ userId }) -> { createPlaylist, addTracks({ playlistId, ids }), getPlaylistUrl, setPlaylistImage? }
+ * - createDestinationClient({ userId }) -> { createPlaylist, addTracks({ playlistId, ids, expectedIds }), getPlaylistUrl, setPlaylistImage? }
+ *   `expectedIds` contém todas as ocorrências resolvidas; use para reconciliar a quantidade já presente no destino antes de inserir.
  * - getSearchDelayMs()
  * - oauth { getAuthorizationUrl, handleCallback } quando auth.type === 'oauth'
  * - saveCredentials({ values }) quando auth.type === 'cookie'

@@ -53,12 +53,13 @@ export const createExport = ({ title, description }) => {
 };
 
 /** Acrescenta faixas preservando ordem e repetições da playlist de origem. */
-export const appendExportTracks = (exportId, tracks) => {
+export const appendExportTracks = (exportId, tracks, expectedTracks) => {
     const exports = listExports();
     const record = exports.find((item) => item.id === exportId);
     if (!record) throw new Error('Arquivo de destino não encontrado. Ele pode ter sido apagado.');
 
-    record.tracks.push(...tracks);
+    if (expectedTracks) record.tracks = expectedTracks;
+    else record.tracks.push(...tracks);
     record.updatedAt = new Date().toISOString();
     writeStore(EXPORTS_STORE, exports);
     return record;

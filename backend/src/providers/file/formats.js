@@ -210,7 +210,10 @@ const playlistNameFromFilename = (filename) => (
 export const parsePlaylistFile = ({ filename, content }) => {
     const format = detectFileFormat(filename, content);
     const parsed = PARSERS[format](content);
-    const tracks = parsed.tracks.filter((track) => track.name).slice(0, MAX_IMPORT_TRACKS);
+    const tracks = parsed.tracks.filter((track) => track.name);
+    if (tracks.length > MAX_IMPORT_TRACKS) {
+        throw new Error(`O arquivo excede o limite de ${MAX_IMPORT_TRACKS} faixas. Divida a playlist em arquivos menores.`);
+    }
 
     if (!tracks.length) {
         throw new Error('Nenhuma faixa encontrada no arquivo.');

@@ -6,6 +6,7 @@ const { default: app } = await import('../src/app.js');
 const { default: TransferProcessor } = await import('../src/services/transfer/TransferProcessor.js');
 const { default: TrackMatcher } = await import('../src/services/transfer/TrackMatcher.js');
 const { findExport, saveImport } = await import('../src/providers/file/fileLibrary.js');
+const { default: fileProvider } = await import('../src/providers/file/index.js');
 
 const EXPORTIFY_CSV = [
     '"Track URI","Track Name","Artist URI(s)","Artist Name(s)","Album Name","Track Duration (ms)","ISRC"',
@@ -44,6 +45,11 @@ describe('formatos de arquivo', () => {
 
     it('recusa CSV sem coluna de nome', () => {
         expect(() => parsePlaylistFile({ filename: 'x.csv', content: 'a,b\n1,2' })).toThrow('coluna de nome');
+    });
+
+    it('recusa arquivos acima do limite em vez de descartar faixas silenciosamente', () => {
+        expect(() => parsePlaylistFile({ filename: 'grande.txt', content: 'Artista - Música\n'.repeat(5001) }))
+            .toThrow('excede o limite de 5000');
     });
 
     it('lê M3U com #EXTINF e nome da playlist, e M3U só com caminhos', () => {
@@ -136,6 +142,19 @@ describe('rotas da plataforma arquivo', () => {
 });
 
 describe('migração ponta a ponta arquivo -> arquivo', () => {
+    it('reconstrói o arquivo na ordem esperada sem duplicar após repetir a inserção', async () => {
+        const search = fileProvider.createSearchClient();
+        const first = await search.searchBestMatch({ track: { name: 'A', artist: 'X' } });
+        const second = await search.searchBestMatch({ track: { name: 'B', artist: 'X' } });
+        const desired = [first.id, second.id, first.id];
+        const destination = fileProvider.createDestinationClient();
+        const playlistId = await destination.createPlaylist({ title: 'Retomada', description: '' });
+        await destination.addTracks({ playlistId, ids: [first.id], expectedIds: [first.id] });
+        await fileProvider.createDestinationClient().addTracks({ playlistId, ids: desired, expectedIds: desired });
+        await fileProvider.createDestinationClient().addTracks({ playlistId, ids: desired, expectedIds: desired });
+        expect(findExport(playlistId).tracks.map((track) => track.name)).toEqual(['A', 'B', 'A']);
+    });
+
     it('importa, processa com o fluxo real e baixa o resultado', async () => {
         const source = saveImport({
             filename: 'bossa.csv',

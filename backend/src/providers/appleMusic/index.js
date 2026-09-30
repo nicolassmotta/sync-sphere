@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from '../../services/transfer/reconcileTrackIds.js';
 import AppError from '../../utils/AppError.js';
 import { pickBestCandidate } from '../../services/matching/scoreCandidate.js';
 import {
@@ -202,11 +203,10 @@ const appleMusicProvider = {
                 return playlistId;
             },
 
-            async addTracks({ playlistId, ids }) {
+            async addTracks({ playlistId, ids, expectedIds }) {
                 // A API não evita duplicatas: compara com o que já está na playlist.
-                const { songs } = await getLibraryPlaylist({ playlistId, limit: PLAYLIST_MAX_ITEMS }).catch(() => ({ songs: [] }));
-                const existing = new Set(songs.map((song) => toAppleTrack(song).appleId));
-                const pending = [...new Set(ids)].filter((id) => !existing.has(id));
+                const { songs } = await getLibraryPlaylist({ playlistId, limit: Infinity });
+                const pending = getMissingTrackIds({ ids, existingIds: songs.map((song) => toAppleTrack(song).appleId), expectedIds });
                 if (pending.length) await addLibraryPlaylistTracks({ playlistId, songIds: pending });
             },
 

@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from '../../services/transfer/reconcileTrackIds.js';
 import AppError from '../../utils/AppError.js';
 import {
     clearProviderCredentials,
@@ -208,9 +209,9 @@ const deezerProvider = {
                 return String(playlistId);
             },
 
-            async addTracks({ playlistId, ids }) {
-                const existing = new Set((await gateway.getPlaylistSongs(playlistId)).map((song) => String(song.SNG_ID)));
-                const pending = [...new Set(ids.map(String))].filter((id) => !existing.has(id));
+            async addTracks({ playlistId, ids, expectedIds }) {
+                const existingIds = (await gateway.getPlaylistSongs(playlistId)).map((song) => String(song.SNG_ID));
+                const pending = getMissingTrackIds({ ids: ids.map(String), existingIds, expectedIds });
 
                 for (let index = 0; index < pending.length; index += ADD_CHUNK_SIZE) {
                     await gateway.addSongs({ playlistId, songIds: pending.slice(index, index + ADD_CHUNK_SIZE) });

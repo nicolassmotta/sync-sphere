@@ -191,8 +191,16 @@ describe('provedor Apple Music', () => {
 
         expect(playlistId).toBe('p.new');
         expect(JSON.parse(fetchCall(0).init.body)).toEqual({ attributes: { name: 'Migrada', description: 'SyncSphere' } });
-        expect(JSON.parse(fetchCall(3).init.body)).toEqual({ data: [{ id: '2', type: 'songs' }] });
+        expect(JSON.parse(fetchCall(3).init.body)).toEqual({ data: [{ id: '2', type: 'songs' }, { id: '2', type: 'songs' }] });
         expect(destination.getPlaylistUrl('p.new')).toBe('https://music.apple.com/library/playlist/p.new');
+    });
+
+    it('não insere faixas se não conseguir consultar a playlist de destino', async () => {
+        useSigningKey();
+        setProviderCredentials('appleMusic', { musicUserToken: 'mut', storefront: 'br' });
+        global.fetch.mockResolvedValueOnce(response({ errors: [{ status: '503', title: 'Unavailable' }] }, { status: 503 }));
+        await expect(appleMusicProvider.createDestinationClient().addTracks({ playlistId: 'p.new', ids: ['1'] })).rejects.toThrow();
+        expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('token recusado (403) pede reconexão', async () => {

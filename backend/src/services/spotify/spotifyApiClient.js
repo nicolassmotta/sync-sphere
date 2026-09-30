@@ -65,7 +65,7 @@ export const getSpotifyPlaylistDetails = async ({ playlistId, accessToken }) => 
 };
 
 export const getSpotifyPlaylistItemsPageUrl = ({ playlistId, itemsReference, limit, offset }) => {
-    const url = new URL(itemsReference?.href || `https://api.spotify.com/v1/playlists/${playlistId}/tracks`);
+    const url = new URL(itemsReference?.href || `https://api.spotify.com/v1/playlists/${playlistId}/items`);
     url.searchParams.set('limit', String(limit));
     url.searchParams.set('offset', String(offset));
     url.searchParams.set('market', 'from_token');

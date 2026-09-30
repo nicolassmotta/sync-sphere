@@ -81,7 +81,7 @@ const spotifyProvider = {
         const client = createSpotifyDestinationClient({ userId });
         return {
             createPlaylist: (args) => client.createPlaylist(args),
-            addTracks: ({ playlistId, ids }) => client.addTracksToPlaylist({ playlistId, trackUris: ids }),
+            addTracks: ({ playlistId, ids, expectedIds }) => client.addTracksToPlaylist({ playlistId, trackUris: ids, expectedIds }),
             getPlaylistUrl: (playlistId) => client.getPlaylistUrl(playlistId),
             setPlaylistImage: client.setPlaylistImage,
         };

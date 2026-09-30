@@ -172,8 +172,8 @@ export const addPlaylistItems = async ({ token, playlistId, trackIds }) => {
             method: 'POST',
             body: {
                 data: trackIds.slice(index, index + TIDAL_ADD_ITEMS_LIMIT).map((id) => ({ id, type: 'tracks' })),
-                // Retomada segura: itens já presentes são ignorados.
-                meta: { onDuplicates: 'SKIP' },
+                // O adaptador reconcilia as ocorrências antes de escrever.
+                meta: { onDuplicates: 'ADD' },
             },
         });
     }

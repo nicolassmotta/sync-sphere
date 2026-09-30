@@ -1,4 +1,5 @@
 import fs from 'fs';
+import crypto from 'node:crypto';
 import { ensureDataDir, dataFile } from '../config/paths.js';
 import { encryptText, decryptText } from '../utils/crypto.js';
 
@@ -27,7 +28,20 @@ export const readStore = (name, fallback) => {
 
 export const writeStore = (name, data) => {
     ensureDataDir();
-    fs.writeFileSync(dataFile(name), encryptText(JSON.stringify(data)), { mode: 0o600 });
+    const file = dataFile(name);
+    const temporary = `${file}.${crypto.randomUUID()}.tmp`;
+    let descriptor;
+    try {
+        descriptor = fs.openSync(temporary, 'wx', 0o600);
+        fs.writeFileSync(descriptor, encryptText(JSON.stringify(data)));
+        fs.fsyncSync(descriptor);
+        fs.closeSync(descriptor);
+        descriptor = undefined;
+        fs.renameSync(temporary, file);
+    } finally {
+        if (descriptor !== undefined) fs.closeSync(descriptor);
+        fs.rmSync(temporary, { force: true });
+    }
 };
 
 export const removeStore = (name) => {

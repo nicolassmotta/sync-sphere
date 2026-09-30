@@ -4,6 +4,16 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Fidelidade e retomada segura
+
+- Destinos reconciliam quantidades de cada faixa antes de inserir, preservando repetições intencionais e evitando duplicatas ao repetir uma escrita parcialmente concluída.
+- Exportações em Arquivo são reconstruídas na ordem das faixas resolvidas da origem durante retomadas.
+- YouTube Music e Apple Music interrompem a inserção se não conseguirem ler o destino, em vez de tratar a playlist como vazia.
+- Spotify usa `/me/playlists` e `/playlists/:id/items` na criação, leitura e inserção de itens. TIDAL usa `onDuplicates: ADD` após reconciliar o estado do destino.
+- Armazenamento cifrado grava e sincroniza um arquivo temporário antes de substituir o anterior por renomeação atômica.
+- Arquivos com mais de 5.000 faixas e inserções acima do limite do SoundCloud são recusados explicitamente, sem cortar a lista silenciosamente.
+- Suítes de teste passam a usar diretórios temporários separados para evitar contaminação entre execuções.
+
 ### Revisão manual de faixas
 
 - O Histórico permite ajustar título e artista, buscar uma alternativa no destino e confirmar a música desejada para faixas não encontradas ou com falha definitiva.

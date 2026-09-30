@@ -58,7 +58,7 @@ const buildTransferConfig = ({ transferRecord, direction }) => {
         createSearchClient: ({ userId }) => target.createSearchClient({ userId }),
         createDestinationClient: ({ userId }) => target.createDestinationClient({ userId }),
         getMatchId: target.getMatchId,
-        addTracks: (client, { playlistId, ids }) => client.addTracks({ playlistId, ids }),
+        addTracks: (client, options) => client.addTracks(options),
         buildDescription: buildDescription(source.label),
     };
 };
@@ -396,6 +396,8 @@ export default class TransferProcessor {
         await config.addTracks(destinationClient, {
             playlistId,
             ids: tracksToInsert.map((track) => track.targetId),
+            expectedIds: tracks.filter((track) => track.status === TRACK_STATUS.MATCHED)
+                .sort((a, b) => a.index - b.index).map((track) => track.targetId),
         });
         const chunks = Math.max(1, Math.ceil(tracksToInsert.length / (metrics.chunkSize || 100)));
         metrics.recordInsertChunk((this.now() - startedAt) / chunks);

@@ -1,3 +1,4 @@
+import { getMissingTrackIds } from '../../services/transfer/reconcileTrackIds.js';
 import AppError from '../../utils/AppError.js';
 import {
     createOAuthState,
@@ -174,8 +175,11 @@ const tidalProvider = {
                 if (!playlistId) throw new Error('TIDAL não retornou o ID da playlist criada.');
                 return playlistId;
             },
-            async addTracks({ playlistId, ids }) {
-                await addPlaylistItems({ token: await getTidalUserToken(), playlistId, trackIds: [...new Set(ids)] });
+            async addTracks({ playlistId, ids, expectedIds }) {
+                const token = await getTidalUserToken();
+                const existingIds = await getPlaylistTrackIds({ token, playlistId, countryCode: getCountryCode() });
+                const pending = getMissingTrackIds({ ids, existingIds, expectedIds });
+                await addPlaylistItems({ token, playlistId, trackIds: pending });
             },
             getPlaylistUrl: (playlistId) => `https://tidal.com/playlist/${playlistId}`,
             setPlaylistImage: null,
