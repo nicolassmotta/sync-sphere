@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import MatchCache from '../src/services/matching/MatchCache.js';
 import { buildSpotifyServiceMock, buildYoutubeMusicServiceMock } from './helpers/serviceMocks.js';
 
 const mockGetSpotifyPlaylistSnapshot = jest.fn();
@@ -73,6 +74,7 @@ const buildProcessor = ({
     searchBestMatch = jest.fn().mockResolvedValue({ videoId: 'youtube-video-1', uri: 'spotify:track:1', matchScore: 90 }),
     destinationOverrides = {},
     trackStore = buildTrackStore(),
+    createMatchCache = () => null,
 } = {}) => {
     const repository = buildRepository(transferRecord);
     const publisher = { emit: jest.fn() };
@@ -97,6 +99,7 @@ const buildProcessor = ({
         trackMatcher: new TrackMatcher({ delayMs: 0, inlineRetryBaseMs: 0, searchConcurrency: 1, now: () => NOW }),
         trackStore,
         createMetrics: buildMetrics,
+        createMatchCache,
         now: () => NOW,
     });
 
@@ -161,6 +164,21 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
             totalTracks: 2,
         });
         expect(trackStore.store.tracks.every((track) => track.inserted)).toBe(true);
+    });
+
+    it('usa correspondências persistidas em uma nova transferência', async () => {
+        const scope = `processor-${Date.now()}`;
+        const createMatchCache = () => new MatchCache({ scope });
+        const first = buildProcessor({ createMatchCache });
+        await first.processor.process(spotifyJob);
+
+        const second = buildProcessor({ createMatchCache });
+        await second.processor.process(spotifyJob);
+
+        expect(first.searchClient.searchBestMatch).toHaveBeenCalledTimes(2);
+        expect(second.searchClient.searchBestMatch).not.toHaveBeenCalled();
+        expect(second.destinationClient.addVideosToPlaylist).toHaveBeenCalled();
+        expect(second.transferRecord.status).toBe('completed');
     });
 
     it('reutiliza playlist de destino já criada quando a tarefa é retomada', async () => {

@@ -4,6 +4,13 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Cache de correspondências
+
+- Transferências novas reutilizam correspondências confiáveis já encontradas na plataforma de destino, sem repetir a busca nem seu atraso.
+- Cache local cifrado com validade de sete dias e limite de 5.000 entradas. Identidade considera plataforma, contexto do catálogo, título completo, artista, álbum, ISRC e duração.
+- Resultados ausentes, pouco confiáveis e erros continuam sendo buscados em novas tentativas.
+- Métricas de velocidade de busca externa ignoram acertos de cache.
+
 ### Plataforma SoundCloud
 
 - Nova plataforma `soundcloud`: lê playlists públicas e busca sem login (client_id público do site, renovado sozinho), completa faixas resumidas em lote e cria playlists privadas com o cookie `oauth_token`.

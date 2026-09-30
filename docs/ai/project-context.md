@@ -55,6 +55,7 @@ Mapa de arquivos:
 - `src/services/transfer/TransferProcessor.js`: orquestra a migração para qualquer par origem/destino a partir do registro de provedores.
 - `src/services/transfer/startTransferService.js`: caso de uso HTTP para criar transferências e enfileirar tarefas.
 - `src/services/transfer/TrackMatcher.js`: executa correspondência faixa a faixa.
+- `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache.
 - `src/services/transfer/ProgressPublisher.js`: publica eventos Socket.io por transferência.
 - `src/services/transfer/TransferRepository.js`: encapsula leitura/escrita de transferência e usuário para tarefas.
 - `src/services/transfer/transferProgressSnapshot.js`: calcula snapshot inicial de progresso usado no Socket.io.
