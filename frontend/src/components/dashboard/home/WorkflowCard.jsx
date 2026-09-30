@@ -14,7 +14,7 @@ const workflowSteps = [
     {
         label: '3',
         title: 'Migração',
-        text: 'Escolha playlists, enfileire tarefas e acompanhe Socket.io.',
+        text: 'Escolha playlists, inicie a transferência e acompanhe cada faixa.',
     },
 ];
 
@@ -44,7 +44,7 @@ const WorkflowCard = ({ sourceLabel, targetLabel }) => (
             <div className="rounded-lg border border-white/10 bg-black/30 p-4">
                 <p className="text-xs font-bold uppercase text-spotify">Direção atual</p>
                 <h4 className="mt-1 font-black text-white">{sourceLabel} -&gt; {targetLabel}</h4>
-                <p className="mt-1 text-sm leading-6 text-muted">A fila cria playlists privadas no destino selecionado.</p>
+                <p className="mt-1 text-sm leading-6 text-muted">A transferência cria a saída conforme as capacidades do destino selecionado.</p>
             </div>
         </div>
     </div>

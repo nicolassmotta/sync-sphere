@@ -19,6 +19,8 @@ SyncSphere migra playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Mu
 
 ## Arquitetura Atual
 
+Os guias públicos ficam em `docs/README.md`. Use `docs/architecture.md` e `docs/api.md` para contratos públicos, e mantenha `docs/integrations.md` como referência de autenticação e limites. As capturas de divulgação usam dados demonstrativos e têm proveniência em `docs/media-kit.md`.
+
 ### Raiz
 
 - `package.json`: scripts de conveniência para open-source local. `npm run setup` instala back-end/front-end e gera `frontend/dist`; `npm start` sobe o back-end, que serve API, Socket.io e React em `http://localhost:8000`.
@@ -76,6 +78,7 @@ Mapa de arquivos:
 Diretório: `frontend/`
 
 - Execução/build: Vite.
+- Versão atual da ferramenta: Vite 6.4.3, com plugin React 4.7.0.
 - UI: React 18.
 - Roteamento: React Router.
 - Estado global: Zustand.

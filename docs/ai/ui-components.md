@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-A camada `frontend/src/components/ui/` reúne primitivas reutilizáveis para manter telas consistentes, acessíveis e prontas para produção. Prefira estes componentes antes de criar botões, campos de entrada, modais, badges, alertas ou estados de carregamento diretamente nas telas.
+A camada `frontend/src/components/ui/` reúne primitivas reutilizáveis para manter telas consistentes e com comportamento de acessibilidade compartilhado. Prefira estes componentes antes de criar botões, campos de entrada, modais, badges, alertas ou estados de carregamento diretamente nas telas. O guia público de arquitetura está em [../architecture.md](../architecture.md).
 
 ## Arquitetura
 
@@ -18,6 +18,7 @@ A camada `frontend/src/components/ui/` reúne primitivas reutilizáveis para man
 - `Card.jsx`: superfície base e subcomponentes de cabeçalho/título/descrição.
 - `Spinner.jsx`: indicador de carregamento com `aria-hidden`.
 - `BrandIcons.jsx`: ícones Spotify/YouTube reutilizáveis.
+- `ProviderIcon.jsx`: ícone visual por provedor, incluindo os sete destinos/origens registrados.
 - `FadeInPage.jsx`: componente de entrada para páginas/abas.
 - `utils/cn.js`: mescla segura de classes Tailwind com `clsx` e `tailwind-merge`.
 
@@ -42,7 +43,7 @@ A camada `frontend/src/components/ui/` reúne primitivas reutilizáveis para man
 ### TextField
 
 - `label`: conecta `label` e `input` por `htmlFor`.
-- `labelAction`: ação contextual alinhada ao label, como "Esqueceu a senha?".
+- `labelAction`: ação contextual alinhada ao label, como abrir a ajuda de configuração.
 - `hint`: texto auxiliar conectado por `aria-describedby`.
 - `error`: marca `aria-invalid` e renderiza mensagem com `role="alert"`.
 - `leadingIcon`: ícone no início do campo.
@@ -76,7 +77,7 @@ A camada `frontend/src/components/ui/` reúne primitivas reutilizáveis para man
 
 ### StatusBadge
 
-- `status`: `completed`, `connected`, `failed`, `disconnected`, `pending`, `processing`, `queued`.
+- `status`: `completed`, `connected`, `failed`, `disconnected`, `pending`, `processing`, `queued`, `paused` e `needs_auth`.
 - `label`: sobrescreve o texto do padrão.
 - `tone` / `icon`: sobrescrevem a aparência do padrão quando necessário.
 

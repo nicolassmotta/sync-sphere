@@ -11,3 +11,4 @@ Use este checklist no início de uma sessão nova.
 7. Se `rtk` estiver instalado, preferir comandos compactados para saídas grandes; se não estiver, seguir com comandos normais.
 8. Evitar segredos: não imprimir `.env`, cookies, tokens ou dados reais.
 9. Validar no escopo certo: back-end para API/fila/storage; front-end para UI/rotas/build.
+10. Em documentação pública, usar `docs/README.md` como índice; verificar fatos contra o código e regras externas contra fontes oficiais. Registrar se uma validação foi simulada ou confirmada numa conta.

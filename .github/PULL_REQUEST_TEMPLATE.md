@@ -12,6 +12,7 @@ Liste os comandos executados e os resultados observados. Para integrações, dif
 - [ ] Diff revisado, com formatação restrita aos arquivos alterados.
 - [ ] Testes, lint e build relevantes executados.
 - [ ] README ou changelog atualizado quando necessário.
+- [ ] Links dos guias e exemplos verificados; capturas usam dados demonstrativos com legenda.
 - [ ] Exemplos e artefatos estão livres de credenciais e dados pessoais.
 
 ## Limites

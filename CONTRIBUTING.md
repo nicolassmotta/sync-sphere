@@ -4,7 +4,7 @@ O SyncSphere é um aplicativo local para uma pessoa, com dados cifrados em arqui
 
 ## Preparar o ambiente
 
-Use Node.js 20 ou superior. Na raiz do repositório:
+Recomendamos Node.js 22 ou 24 LTS, conforme o [calendário oficial](https://nodejs.org/en/about/previous-releases). O requisito técnico atual é 20+. Na raiz do repositório:
 
 ```bash
 npm ci --prefix backend
@@ -16,7 +16,7 @@ npm start
 
 No PowerShell, substitua o comando de cópia por `Copy-Item backend/.env.example backend/.env`. Configure apenas os serviços que pretende testar. O painel fica em `http://localhost:8000`.
 
-Para trabalhar na interface com atualização automática, rode `npm run dev:backend` e `npm run dev:frontend` em terminais separados. Confira `FRONTEND_URL` e `VITE_API_URL` conforme o README.
+Para trabalhar na interface com atualização automática, rode `npm run dev:backend` e `npm run dev:frontend` em terminais separados. Confira `FRONTEND_URL` e `VITE_API_URL` no [guia de configuração](docs/configuration.md). O [índice da documentação](docs/README.md) organiza os demais guias.
 
 ## Implementar uma mudança
 
@@ -25,7 +25,7 @@ Para trabalhar na interface com atualização automática, rode `npm run dev:bac
 3. Preserve ESM no backend e os componentes compartilhados da interface.
 4. Valide entradas HTTP com Zod e mantenha controllers pequenos.
 5. Acrescente testes para regras de negócio e falhas relevantes.
-6. Atualize o README ou o changelog quando o comportamento visível mudar.
+6. Atualize o guia público relevante e o changelog quando o comportamento visível mudar. Preserve o índice em `docs/README.md`.
 
 Use identificadores de código em inglês. UI, mensagens, documentação e commits usam português. Commits seguem Conventional Commits, por exemplo `fix: corrigir retomada da playlist`.
 
@@ -59,3 +59,9 @@ No PR, explique o problema, o resultado da mudança e os comandos que executou. 
 Inclua versão ou commit, sistema operacional, versão do Node.js, plataformas envolvidas, passos para reproduzir e resultado esperado. Remova tokens, cookies, URLs privadas e dados pessoais dos exemplos.
 
 Para problemas de segurança, siga [SECURITY.md](SECURITY.md). O plano das fases está em [docs/roadmap.md](docs/roadmap.md).
+
+## Contribuir com documentação e exemplos
+
+As capturas públicas devem usar dados demonstrativos, com origem descrita em `docs/media-kit.md`. Os exemplos de playlist precisam ser aceitos pelo importador e não devem conter credenciais ou links privados. Verifique links locais, referências de configuração e comandos antes de abrir o PR.
+
+Preserve a diferença entre uma capacidade implementada, uma resposta externa simulada em teste e uma operação confirmada em conta real. Mantenha a versão em preparação identificada até sua publicação. O material para apresentação está em [docs/media-kit.md](docs/media-kit.md).

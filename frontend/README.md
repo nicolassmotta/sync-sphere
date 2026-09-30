@@ -1,120 +1,57 @@
-# SyncSphere Front-end
+# Frontend do SyncSphere
 
-Interface React/Vite do SyncSphere. O front-end funciona como painel de migração e guia local: mostra checklist de configuração, status técnico das integrações, seleção de playlists, progresso via Socket.io e histórico.
+Painel React 18 com Vite 6, React Router, Zustand, Axios, TailwindCSS, Framer Motion e Lucide. A interface reúne configuração, escolha dos provedores, playlists, progresso e revisão manual no Histórico.
 
-## Tecnologias
+## Executar em desenvolvimento
 
-- React 18
-- Vite 6
-- React Router
-- Zustand
-- Axios com `withCredentials`
-- TailwindCSS
-- Framer Motion
-- Lucide React
-
-## Como Rodar
-
-No uso local principal, o front-end é buildado e servido pelo back-end:
+Na raiz, instale dependências:
 
 ```bash
-npm run setup
-npm start
+npm ci --prefix backend
+npm ci --prefix frontend
 ```
 
-Abra `http://localhost:8000`.
-
-Para desenvolver a UI com Vite, suba o back-end em `http://localhost:8000` e valide:
+Inicie o backend com `npm run dev:backend`. Em outro terminal, prepare o ambiente do frontend:
 
 ```bash
-curl http://localhost:8000/api/health
-curl http://localhost:8000/api/ready
+cp frontend/.env.example frontend/.env
+npm run dev:frontend
 ```
 
-Depois rode:
+No PowerShell, use `Copy-Item frontend/.env.example frontend/.env`. O Vite usa `http://localhost:5173` por padrão. Configure a origem exata em `FRONTEND_URL`/`FRONTEND_URLS` no backend quando necessário.
 
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
+Se a API usar outra porta, defina em `frontend/.env`:
 
-Configure `VITE_API_URL` quando o back-end não estiver na porta padrão:
-
-```env
+```dotenv
 VITE_API_URL=http://localhost:8000/api/v1
 ```
 
-Portas esperadas:
+No uso empacotado, mantenha essa variável vazia para usar a mesma origem do painel. O [guia de configuração](../docs/configuration.md) detalha portas e CORS.
 
-- Aplicação local empacotada: `http://localhost:8000`
-- Front-end Vite em desenvolvimento: `http://localhost:5173`
-- API do back-end: `http://localhost:8000/api/v1`
-- Saúde do back-end: `http://localhost:8000/api/health`
-- Prontidão do back-end: `http://localhost:8000/api/ready`
+## Verificar e compilar
 
-## Fluxo no Front-end
-
-1. Página inicial explica a migração local entre os sete provedores.
-2. O painel abre direto, sem login (não há contas).
-3. Início mostra checklist, seleção de origem e destino, playlists, fila e progresso.
-4. Integrações mostra o estado e a configuração de cada provedor, incluindo leitura pública sem conexão quando disponível.
-5. Guia local traz comandos copiáveis, variáveis de ambiente e solução de problemas.
-6. Seleção de playlists lista a conta, recebe link/ID ou permite importar um arquivo, conforme a plataforma.
-7. Migração usa `/transfer/start`, a fila local e Socket.io.
-8. Histórico lista status, pendências, faixas não encontradas e saída criada no destino, com downloads para Arquivo.
-9. Revisão manual permite ajustar título/artista, conferir uma alternativa e confirmar sua inserção pela fila.
-
-## Configuração Local Referenciada pela UI
-
-Back-end:
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-Spotify OAuth em `backend/.env`:
-
-```env
-SPOTIFY_CLIENT_ID=seu_client_id_spotify
-SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback
-```
-
-O fluxo usa Authorization Code + PKCE, então não há `SPOTIFY_CLIENT_SECRET`.
-
-YouTube Music em `backend/.env`:
-
-```env
-YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
-YTMUSIC_AUTH_USER=0
-```
-
-Use apenas valores demonstrativos em documentação, commits, issues e capturas de tela.
-
-## Convenções
-
-- Centralize HTTP em `src/services/api.js`.
-- Preserve `withCredentials` para cookies HttpOnly.
-- `src/store/useAuthStore.js` mantém apenas o usuário local fixo (não há login).
-- Reaproveite componentes em `src/components/ui`, `src/components/layout`, `src/components/setup` e `src/components/dashboard`.
-- Mantenha UI dark, responsiva, utilitária e legível.
-- Não adicione camada comercial ou linguagem de produto pago.
-- Não exponha tokens, cookies ou segredos reais.
-
-## Solução de Problemas
-
-- Painel não carrega dados: confirme back-end online, `FRONTEND_URL` e `VITE_API_URL`.
-- Checklist mostra back-end offline: valide `VITE_API_URL` e `http://localhost:8000/api/health`.
-- Spotify desconectado: revise `SPOTIFY_CLIENT_ID` e a URI de redirecionamento no back-end e no painel do Spotify.
-- `YTMUSIC_COOKIE` pendente: reinicie o back-end depois de editar `.env` e clique em revalidar.
-
-## Verificação
+Neste diretório:
 
 ```bash
 npm run lint
 npm run build
 ```
+
+O build fica em `frontend/dist`. Na raiz, `npm start` sobe o backend que serve esse build. `npm run setup` instala os dois subprojetos e gera a interface.
+
+## Convenções
+
+- Centralize HTTP em `src/services/api.js` e mantenha `withCredentials`.
+- Reaproveite primitivas em `components/ui` e a estrutura em `components/layout`.
+- Use hooks para efeitos e fluxos reutilizáveis.
+- O usuário da aplicação é local e implícito; não há login próprio.
+- Textos da interface ficam em português; identificadores técnicos ficam em inglês.
+- Confira responsividade, rótulos de campos, teclado e estados de erro ao alterar uma tela.
+
+## Guias
+
+- [Como usar](../docs/usage.md): fluxo visível e revisão manual.
+- [Contribuição](../CONTRIBUTING.md): comandos e processo de PR.
+- [Arquitetura](../docs/architecture.md): integração com o backend.
+- [Componentes reutilizáveis](../docs/ai/ui-components.md): propriedades e exemplos.
+- [Solução de problemas](../docs/troubleshooting.md): conexão, CORS e progresso.

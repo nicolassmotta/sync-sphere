@@ -1,5 +1,7 @@
 # Fases do SyncSphere
 
+[Índice da documentação](README.md)
+
 O objetivo é migrar playlists entre os provedores suportados, mantendo execução local, fila persistida e credenciais cifradas.
 
 | Fase | Escopo | Estado |
@@ -26,6 +28,8 @@ O storage sincroniza um temporário antes de substituir o arquivo anterior. Falh
 Preparar a versão 1.1.0 com documentação atualizada, guias de contribuição e segurança, templates de PR e issue, dependências corrigidas e validação de testes, lint, build, auditoria e aplicação empacotada.
 
 As notas estão em [releases/v1.1.0.md](releases/v1.1.0.md). Publicar tag e GitHub Release é uma etapa posterior à preparação.
+
+A documentação pública está organizada por instalação, integração, uso, configuração, arquitetura e API. As capturas e os textos de apresentação ficam em [media-kit.md](media-kit.md).
 
 ## Validações externas pendentes
 

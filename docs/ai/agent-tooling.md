@@ -32,7 +32,7 @@ Use:
 - bullets curtos quando ajudarem;
 - detalhes técnicos intactos.
 
-Nao use:
+Não use:
 
 - caricatura que atrapalhe Português;
 - abreviações obscuras em docs de usuário;

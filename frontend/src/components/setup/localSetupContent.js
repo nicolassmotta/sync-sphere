@@ -4,12 +4,12 @@ export const localSetupFlow = [
         description: 'Instale dependências, copie o `.env.example`, gere o build React e rode tudo em `localhost:8000`. Os dados ficam em arquivos locais cifrados; não precisa de banco nem Redis.',
     },
     {
-        title: 'Configurar Spotify OAuth',
-        description: 'Crie um app no painel do Spotify e use o callback local com escopos de leitura e escrita.',
+        title: 'Conectar as plataformas escolhidas',
+        description: 'Abra Integrações e configure apenas os serviços do seu fluxo. Cada plataforma informa seu método de conexão e disponibilidade de leitura pública.',
     },
     {
-        title: 'Configurar o cookie do YouTube Music',
-        description: 'Cole em Integrações (ou em YTMUSIC_COOKIE no backend/.env) o cabeçalho Cookie completo de uma sessão sua em music.youtube.com.',
+        title: 'Experimentar sem contas',
+        description: 'Escolha Arquivo como origem e destino e importe docs/examples/playlist.csv, incluído no repositório. O Histórico oferece o download em outro formato.',
     },
     {
         title: 'Validar integrações',
@@ -17,15 +17,15 @@ export const localSetupFlow = [
     },
     {
         title: 'Escolher playlists',
-        description: 'Escolha a direção, carregue playlists do Spotify ou cole link/ID do YouTube Music.',
+        description: 'Escolha origem e destino. Liste a conta, cole um link/ID ou importe um arquivo, conforme as capacidades da plataforma.',
     },
     {
         title: 'Iniciar migração',
-        description: 'O back-end cria registros de transferência e envia tarefas para a fila local em memória.',
+        description: 'O back-end valida a origem e envia tarefas para a fila local persistida. Destinos diferentes podem avançar em paralelo.',
     },
     {
         title: 'Acompanhar progresso e histórico',
-        description: 'Socket.io atualiza a migração ativa; o histórico mostra direção, sucesso, falhas e links criados.',
+        description: 'Acompanhe cada faixa, retome pendências e revise manualmente as músicas não encontradas quando a transferência terminar.',
     },
 ];
 
@@ -75,6 +75,10 @@ curl http://localhost:8000/api/ready`,
 ];
 
 export const usefulLinks = [
+    {
+        label: 'Documentação do SyncSphere',
+        href: 'https://github.com/nicolassmotta/sync-sphere/blob/main/docs/README.md',
+    },
     {
         label: 'Painel de desenvolvedores do Spotify',
         href: 'https://developer.spotify.com/dashboard',

@@ -20,7 +20,7 @@ const EstimateNotice = ({ estimate, targetLabel }) => {
                 {estimate.queueAheadSeconds > 0 && ` Antes dela, a fila ainda tem ${formatEta(estimate.queueAheadSeconds)} de trabalho.`}
             </p>
             <p className="mt-1 text-muted">
-                Se a plataforma limitar as buscas, a migração pausa e continua sozinha, sem perder faixas.
+                Se a plataforma limitar as buscas, a migração pausa e conserva o progresso para a retomada.
             </p>
         </div>
     );
