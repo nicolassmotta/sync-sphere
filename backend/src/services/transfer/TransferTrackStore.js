@@ -71,24 +71,13 @@ export const summarizeTransferTracks = (tracks = []) => {
 };
 
 /**
- * IDs de destino ainda não inseridos, na ordem da playlist de origem e sem
- * duplicatas (duas faixas podem cair no mesmo vídeo/faixa de destino).
+ * IDs de destino ainda não inseridos, na ordem da playlist de origem.
+ * A mesma faixa pode aparecer mais de uma vez na playlist original.
  */
 export const getTracksToInsert = (tracks = []) => {
-    const seen = new Set(tracks.filter((track) => track.inserted && track.targetId).map((track) => track.targetId));
-    const pending = [];
-
-    for (const track of [...tracks].sort((a, b) => a.index - b.index)) {
-        if (track.status !== TRACK_STATUS.MATCHED || track.inserted || !track.targetId) continue;
-        if (seen.has(track.targetId)) {
-            track.inserted = true;
-            continue;
-        }
-        seen.add(track.targetId);
-        pending.push(track);
-    }
-
-    return pending;
+    return tracks
+        .filter((track) => track.status === TRACK_STATUS.MATCHED && !track.inserted && track.targetId)
+        .sort((a, b) => a.index - b.index);
 };
 
 /**

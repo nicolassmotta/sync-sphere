@@ -182,4 +182,41 @@ describe('migração ponta a ponta arquivo -> arquivo', () => {
         expect(download.headers['content-disposition']).toContain('bossa.m3u8');
         expect(download.body).toContain('Tom Jobim, Vinicius de Moraes - Garota de Ipanema');
     });
+
+    it('preserva faixas repetidas na exportação', async () => {
+        const source = saveImport({
+            filename: 'repetidas.txt',
+            playlist: parsePlaylistFile({
+                filename: 'repetidas.txt',
+                content: 'Artista - Música\nArtista - Música\n',
+            }),
+        });
+        const transferRecord = {
+            _id: `transfer-repetidas-${Date.now()}`,
+            sourceProvider: 'file',
+            targetProvider: 'file',
+            sourcePlaylistId: source.id,
+            errors: [],
+        };
+        const repository = {
+            getTransferForProcessing: jest.fn().mockResolvedValue(transferRecord),
+            getUserWithTransferSecrets: jest.fn().mockResolvedValue({ _id: 'local' }),
+            update: jest.fn(async (record, fields) => Object.assign(record, fields)),
+            save: jest.fn(async (record) => record),
+            markFailed: jest.fn(),
+        };
+        const processor = new TransferProcessor({
+            repository,
+            publisher: { emit: jest.fn() },
+            trackMatcher: new TrackMatcher({ delayMs: 0 }),
+        });
+
+        await processor.process({
+            id: 'job-repetidas',
+            data: { transferId: transferRecord._id, userId: 'local', sourcePlaylistId: source.id },
+        });
+
+        expect(findExport(transferRecord.targetPlaylistId).tracks.map((track) => track.name))
+            .toEqual(['Música', 'Música']);
+    });
 });

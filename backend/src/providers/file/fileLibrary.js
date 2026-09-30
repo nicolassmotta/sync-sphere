@@ -52,22 +52,13 @@ export const createExport = ({ title, description }) => {
     return record;
 };
 
-/**
- * Acrescenta faixas sem duplicar (a inserção pode ser repetida numa retomada).
- */
+/** Acrescenta faixas preservando ordem e repetições da playlist de origem. */
 export const appendExportTracks = (exportId, tracks) => {
     const exports = listExports();
     const record = exports.find((item) => item.id === exportId);
     if (!record) throw new Error('Arquivo de destino não encontrado. Ele pode ter sido apagado.');
 
-    const seen = new Set(record.tracks.map((track) => JSON.stringify(track)));
-    tracks.forEach((track) => {
-        const key = JSON.stringify(track);
-        if (!seen.has(key)) {
-            seen.add(key);
-            record.tracks.push(track);
-        }
-    });
+    record.tracks.push(...tracks);
     record.updatedAt = new Date().toISOString();
     writeStore(EXPORTS_STORE, exports);
     return record;

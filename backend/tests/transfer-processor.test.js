@@ -176,7 +176,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         expect(destinationClient.createPlaylist).not.toHaveBeenCalled();
         expect(destinationClient.addVideosToPlaylist).toHaveBeenCalledWith({
             playlistId: 'target-existing',
-            videoIds: ['youtube-video-1'],
+            videoIds: ['youtube-video-1', 'youtube-video-1'],
         });
         expect(transferRecord.status).toBe('completed');
     });
