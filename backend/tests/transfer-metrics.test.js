@@ -60,3 +60,29 @@ describe('classifyProviderError', () => {
         expect(getRetryAfterMs(new Error('x'))).toBeNull();
     });
 });
+
+describe('pontuação compartilhada de candidatos', () => {
+    it('penaliza versões que a faixa original não tem e aceita as que tem', async () => {
+        const { pickBestCandidate, scoreTrackCandidate } = await import('../src/services/matching/scoreCandidate.js');
+        const track = { name: 'Blinding Lights', artist: 'The Weeknd', durationMs: 200000 };
+
+        const best = pickBestCandidate(track, [
+            { id: 'remake', name: 'Blinding lights', rawName: 'Blinding lights (Lee Wright Remake)', artists: ['The Weeknd'], durationMs: 200000 },
+            { id: 'original', name: 'Blinding Lights', artists: ['The Weeknd'], durationMs: 201000 },
+        ]);
+        expect(best.id).toBe('original');
+
+        expect(scoreTrackCandidate(
+            { name: 'Pau Mandado (Ao Vivo)', artist: 'Israel & Rodolffo' },
+            { name: 'Pau Mandado', rawName: 'Pau Mandado (Ao Vivo)', artists: ['Israel & Rodolffo'] }
+        )).toBe(90);
+    });
+
+    it('com requireArtist descarta covers de outros artistas', async () => {
+        const { pickBestCandidate } = await import('../src/services/matching/scoreCandidate.js');
+        const track = { name: 'Garota de Ipanema', artist: 'Tom Jobim' };
+
+        expect(pickBestCandidate(track, [{ id: 'cover', name: 'Garota de Ipanema', artists: ['Richard Borges'] }], { requireArtist: true })).toBeNull();
+        expect(pickBestCandidate(track, [{ id: 'cover', name: 'Garota de Ipanema', artists: ['Richard Borges'] }]).id).toBe('cover');
+    });
+});

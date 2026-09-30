@@ -82,6 +82,20 @@ TIDAL_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/tidal/callback`,
 APPLE_KEY_ID=id_da_chave_musickit
 APPLE_PRIVATE_KEY_PATH=/caminho/AuthKey_XXXXXXXXXX.p8`,
     },
+    soundcloud: {
+        label: 'SoundCloud',
+        tone: 'neutral',
+        buttonVariant: 'secondary',
+        accentGradient: 'via-[#FF5500]',
+        description: 'Origem ou destino. Playlists públicas e a busca funcionam sem login. O catálogo tem muito upload de terceiros: faixas sem o mesmo artista ficam como não encontradas em vez de virar um cover.',
+        setupSteps: [
+            'Sem nada configurado: cole o link de uma playlist (set) pública do SoundCloud como origem.',
+            'Para usar como destino: abra soundcloud.com logado, ferramentas de desenvolvedor > Aplicativo > Cookies e copie o valor de "oauth_token".',
+            'A API oficial só libera credenciais para contas Artist Pro; por isso a integração usa a sessão do site (não oficial).',
+        ],
+        credentialWarning: 'O oauth_token dá acesso à sua conta SoundCloud. Fica cifrado em backend/data; não compartilhe.',
+        envSnippet: 'SOUNDCLOUD_OAUTH_TOKEN=cole_o_cookie_oauth_token_aqui',
+    },
     file: {
         label: 'Arquivo',
         tone: 'neutral',

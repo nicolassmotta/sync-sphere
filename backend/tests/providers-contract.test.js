@@ -50,6 +50,12 @@ describe.each(listProviders().map((provider) => [provider.id, provider]))('contr
         expect(normalized).not.toContain('://');
     });
 
+    it('normalizar duas vezes dá o mesmo ID (início e leitura normalizam)', () => {
+        const example = provider.playlistUrlExample.replace('PL...', 'PLabc123');
+        const once = provider.normalizePlaylistId(example);
+        expect(provider.normalizePlaylistId(once)).toBe(once);
+    });
+
     it('usa atraso de busca numérico', () => {
         expect(Number.isFinite(provider.getSearchDelayMs())).toBe(true);
     });

@@ -97,6 +97,7 @@ export const getPublicPlaylistPreview = async (playlistId, limit) => {
 const toCandidate = (track) => ({
     id: String(track.id),
     name: track.title,
+    rawName: [track.title, track.title_version].filter(Boolean).join(' '),
     artists: [track.artist?.name, ...(track.contributors || []).map((artist) => artist.name)].filter(Boolean),
     durationMs: (Number(track.duration) || 0) * 1000,
     isrc: track.isrc || null,

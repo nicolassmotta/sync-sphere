@@ -16,6 +16,7 @@ export const DEFAULT_PROVIDER_STATS = {
     deezer: { searchMs: 450, insertChunkMs: 900, chunkSize: 100 },
     tidal: { searchMs: 900, insertChunkMs: 700, chunkSize: 50 },
     appleMusic: { searchMs: 500, insertChunkMs: 900, chunkSize: 100 },
+    soundcloud: { searchMs: 700, insertChunkMs: 1200, chunkSize: 500 },
     file: { searchMs: 5, insertChunkMs: 50, chunkSize: 100 },
 };
 

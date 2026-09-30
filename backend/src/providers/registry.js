@@ -2,6 +2,7 @@ import AppError from '../utils/AppError.js';
 import appleMusicProvider from './appleMusic/index.js';
 import deezerProvider from './deezer/index.js';
 import fileProvider from './file/index.js';
+import soundcloudProvider from './soundcloud/index.js';
 import spotifyProvider from './spotify/index.js';
 import tidalProvider from './tidal/index.js';
 import youtubeMusicProvider from './youtubeMusic/index.js';
@@ -33,6 +34,7 @@ const PROVIDERS = [
     deezerProvider,
     tidalProvider,
     appleMusicProvider,
+    soundcloudProvider,
     fileProvider,
 ];
 

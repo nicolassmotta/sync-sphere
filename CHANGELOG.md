@@ -4,6 +4,13 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Plataforma SoundCloud
+
+- Nova plataforma `soundcloud`: lê playlists públicas e busca sem login (client_id público do site, renovado sozinho), completa faixas resumidas em lote e cria playlists privadas com o cookie `oauth_token`.
+- Busca ignora prévias de 30 s e exige artista em comum, para não trocar a música por um cover.
+- Pontuação compartilhada penaliza versões que a faixa original não tem (remix, cover, ao vivo, sped up, edit...).
+- Teste de contrato garante normalização de ID idempotente em todas as plataformas (corrige links do SoundCloud normalizados duas vezes).
+
 ### Plataforma Apple Music
 
 - Nova plataforma `appleMusic`: lê playlists do catálogo (pela loja do link) e da biblioteca, busca por ISRC antes do texto, cria playlists na biblioteca e adiciona só faixas novas.
