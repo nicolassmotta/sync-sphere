@@ -101,10 +101,10 @@ const Modal = ({
                 </button>
 
                 {(title || description) && (
-                    <header className="mb-6 shrink-0 pr-10">
+                    <div className="mb-6 shrink-0 pr-10">
                         {title && <h2 id={titleId} className="text-2xl font-bold text-white">{title}</h2>}
                         {description && <p id={descriptionId} className="mt-2 text-sm leading-6 text-muted">{description}</p>}
-                    </header>
+                    </div>
                 )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto pr-1">

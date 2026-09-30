@@ -4,6 +4,13 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Revisão manual de faixas
+
+- O Histórico permite ajustar título e artista, buscar uma alternativa no destino e confirmar a música desejada para faixas não encontradas ou com falha definitiva.
+- A escolha confirmada entra na fila e é acrescentada à playlist existente; as faixas já inseridas são preservadas.
+- Propostas são geradas no servidor, expiram em dez minutos e não podem ser confirmadas durante outra execução da transferência.
+- Cabeçalho do modal ajustado para evitar um segundo marco de navegação na acessibilidade.
+
 ### Cache de correspondências
 
 - Transferências novas reutilizam correspondências confiáveis já encontradas na plataforma de destino, sem repetir a busca nem seu atraso.
