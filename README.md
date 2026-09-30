@@ -33,7 +33,7 @@ Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em 
 | Plataforma | Origem | Destino | Autenticação | Observações |
 |---|---|---|---|---|
 | Spotify | sim | sim | OAuth + PKCE (`SPOTIFY_CLIENT_ID`) | Lista as playlists da conta conectada. |
-| YouTube Music | sim | sim | Cookie colado no painel ou `YTMUSIC_COOKIE` | API não oficial; origem por link ou ID. |
+| YouTube Music | sim | sim | Cookie colado no painel ou `YTMUSIC_COOKIE` | API não oficial; origem por link ou ID de music.youtube.com ou youtube.com. A playlist criada também aparece no YouTube. |
 | Deezer | sim | sim | Nenhuma para ler playlists públicas; cookie `arl` (painel ou `DEEZER_ARL`) para listar suas playlists, ler privadas e criar | Busca exata por ISRC antes da busca por texto. Escrita usa o gateway interno do site (não oficial). |
 | TIDAL | sim | sim | OAuth + PKCE (`TIDAL_CLIENT_ID`; `TIDAL_CLIENT_SECRET` opcional para ler sem login) | API oficial v2. Busca por ISRC. Playlists criadas como "não listadas" (a API não cria privadas). |
 | Apple Music | sim | sim | Nenhuma para ler playlists do catálogo; conta via MusicKit (chave `APPLE_*`) ou cookie `media-user-token` para biblioteca e escrita | Busca por ISRC. Sem chave MusicKit usa o token público do web player (não oficial). |

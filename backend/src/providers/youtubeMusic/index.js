@@ -34,7 +34,8 @@ const ensureCookie = (action) => {
 const youtubeMusicProvider = {
     id: 'youtubeMusic',
     label: 'YouTube Music',
-    aliases: ['youtube-music', 'ytmusic'],
+    // Playlists do YouTube Music são playlists do youtube.com: links dos dois servem.
+    aliases: ['youtube-music', 'ytmusic', 'youtube'],
     auth: {
         type: 'cookie',
         method: 'ytmusic-cookie',

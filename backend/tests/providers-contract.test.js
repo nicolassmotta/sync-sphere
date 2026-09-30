@@ -66,7 +66,12 @@ describe('registro de provedores', () => {
         expect(findProvider('youtube-music')?.id).toBe('youtubeMusic');
         expect(findProvider('spotify')?.id).toBe('spotify');
         expect(findProvider('deezer')?.id).toBe('deezer');
+        expect(findProvider('youtube')?.id).toBe('youtubeMusic');
         expect(findProvider('napster')).toBeNull();
+    });
+
+    it('YouTube Music aceita link de playlist do youtube.com', () => {
+        expect(getProvider('youtubeMusic').normalizePlaylistId('https://www.youtube.com/playlist?list=PLx123&si=a')).toBe('PLx123');
     });
 
     it('recusa plataforma desconhecida com 404', () => {

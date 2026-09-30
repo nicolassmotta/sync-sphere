@@ -26,7 +26,7 @@ export const PROVIDER_UI = {
         tone: 'youtube',
         buttonVariant: 'youtube',
         accentGradient: 'via-youtube',
-        description: 'Origem ou destino. O back-end lê playlists e cria playlists privadas no YouTube Music usando o cookie da sua sessão no navegador.',
+        description: 'Origem ou destino. O back-end lê playlists e cria playlists privadas no YouTube Music usando o cookie da sua sessão no navegador. Aceita links de music.youtube.com e youtube.com; a playlist criada aparece nos dois.',
         setupSteps: [
             'Abra music.youtube.com logado na conta que vai usar.',
             'Nas ferramentas de desenvolvedor, aba Rede, clique em uma requisição para music.youtube.com.',
