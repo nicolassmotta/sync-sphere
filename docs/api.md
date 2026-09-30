@@ -60,7 +60,16 @@ curl --fail --request POST \
   --data-binary @docs/examples/playlist.csv
 ```
 
-Use o `data.playlist.id` retornado como origem de uma transferência. No PowerShell, use `curl.exe`.
+No PowerShell, use `curl.exe` e a continuação de linha com acento grave:
+
+```powershell
+curl.exe --fail --request POST `
+  'http://localhost:8000/api/v1/integrations/file/imports?filename=playlist.csv' `
+  --header 'Content-Type: text/plain' `
+  --data-binary '@docs/examples/playlist.csv'
+```
+
+Use o `data.playlist.id` retornado como origem de uma transferência.
 
 ## Transferências
 
