@@ -1,6 +1,6 @@
 # SyncSphere - Back-end (API e Fila Local)
 
-O coração do SyncSphere. Esta aplicação Express.js lida com a lógica de migração bidirecional entre Spotify e YouTube Music sem exigir serviços externos.
+A API Express do SyncSphere migra playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. Ela roda com armazenamento local e fila persistida, sem banco de dados nem Redis.
 
 É **local-first single-user**: não há contas, login nem banco de dados. As credenciais e o histórico ficam em arquivos JSON cifrados em `backend/data/`, e as transferências rodam em uma fila no próprio processo, persistida em `data/queue.json` para sobreviver a reinícios.
 
@@ -13,6 +13,8 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
 - `src/storage/`: armazenamento local em arquivos JSON cifrados (`jsonStore.js`).
 - `src/middlewares/`: tratamento de erros, validação e usuário local.
 - `src/services/queueService.js`: fila de transferências local persistida (sem Redis), com reagendamento para pausas.
+- `src/providers/`: adaptadores registrados em `registry.js`, com autenticação, leitura, busca e escrita por plataforma.
+- `src/services/transfer/`: processamento, estado por faixa, ETA, revisão manual e reconciliação de inserções.
 - `src/workers/`: registra o processador da fila local.
 
 ## Configuração de Desenvolvimento Inicial
@@ -63,7 +65,7 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
 
    Para o uso local empacotado, rode `npm run setup` na raiz do repositório e depois `npm start`. Nesse modo, o Express serve a API, o Socket.io e o build React em `http://localhost:8000`.
 
-## Spotify OAuth Gratuito
+## Spotify OAuth com PKCE
 
 1. Abra o painel em `https://developer.spotify.com/dashboard` e faça login.
 2. Clique em `Create app`.
@@ -73,6 +75,8 @@ Utilizamos uma arquitetura adaptada de MVC e código limpo:
 6. Reconecte contas já autorizadas antes desta versão para conceder `playlist-modify-private`/`playlist-modify-public`, usados no fluxo YouTube Music -> Spotify.
 
 O fluxo usa Authorization Code + PKCE, então não há `SPOTIFY_CLIENT_SECRET`.
+
+No modo de desenvolvimento, o Spotify exige que a conta proprietária do app tenha Premium e aplica restrições de acesso ao catálogo e a playlists de terceiros. Confira o [guia oficial de migração](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide) para as regras vigentes.
 
 ## YouTube Music via Cookie
 
@@ -89,6 +93,11 @@ Observações:
 
 - `data/credentials.json`: tokens do Spotify, cifrados.
 - `data/transfers.json`: histórico de transferências.
+- `data/queue.json`: fila persistida e horários de retomada.
+- `data/transfer-tracks-<id>.json`: estado e propostas de revisão de cada faixa.
+- `data/provider-credentials.json`: credenciais dos demais provedores, cifradas.
+- `data/match-cache.json`: cache cifrado de correspondências confiáveis.
+- `data/file-imports.json` e `data/file-exports.json`: playlists em arquivo, cifradas.
 - `data/encryption.key`: chave de criptografia gerada automaticamente (se `ENCRYPTION_KEY` não estiver no `.env`).
 - Limpar o histórico de transferências: `npm run history:clear`.
 
@@ -102,5 +111,6 @@ npm test
 Observações:
 
 - Os testes usam `NODE_ENV=test` e variáveis mínimas definidas em `tests/setupEnv.js` (não precisam de `.env`, banco ou Redis).
+- Cada suíte tem um diretório temporário próprio; respostas das plataformas são simuladas nos testes de integração.
 - Endpoint de vitalidade: `GET /api/health`.
 - Endpoint de prontidão: `GET /api/ready` (retorna `storage` e `queue`).

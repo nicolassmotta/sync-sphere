@@ -2,20 +2,20 @@
 
 ## Produto
 
-SyncSphere migra playlists entre Spotify e YouTube Music. É open-source **self-hosted single-user**: a pessoa clona, configura suas credenciais e usa localmente. Não há contas, login nem banco de dados. A experiência é:
+SyncSphere migra playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. É open-source **self-hosted single-user**: a pessoa clona, configura as plataformas escolhidas e usa localmente. Não há contas locais, login nem banco de dados. A experiência é:
 
 1. usuário roda o projeto localmente;
 2. abre `http://localhost:8000`, servido pelo back-end depois do build do front-end;
 3. valida o back-end pelo front-end ou por `/api/health` e `/api/ready`;
-4. configura Spotify OAuth no back-end;
-5. configura `YTMUSIC_COOKIE` no back-end;
+4. configura apenas as plataformas necessárias ao fluxo;
+5. conecta serviços por OAuth ou cola credenciais em Integrações;
 6. valida integrações no painel;
-7. escolhe a direção Spotify -> YouTube Music ou YouTube Music -> Spotify;
-8. conecta Spotify via OAuth ou cola uma playlist;
-9. escolhe uma ou várias playlists do Spotify, ou informa link/ID do YouTube Music;
+7. escolhe origem e destino entre os provedores registrados;
+8. seleciona playlists da conta, cola links ou importa arquivos;
+9. revisa a seleção e a estimativa de tempo;
 10. back-end cria uma transferência por playlist e envia os trabalhos para a fila local;
-11. trabalhador busca correspondências no destino e cria a playlist privada;
-12. painel mostra progresso, histórico, direção e falhas de correspondência.
+11. trabalhador busca correspondências no destino e cria a playlist ou arquivo de saída, respeitando a privacidade suportada por cada plataforma;
+12. painel mostra progresso e histórico, com retomada, retry e revisão manual de faixas não encontradas.
 
 ## Arquitetura Atual
 

@@ -1,8 +1,8 @@
 {
   "name": "sync-sphere-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Back-end local-first do SyncSphere: API Express + Socket.io para migrar playlists entre Spotify e YouTube Music, com persistência em arquivos JSON cifrados e fila em memória.",
+  "description": "API local do SyncSphere com Express, Socket.io, sete provedores, armazenamento cifrado e fila persistida.",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

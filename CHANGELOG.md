@@ -4,6 +4,15 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+## [1.1.0] - Em preparação
+
+### Preparação da versão
+
+- Versões da raiz, backend, frontend e lockfiles alinhadas em 1.1.0.
+- Dependências atualizadas com correções de segurança; Vite atualizado para 6.4.3 e plugin React para 4.7.0.
+- README e título do aplicativo alinhados às sete plataformas.
+- Guias de contribuição, segurança, fases e notas de versão adicionados.
+
 ### Fidelidade e retomada segura
 
 - Destinos reconciliam quantidades de cada faixa antes de inserir, preservando repetições intencionais e evitando duplicatas ao repetir uma escrita parcialmente concluída.
@@ -46,7 +55,7 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 ### Plataforma TIDAL
 
 - Nova plataforma `tidal` pela API oficial v2 (JSON:API) com OAuth Authorization Code + PKCE e refresh automático do token.
-- Lê playlists (paginação por cursor, artistas e álbum em lote), busca por ISRC antes do texto, cria playlists "não listadas" e adiciona faixas em lotes de 50 com `onDuplicates: SKIP` para retomada segura.
+- Lê playlists (paginação por cursor, artistas e álbum em lote), busca por ISRC antes do texto, cria playlists "não listadas" e adiciona faixas em lotes de 50 após reconciliar as ocorrências existentes.
 - `TIDAL_CLIENT_SECRET` opcional habilita Client Credentials para ler playlists públicas e buscar sem conectar a conta.
 - PKCE compartilhado em `modules/integrations/shared/pkceStore.js`.
 
