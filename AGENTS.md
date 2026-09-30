@@ -4,11 +4,11 @@ Use este arquivo como briefing inicial para qualquer agente/assistente trabalhan
 
 ## Identidade do Produto
 
-SyncSphere é uma aplicação fullstack para migrar playlists entre Spotify e YouTube Music. É open-source self-hosted single-user: a pessoa clona, configura credenciais e usa localmente. O produto combina conexões com serviços de música, fila local para transferências e painel React para acompanhar progresso. Não há contas, login nem banco de dados.
+SyncSphere é uma aplicação fullstack para migrar playlists entre plataformas de música (hoje Spotify e YouTube Music, com arquitetura de provedores para adicionar outras). É open-source self-hosted single-user: a pessoa clona, configura credenciais e usa localmente. O produto combina conexões com serviços de música, fila local para transferências e painel React para acompanhar progresso. Não há contas, login nem banco de dados.
 
 ## Tecnologias e Estrutura
 
-- `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória. Sem MongoDB, sem Redis, sem login.
+- `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`. Sem MongoDB, sem Redis, sem login.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion, Lucide.
 - `docs/ai/`: contexto operacional para agentes, MCPs e prompts repetíveis.
 - `.agents/skills/sync-sphere/`: skill local do projeto para reutilizar este contexto.
@@ -70,7 +70,8 @@ Serviços esperados:
 - API base esperada no Vite: `VITE_API_URL=http://localhost:8000/api/v1`; no app servido pelo back-end, `frontend/src/services/api.js` usa `/api/v1`.
 - Dados locais: arquivos cifrados em `backend/data/` (sem banco de dados externo).
 - Spotify OAuth: `SPOTIFY_CLIENT_ID` e `SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback` (Authorization Code + PKCE, sem `SPOTIFY_CLIENT_SECRET`)
-- YouTube Music: `YTMUSIC_COOKIE`
+- YouTube Music: cookie colado em Integrações ou `YTMUSIC_COOKIE`
+- Plataformas: adaptadores em `backend/src/providers/<id>/`, registrados em `backend/src/providers/registry.js`.
 
 ## Convenções de Implementação
 

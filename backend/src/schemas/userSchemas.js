@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { TRANSFER_DIRECTION_VALUES } from '../constants/transferDirections.js';
+import { findProvider } from '../providers/registry.js';
+
+// Valores antigos (`spotify_to_youtube`) ou `<origem>_to_<destino>`.
+const directionSchema = z
+    .string()
+    .regex(/^[a-zA-Z]+_to_[a-zA-Z]+$/, 'Direção de transferência inválida.');
+const providerSchema = z
+    .string()
+    .refine((id) => findProvider(id)?.id === id, 'Plataforma não suportada.');
 
 /**
  * @constant registerSchema
@@ -32,7 +40,9 @@ export const loginSchema = z.object({
 // Futura validação do POST na hora de começar uma transferência real
 export const transferStartSchema = z.object({
     body: z.object({
-        direction: z.enum(TRANSFER_DIRECTION_VALUES).optional(),
+        direction: directionSchema.optional(),
+        sourceProvider: providerSchema.optional(),
+        targetProvider: providerSchema.optional(),
         sourcePlaylistId: z.string().min(10, 'A playlist de origem não está bem formulada.').optional(),
         sourcePlaylistIds: z
             .array(z.string().min(10, 'Uma das playlists de origem não está bem formulada.'))
@@ -41,5 +51,44 @@ export const transferStartSchema = z.object({
     }).refine((body) => body.sourcePlaylistId || body.sourcePlaylistIds?.length, {
         message: 'Selecione ao menos uma playlist de origem.',
         path: ['sourcePlaylistIds'],
+    }).refine((body) => (
+        !body.sourceProvider
+        || body.sourceProvider !== body.targetProvider
+        || findProvider(body.sourceProvider)?.capabilities.sameProviderTransfer
+    ), {
+        message: 'Origem e destino precisam ser plataformas diferentes.',
+        path: ['targetProvider'],
     })
+});
+
+const transferIdParams = z.object({
+    transferId: z.string().min(1, 'Informe a transferência.').max(100),
+});
+
+export const transferIdSchema = z.object({
+    params: transferIdParams,
+});
+
+export const transferTracksSchema = z.object({
+    params: transferIdParams,
+    query: z.object({
+        status: z
+            .string()
+            .regex(/^(pending|matched|not_found|retry_queued|failed)(,(pending|matched|not_found|retry_queued|failed))*$/, 'Filtro de status inválido.')
+            .optional(),
+    }).passthrough(),
+});
+
+export const transferEstimateSchema = z.object({
+    query: z.object({
+        direction: directionSchema.optional(),
+        targetProvider: providerSchema.optional(),
+        count: z.coerce.number().int().min(0).max(100000),
+    }).passthrough(),
+});
+
+export const providerCredentialsSchema = z.object({
+    body: z.object({
+        values: z.record(z.string().max(20000, 'Valor longo demais.')),
+    }),
 });

@@ -1,13 +1,19 @@
-import { lazy, Suspense, useState, useEffect, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useIntegrationStatus } from '../hooks/useIntegrationStatus';
 import { useLocalSystemStatus } from '../hooks/useLocalSystemStatus';
 import { useStartTransfer } from '../hooks/useStartTransfer';
-import { useSpotifyPlaylists } from '../hooks/useSpotifyPlaylists';
+import { useProviderPlaylists } from '../hooks/useProviderPlaylists';
 import { useTransferSocket } from '../hooks/useTransferSocket';
-import { TRANSFER_DIRECTIONS } from '../constants/transferDirections';
+import {
+    DEFAULT_SOURCE_PROVIDER,
+    DEFAULT_TARGET_PROVIDER,
+    getProviderLabel,
+    PROVIDER_UI,
+} from '../constants/providers';
+import api from '../services/api';
 
 import DashboardLayout from '../components/layout/DashboardLayout';
 
@@ -15,6 +21,16 @@ const HomeTab = lazy(() => import('../components/dashboard/HomeTab'));
 const SettingsTab = lazy(() => import('../components/dashboard/SettingsTab'));
 const HistoryTab = lazy(() => import('../components/dashboard/HistoryTab'));
 const IntegrationsTab = lazy(() => import('../components/dashboard/IntegrationsTab'));
+
+const ACTIVE_TRANSFER_STATUSES = ['pending', 'processing', 'paused', 'needs_auth'];
+
+// Antes do primeiro `GET /integrations/status`, mostra as plataformas conhecidas como pendentes.
+const FALLBACK_PROVIDERS = Object.entries(PROVIDER_UI).map(([id, ui]) => ({
+    id,
+    label: ui.label,
+    connected: false,
+    capabilities: { read: true, write: true, listUserPlaylists: id === 'spotify' },
+}));
 
 const DashboardTabFallback = () => (
     <div className="mx-auto grid min-h-[320px] w-full max-w-5xl place-items-center">
@@ -29,7 +45,13 @@ const Dashboard = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('home');
-    const { integrations, loading: integrationsLoading, refreshIntegrations } = useIntegrationStatus();
+    const {
+        integrations,
+        providers: loadedProviders,
+        loading: integrationsLoading,
+        refreshIntegrations,
+    } = useIntegrationStatus();
+    const providers = loadedProviders.length ? loadedProviders : FALLBACK_PROVIDERS;
     const {
         loading: systemStatusLoading,
         refreshSystemStatus,
@@ -37,63 +59,127 @@ const Dashboard = () => {
     } = useLocalSystemStatus();
     
     const [showModal, setShowModal] = useState(false);
-    const [transferDirection, setTransferDirection] = useState(TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE);
+    const [providerPair, setProviderPair] = useState({
+        sourceProvider: DEFAULT_SOURCE_PROVIDER,
+        targetProvider: DEFAULT_TARGET_PROVIDER,
+    });
+    const source = useMemo(() => (
+        providers.find((provider) => provider.id === providerPair.sourceProvider)
+        || { id: providerPair.sourceProvider, label: getProviderLabel(providerPair.sourceProvider), capabilities: {} }
+    ), [providerPair.sourceProvider, providers]);
+    const target = useMemo(() => (
+        providers.find((provider) => provider.id === providerPair.targetProvider)
+        || { id: providerPair.targetProvider, label: getProviderLabel(providerPair.targetProvider), capabilities: {} }
+    ), [providerPair.targetProvider, providers]);
     const [sourcePlaylistId, setSourcePlaylistId] = useState('');
     const [sourcePlaylistIds, setSourcePlaylistIds] = useState([]);
     const [transferIds, setTransferIds] = useState([]);
     const {
-        playlists: spotifyPlaylists,
-        summary: spotifyPlaylistsSummary,
-        loading: spotifyPlaylistsLoading,
-        error: spotifyPlaylistsError,
-        refreshPlaylists: refreshSpotifyPlaylists,
-    } = useSpotifyPlaylists({
-        enabled: integrations.spotify.connected && transferDirection === TRANSFER_DIRECTIONS.SPOTIFY_TO_YOUTUBE,
+        playlists: sourcePlaylists,
+        summary: sourcePlaylistsSummary,
+        loading: sourcePlaylistsLoading,
+        error: sourcePlaylistsError,
+        refreshPlaylists: refreshSourcePlaylists,
+    } = useProviderPlaylists({
+        providerId: source.id,
+        providerLabel: source.label,
+        enabled: Boolean(source.connected && source.capabilities?.listUserPlaylists),
     });
     const {
         isTransferring,
         progress,
         progressMessage,
+        transfers,
         prepareTransferProgress,
         stopTransferProgress,
     } = useTransferSocket(transferIds);
 
+    // Depois de recarregar a página, volta a acompanhar o que ainda não terminou.
+    useEffect(() => {
+        let cancelled = false;
+
+        api.get('/transfer')
+            .then((response) => {
+                if (cancelled) return;
+                const activeIds = (response.data.data.transfers || [])
+                    .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
+                    .map((transfer) => transfer._id);
+                if (activeIds.length) {
+                    setTransferIds((currentIds) => (currentIds.length ? currentIds : activeIds));
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const followTransfers = useCallback((nextTransferIds) => {
+        const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        // Sempre um array novo: reconecta o socket mesmo se a transferência já estava na lista.
+        setTransferIds((currentIds) => [...new Set([...currentIds.map(String), ...ids])]);
+    }, []);
+
+    const resumeTransfer = useCallback(async (transferId) => {
+        try {
+            const response = await api.post(`/transfer/${transferId}/resume`);
+            toast.success(response.data.message || 'Transferência retomada.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível retomar a transferência.');
+        }
+    }, []);
+
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const tab = params.get('tab');
-        const spotifyStatus = params.get('spotify');
+        const providerId = params.get('provider');
+        const connectionStatus = params.get('status');
+        const providerLabel = getProviderLabel(providerId);
 
         if (tab) setActiveTab(tab);
-        if (spotifyStatus === 'connected') toast.success('Spotify conectado com sucesso.');
-        if (spotifyStatus === 'denied') toast.error('Conexão com Spotify cancelada.');
+        if (providerId && connectionStatus === 'connected') toast.success(`${providerLabel} conectado com sucesso.`);
+        if (providerId && connectionStatus === 'denied') toast.error(`Conexão com ${providerLabel} cancelada.`);
 
-        if (tab || spotifyStatus) {
+        if (tab || providerId) {
             refreshIntegrations();
             navigate('/dashboard', { replace: true });
         }
     }, [location.search, navigate, refreshIntegrations]);
 
+    // Nova migração entra na lista sem esconder as que ainda estão pausadas ou na fila.
     const handleTransferQueued = useCallback((nextTransferIds) => {
-        setTransferIds(Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds].filter(Boolean));
-    }, []);
+        const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        const stillActiveIds = transfers
+            .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
+            .map((transfer) => String(transfer.transferId));
+        setTransferIds([...new Set([...stillActiveIds, ...ids])]);
+    }, [transfers]);
 
     const handleBeforeTransferStart = useCallback(() => {
         setShowModal(false);
         prepareTransferProgress('Preparando sua migração...');
     }, [prepareTransferProgress]);
 
-    const handleTransferDirectionChange = useCallback((nextDirection) => {
-        setTransferDirection(nextDirection);
-        setSourcePlaylistId('');
-        setSourcePlaylistIds([]);
-    }, []);
+    // Trocar a origem descarta a seleção: IDs de playlist não valem entre plataformas.
+    const handleProvidersChange = useCallback((nextPair) => {
+        if (nextPair.sourceProvider !== providerPair.sourceProvider) {
+            setSourcePlaylistId('');
+            setSourcePlaylistIds([]);
+        }
+        setProviderPair(nextPair);
+    }, [providerPair.sourceProvider]);
 
     const startTransferProcess = useStartTransfer({
-        direction: transferDirection,
+        sourceProvider: source.id,
+        targetProvider: target.id,
+        sourceLabel: source.label,
+        targetLabel: target.label,
+        sourceReady: Boolean(source.canRead),
+        targetReady: Boolean(target.canWrite),
+        allowSameProvider: Boolean(source.capabilities?.sameProviderTransfer),
         sourcePlaylistId,
         sourcePlaylistIds,
-        spotifyReady: integrations.spotify.connected,
-        youtubeReady: integrations.youtubeMusic.connected,
         setActiveTab,
         onBeforeStart: handleBeforeTransferStart,
         onTransferQueued: handleTransferQueued,
@@ -106,8 +192,10 @@ const Dashboard = () => {
                 {activeTab === 'home' && (
                     <HomeTab 
                         user={user}
-                        transferDirection={transferDirection}
-                        onTransferDirectionChange={handleTransferDirectionChange}
+                        providers={providers}
+                        source={source}
+                        target={target}
+                        onProvidersChange={handleProvidersChange}
                         showModal={showModal}
                         setShowModal={setShowModal}
                         sourcePlaylistId={sourcePlaylistId}
@@ -117,6 +205,8 @@ const Dashboard = () => {
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        transfers={transfers}
+                        onResumeTransfer={resumeTransfer}
                         startTransferProcess={startTransferProcess}
                         integrations={integrations}
                         integrationsLoading={integrationsLoading}
@@ -124,17 +214,18 @@ const Dashboard = () => {
                         systemStatusLoading={systemStatusLoading}
                         refreshIntegrations={refreshIntegrations}
                         refreshSystemStatus={refreshSystemStatus}
-                        spotifyPlaylists={spotifyPlaylists}
-                        spotifyPlaylistsSummary={spotifyPlaylistsSummary}
-                        spotifyPlaylistsLoading={spotifyPlaylistsLoading}
-                        spotifyPlaylistsError={spotifyPlaylistsError}
-                        refreshSpotifyPlaylists={refreshSpotifyPlaylists}
+                        sourcePlaylists={sourcePlaylists}
+                        sourcePlaylistsSummary={sourcePlaylistsSummary}
+                        sourcePlaylistsLoading={sourcePlaylistsLoading}
+                        sourcePlaylistsError={sourcePlaylistsError}
+                        refreshSourcePlaylists={refreshSourcePlaylists}
                         setActiveTab={setActiveTab}
                     />
                 )}
 
                 {activeTab === 'integrations' && (
                     <IntegrationsTab
+                        providers={providers}
                         integrations={integrations}
                         integrationsLoading={integrationsLoading}
                         refreshIntegrations={refreshIntegrations}
@@ -145,7 +236,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'history' && (
-                    <HistoryTab />
+                    <HistoryTab onTransfersQueued={followTransfers} />
                 )}
 
                 {activeTab === 'settings' && (

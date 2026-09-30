@@ -8,8 +8,8 @@ export const localSetupFlow = [
         description: 'Crie um app no painel do Spotify e use o callback local com escopos de leitura e escrita.',
     },
     {
-        title: 'Configurar YTMUSIC_COOKIE',
-        description: 'Cole no back-end apenas o cabeçalho Cookie completo de uma sessão sua em music.youtube.com.',
+        title: 'Configurar o cookie do YouTube Music',
+        description: 'Cole em Integrações (ou em YTMUSIC_COOKIE no backend/.env) o cabeçalho Cookie completo de uma sessão sua em music.youtube.com.',
     },
     {
         title: 'Validar integrações',
@@ -100,7 +100,7 @@ export const troubleshootingItems = [
     },
     {
         title: 'YouTube Music aparece como pendente',
-        text: 'Preencha `YTMUSIC_COOKIE`, reinicie o back-end e use o botão de atualizar status. Nunca cole cookies reais em docs, commits ou issues.',
+        text: 'Cole o cookie em Integrações (vale na hora) ou preencha `YTMUSIC_COOKIE` e reinicie o back-end. Nunca cole cookies reais em docs, commits ou issues.',
     },
     {
         title: 'Dados locais e histórico',

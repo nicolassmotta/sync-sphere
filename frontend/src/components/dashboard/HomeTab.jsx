@@ -5,18 +5,18 @@ import {
     Radio,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getTransferDirectionOption, TRANSFER_DIRECTIONS } from '../../constants/transferDirections';
 import api from '../../services/api';
+import { useTransferEstimate } from '../../hooks/useTransferEstimate';
 import Button from '../ui/Button';
 import FadeInPage from '../ui/FadeInPage';
 import SetupChecklist from '../setup/SetupChecklist';
 import ActiveTransferCard from './home/ActiveTransferCard';
 import DestinationCard from './home/DestinationCard';
-import SourceSelectionCard from './home/SourceSelectionCard';
-import SpotifyPlaylistSelectionCard from './home/SpotifyPlaylistSelectionCard';
+import ProviderPairCard from './home/ProviderPairCard';
+import ProviderPlaylistLinkCard from './home/ProviderPlaylistLinkCard';
+import ProviderPlaylistListCard from './home/ProviderPlaylistListCard';
 import TransferConfirmModal from './home/TransferConfirmModal';
 import WorkflowCard from './home/WorkflowCard';
-import YoutubePlaylistSelectionCard from './home/YoutubePlaylistSelectionCard';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -31,10 +31,25 @@ const cardVariants = {
     visible: { y: 0, opacity: 1 }
 };
 
+const emptyPreview = (overrides = {}) => ({
+    open: true,
+    loading: false,
+    tracks: [],
+    totalTracks: 0,
+    hasMore: false,
+    error: '',
+    blocked: false,
+    ...overrides,
+});
+
+const isBlockedPreviewMessage = (message) => message.includes('não permitiu ler as faixas');
+
 const HomeTab = ({
     user,
-    transferDirection,
-    onTransferDirectionChange,
+    providers,
+    source,
+    target,
+    onProvidersChange,
     showModal,
     setShowModal,
     sourcePlaylistId,
@@ -44,6 +59,8 @@ const HomeTab = ({
     isTransferring,
     progress,
     progressMessage,
+    transfers,
+    onResumeTransfer,
     startTransferProcess,
     integrations,
     integrationsLoading,
@@ -51,163 +68,125 @@ const HomeTab = ({
     systemStatusLoading,
     refreshIntegrations,
     refreshSystemStatus,
-    spotifyPlaylists,
-    spotifyPlaylistsSummary,
-    spotifyPlaylistsLoading,
-    spotifyPlaylistsError,
-    refreshSpotifyPlaylists,
+    sourcePlaylists,
+    sourcePlaylistsSummary,
+    sourcePlaylistsLoading,
+    sourcePlaylistsError,
+    refreshSourcePlaylists,
     setActiveTab
 }) => {
-    const directionOption = getTransferDirectionOption(transferDirection);
-    const isYoutubeToSpotify = transferDirection === TRANSFER_DIRECTIONS.YOUTUBE_TO_SPOTIFY;
-    const youtubeReady = Boolean(integrations?.youtubeMusic?.connected);
-    const spotifyConnected = Boolean(integrations?.spotify?.connected);
+    // Sem conta conectada, plataformas que leem por link (Deezer) mostram o campo de link.
+    const listMode = Boolean(source.capabilities?.listUserPlaylists)
+        && Boolean(source.connected || !source.capabilities?.readByLink);
     const [trackPreviews, setTrackPreviews] = useState({});
-    const [youtubePlaylistPreview, setYoutubePlaylistPreview] = useState(null);
+    const [linkPreview, setLinkPreview] = useState(null);
     const selectedPlaylistIdSet = useMemo(() => new Set(sourcePlaylistIds), [sourcePlaylistIds]);
     const blockedPlaylistIdSet = useMemo(() => new Set(
         Object.entries(trackPreviews)
             .filter(([, preview]) => preview?.blocked)
             .map(([playlistId]) => playlistId)
     ), [trackPreviews]);
-    const spotifySelectedPlaylists = useMemo(
-        () => spotifyPlaylists.filter((playlist) => selectedPlaylistIdSet.has(playlist.id)),
-        [spotifyPlaylists, selectedPlaylistIdSet]
-    );
-    const youtubeSelectedPlaylists = useMemo(() => {
-        if (!isYoutubeToSpotify || !sourcePlaylistId) return [];
+
+    const selectedPlaylists = useMemo(() => {
+        if (sourcePlaylistIds.length) {
+            return sourcePlaylists.filter((playlist) => selectedPlaylistIdSet.has(playlist.id));
+        }
+        if (!sourcePlaylistId) return [];
 
         return [{
             id: sourcePlaylistId,
-            name: youtubePlaylistPreview?.name || 'Playlist YouTube Music',
-            imageUrl: youtubePlaylistPreview?.imageUrl,
-            trackCount: youtubePlaylistPreview?.totalTracks || youtubePlaylistPreview?.tracks?.length || 0,
+            name: linkPreview?.name || `Playlist do ${source.label}`,
+            imageUrl: linkPreview?.imageUrl,
+            trackCount: linkPreview?.totalTracks || linkPreview?.tracks?.length || 0,
         }];
-    }, [isYoutubeToSpotify, sourcePlaylistId, youtubePlaylistPreview]);
-    const selectedPlaylists = isYoutubeToSpotify ? youtubeSelectedPlaylists : spotifySelectedPlaylists;
-    const hasManualPlaylist = Boolean(sourcePlaylistId);
-    const selectedCount = isYoutubeToSpotify
-        ? (hasManualPlaylist ? 1 : 0)
-        : sourcePlaylistIds.length || (hasManualPlaylist ? 1 : 0);
-    const readyToTransfer = isYoutubeToSpotify
-        ? Boolean(youtubeReady && spotifyConnected && selectedCount > 0)
-        : Boolean(youtubeReady && selectedCount > 0);
+    }, [linkPreview, selectedPlaylistIdSet, source.label, sourcePlaylistId, sourcePlaylistIds.length, sourcePlaylists]);
+
+    const selectedCount = sourcePlaylistIds.length || (sourcePlaylistId ? 1 : 0);
+    const providersReady = Boolean(source.canRead && target.canWrite);
+    const readyToTransfer = providersReady && selectedCount > 0;
+
+    const selectedTrackCount = useMemo(
+        () => selectedPlaylists.reduce((sum, playlist) => sum + (Number(playlist.trackCount) || 0), 0),
+        [selectedPlaylists]
+    );
+    const transferEstimate = useTransferEstimate({
+        enabled: showModal,
+        targetProvider: target.id,
+        trackCount: selectedTrackCount,
+    });
 
     useEffect(() => {
-        setYoutubePlaylistPreview(null);
-    }, [transferDirection]);
+        setTrackPreviews({});
+        setLinkPreview(null);
+    }, [source.id]);
 
     const openTransferModal = useCallback(() => {
         setShowModal(true);
     }, [setShowModal]);
 
-    const handleTransferDirectionChange = useCallback((nextDirection) => {
-        setTrackPreviews({});
-        setYoutubePlaylistPreview(null);
-        onTransferDirectionChange(nextDirection);
-    }, [onTransferDirectionChange]);
-
     const loadTrackPreview = useCallback(async (playlistId, { open = true } = {}) => {
         setTrackPreviews((current) => ({
             ...current,
-            [playlistId]: {
-                open,
-                loading: true,
-                tracks: [],
-                totalTracks: 0,
-                hasMore: false,
-                error: '',
-                blocked: false,
-            },
+            [playlistId]: emptyPreview({ open, loading: true }),
         }));
 
         try {
-            const response = await api.get(`/integrations/spotify/playlists/${playlistId}/tracks`, {
+            const response = await api.get(`/integrations/${source.id}/playlists/${playlistId}/tracks`, {
                 params: { limit: 30 },
             });
+            const data = response.data.data;
             setTrackPreviews((current) => ({
                 ...current,
-                [playlistId]: {
+                [playlistId]: emptyPreview({
                     open,
-                    loading: false,
-                    tracks: response.data.data.tracks || [],
-                    totalTracks: response.data.data.totalTracks || 0,
-                    hasMore: Boolean(response.data.data.hasMore),
-                    error: '',
-                    blocked: false,
-                },
+                    tracks: data.tracks || [],
+                    totalTracks: data.totalTracks || 0,
+                    hasMore: Boolean(data.hasMore),
+                }),
             }));
             return { ok: true };
         } catch (err) {
             const message = err.response?.data?.message || 'Não foi possível carregar as faixas dessa playlist.';
-            const blocked = message.includes('Spotify não permitiu ler as faixas');
+            const blocked = isBlockedPreviewMessage(message);
             setTrackPreviews((current) => ({
                 ...current,
-                [playlistId]: {
-                    open: true,
-                    loading: false,
-                    tracks: [],
-                    totalTracks: 0,
-                    hasMore: false,
-                    error: message,
-                    blocked,
-                },
+                [playlistId]: emptyPreview({ error: message, blocked }),
             }));
             setSourcePlaylistIds((currentIds) => currentIds.filter((id) => id !== playlistId));
             toast.error(message);
             return { ok: false, blocked, message };
         }
-    }, [setSourcePlaylistIds]);
+    }, [setSourcePlaylistIds, source.id]);
 
-    const loadYoutubePlaylistPreview = useCallback(async () => {
+    const loadLinkPreview = useCallback(async () => {
         const playlistId = sourcePlaylistId.trim();
         if (!playlistId) {
-            toast.error('Cole o link ou ID da playlist do YouTube Music.');
+            toast.error(`Cole o link ou ID da playlist do ${source.label}.`);
             return { ok: false };
         }
 
-        setYoutubePlaylistPreview({
-            open: true,
-            loading: true,
-            tracks: [],
-            totalTracks: 0,
-            hasMore: false,
-            error: '',
-            blocked: false,
-        });
+        setLinkPreview(emptyPreview({ loading: true }));
 
         try {
-            const response = await api.get('/integrations/youtube-music/playlist-tracks', {
+            const response = await api.get(`/integrations/${source.id}/playlist-tracks`, {
                 params: { playlistId, limit: 30 },
             });
             const data = response.data.data;
-            setYoutubePlaylistPreview({
-                open: true,
-                loading: false,
+            setLinkPreview(emptyPreview({
                 name: data.name,
                 imageUrl: data.imageUrl,
                 tracks: data.tracks || [],
                 totalTracks: data.totalTracks || 0,
                 hasMore: Boolean(data.hasMore),
-                error: '',
-                blocked: false,
-            });
+            }));
             return { ok: true };
         } catch (err) {
             const message = err.response?.data?.message || 'Não foi possível carregar as faixas dessa playlist.';
-            setYoutubePlaylistPreview({
-                open: true,
-                loading: false,
-                tracks: [],
-                totalTracks: 0,
-                hasMore: false,
-                error: message,
-                blocked: true,
-            });
+            setLinkPreview(emptyPreview({ error: message, blocked: true }));
             toast.error(message);
             return { ok: false, message };
         }
-    }, [sourcePlaylistId]);
+    }, [source.id, source.label, sourcePlaylistId]);
 
     const togglePlaylist = useCallback(async (playlistId) => {
         if (selectedPlaylistIdSet.has(playlistId)) {
@@ -220,12 +199,9 @@ const HomeTab = ({
         if (currentPreview?.blocked) {
             setTrackPreviews((current) => ({
                 ...current,
-                [playlistId]: {
-                    ...current[playlistId],
-                    open: true,
-                },
+                [playlistId]: { ...current[playlistId], open: true },
             }));
-            toast.error(currentPreview.error || 'O Spotify bloqueou as faixas dessa playlist.');
+            toast.error(currentPreview.error || `O ${source.label} bloqueou as faixas dessa playlist.`);
             return;
         }
 
@@ -243,18 +219,19 @@ const HomeTab = ({
         selectedPlaylistIdSet,
         setSourcePlaylistId,
         setSourcePlaylistIds,
+        source.label,
         trackPreviews,
     ]);
 
     const selectAllPlaylists = useCallback(() => {
-        const selectablePlaylists = spotifyPlaylists.filter((playlist) => !blockedPlaylistIdSet.has(playlist.id));
+        const selectablePlaylists = sourcePlaylists.filter((playlist) => !blockedPlaylistIdSet.has(playlist.id));
         setSourcePlaylistId('');
         setSourcePlaylistIds(selectablePlaylists.map((playlist) => playlist.id));
 
-        if (selectablePlaylists.length < spotifyPlaylists.length) {
-            toast.error('Playlists bloqueadas pelo Spotify ficaram fora da seleção.');
+        if (selectablePlaylists.length < sourcePlaylists.length) {
+            toast.error(`Playlists bloqueadas pelo ${source.label} ficaram fora da seleção.`);
         }
-    }, [blockedPlaylistIdSet, setSourcePlaylistId, setSourcePlaylistIds, spotifyPlaylists]);
+    }, [blockedPlaylistIdSet, setSourcePlaylistId, setSourcePlaylistIds, source.label, sourcePlaylists]);
 
     const clearSelectedPlaylists = useCallback(() => {
         setSourcePlaylistIds([]);
@@ -263,24 +240,10 @@ const HomeTab = ({
     const toggleTrackPreview = useCallback(async (playlistId) => {
         const currentPreview = trackPreviews[playlistId];
 
-        if (currentPreview?.open) {
+        if (currentPreview && (currentPreview.open || !currentPreview.error)) {
             setTrackPreviews((current) => ({
                 ...current,
-                [playlistId]: {
-                    ...current[playlistId],
-                    open: false,
-                },
-            }));
-            return;
-        }
-
-        if (currentPreview && !currentPreview.error) {
-            setTrackPreviews((current) => ({
-                ...current,
-                [playlistId]: {
-                    ...current[playlistId],
-                    open: true,
-                },
+                [playlistId]: { ...current[playlistId], open: !currentPreview.open },
             }));
             return;
         }
@@ -288,25 +251,47 @@ const HomeTab = ({
         await loadTrackPreview(playlistId, { open: true });
     }, [loadTrackPreview, trackPreviews]);
 
+    const importFile = useCallback(async (file) => {
+        try {
+            const content = await file.text();
+            const response = await api.post('/integrations/file/imports', content, {
+                params: { filename: file.name },
+                headers: { 'Content-Type': 'text/plain' },
+            });
+            const imported = response.data.data.playlist;
+            toast.success(response.data.message);
+            await refreshSourcePlaylists({ force: true, silent: true });
+            setSourcePlaylistId('');
+            setSourcePlaylistIds((currentIds) => [...new Set([...currentIds, imported.id])]);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível importar o arquivo.');
+        }
+    }, [refreshSourcePlaylists, setSourcePlaylistId, setSourcePlaylistIds]);
+
+    const deleteImportedPlaylist = useCallback(async (playlistId) => {
+        try {
+            await api.delete(`/integrations/file/imports/${playlistId}`);
+            setSourcePlaylistIds((currentIds) => currentIds.filter((id) => id !== playlistId));
+            await refreshSourcePlaylists({ force: true, silent: true });
+            toast.success('Arquivo removido.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível remover o arquivo.');
+        }
+    }, [refreshSourcePlaylists, setSourcePlaylistIds]);
+
     const handleManualPlaylistChange = useCallback((event) => {
         setSourcePlaylistIds([]);
         setSourcePlaylistId(event.target.value);
-        setYoutubePlaylistPreview(null);
+        setLinkPreview(null);
     }, [setSourcePlaylistId, setSourcePlaylistIds]);
 
     const handlePrimaryAction = useCallback(() => {
-        if (isYoutubeToSpotify && (!youtubeReady || !spotifyConnected)) {
+        if (!providersReady) {
             setActiveTab('integrations');
             return;
         }
-
-        if (!isYoutubeToSpotify && !youtubeReady) {
-            setActiveTab('integrations');
-            return;
-        }
-
         openTransferModal();
-    }, [isYoutubeToSpotify, openTransferModal, setActiveTab, spotifyConnected, youtubeReady]);
+    }, [openTransferModal, providersReady, setActiveTab]);
 
     return (
         <FadeInPage className="mx-auto w-full max-w-7xl">
@@ -314,13 +299,13 @@ const HomeTab = ({
                 <div>
                     <p className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold text-white/65">
                         <Radio size={15} className="text-spotify" />
-                        Olá, {user?.name || 'usuário local'} · {directionOption.label}
+                        Olá, {user?.name || 'usuário local'} · {source.label} -&gt; {target.label}
                     </p>
                     <h1 className="max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">
-                        SyncSphere: migrador local entre Spotify e YouTube Music.
+                        SyncSphere: migrador local de playlists entre plataformas.
                     </h1>
                     <p className="mt-3 max-w-2xl text-base leading-7 text-muted">
-                        Valide o back-end, conecte o Spotify por OAuth e configure o YTMUSIC_COOKIE antes de enfileirar a migração.
+                        Escolha origem e destino, conecte as duas plataformas em Integrações e acompanhe a migração em tempo real.
                     </p>
                 </div>
 
@@ -337,6 +322,8 @@ const HomeTab = ({
             <div className="mb-5">
                 <SetupChecklist
                     integrations={integrations}
+                    source={source}
+                    target={target}
                     isTransferring={isTransferring}
                     onOpenHistory={() => setActiveTab('history')}
                     onOpenIntegrations={() => setActiveTab('integrations')}
@@ -345,8 +332,6 @@ const HomeTab = ({
                     refreshLoading={integrationsLoading || systemStatusLoading}
                     readyToTransfer={readyToTransfer}
                     selectedCount={selectedCount}
-                    sourceLabel={directionOption.source}
-                    targetLabel={directionOption.target}
                     systemStatus={systemStatus}
                 />
             </div>
@@ -354,14 +339,17 @@ const HomeTab = ({
             <TransferConfirmModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                sourceLabel={directionOption.source}
-                targetLabel={directionOption.target}
+                sourceLabel={source.label}
+                targetLabel={target.label}
+                playlistUrlExample={source.playlistUrlExample}
+                allowLink={source.capabilities?.readByLink !== false}
                 selectedPlaylists={selectedPlaylists}
                 sourcePlaylistId={sourcePlaylistId}
                 onManualPlaylistChange={handleManualPlaylistChange}
                 onStartTransfer={startTransferProcess}
                 selectedCount={selectedCount}
                 isTransferring={isTransferring}
+                estimate={transferEstimate}
             />
 
             <motion.div
@@ -371,41 +359,40 @@ const HomeTab = ({
                 className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]"
             >
                 <motion.section variants={cardVariants} className="space-y-5">
-                    <SourceSelectionCard
-                        transferDirection={transferDirection}
-                        spotifyConnected={spotifyConnected}
-                        youtubeReady={youtubeReady}
-                        hasManualPlaylist={hasManualPlaylist}
-                        onTransferDirectionChange={handleTransferDirectionChange}
-                        onOpenManualPlaylist={openTransferModal}
+                    <ProviderPairCard
+                        providers={providers}
+                        sourceProvider={source.id}
+                        targetProvider={target.id}
+                        onChange={onProvidersChange}
                     />
 
-                    {!isYoutubeToSpotify && (
-                        <SpotifyPlaylistSelectionCard
-                            spotifyConnected={spotifyConnected}
-                            spotifyPlaylists={spotifyPlaylists}
-                            spotifyPlaylistsSummary={spotifyPlaylistsSummary}
-                            spotifyPlaylistsLoading={spotifyPlaylistsLoading}
-                            spotifyPlaylistsError={spotifyPlaylistsError}
+                    {listMode ? (
+                        <ProviderPlaylistListCard
+                            provider={source}
+                            connected={Boolean(source.connected)}
+                            playlists={sourcePlaylists}
+                            playlistsSummary={sourcePlaylistsSummary}
+                            playlistsLoading={sourcePlaylistsLoading}
+                            playlistsError={sourcePlaylistsError}
                             sourcePlaylistIds={sourcePlaylistIds}
                             selectedPlaylistIdSet={selectedPlaylistIdSet}
                             trackPreviews={trackPreviews}
-                            onRefreshSpotifyPlaylists={() => refreshSpotifyPlaylists()}
+                            onRefreshPlaylists={() => refreshSourcePlaylists({ force: true })}
                             onSelectAllPlaylists={selectAllPlaylists}
                             onClearSelectedPlaylists={clearSelectedPlaylists}
                             onTogglePlaylist={togglePlaylist}
                             onToggleTrackPreview={toggleTrackPreview}
                             onOpenIntegrations={() => setActiveTab('integrations')}
+                            onImportFile={source.auth?.type === 'file' ? importFile : undefined}
+                            onDeletePlaylist={source.auth?.type === 'file' ? deleteImportedPlaylist : undefined}
                         />
-                    )}
-
-                    {isYoutubeToSpotify && (
-                        <YoutubePlaylistSelectionCard
-                            preview={youtubePlaylistPreview}
+                    ) : (
+                        <ProviderPlaylistLinkCard
+                            source={source}
+                            target={target}
+                            preview={linkPreview}
                             sourcePlaylistId={sourcePlaylistId}
-                            spotifyConnected={spotifyConnected}
-                            youtubeReady={youtubeReady}
-                            onLoadPreview={loadYoutubePlaylistPreview}
+                            onLoadPreview={loadLinkPreview}
                             onOpenIntegrations={() => setActiveTab('integrations')}
                             onPlaylistChange={handleManualPlaylistChange}
                             onReviewTransfer={openTransferModal}
@@ -414,14 +401,10 @@ const HomeTab = ({
                 </motion.section>
 
                 <motion.aside variants={cardVariants} className="space-y-5">
-                    <WorkflowCard
-                        sourceLabel={directionOption.source}
-                        targetLabel={directionOption.target}
-                    />
+                    <WorkflowCard sourceLabel={source.label} targetLabel={target.label} />
                     <DestinationCard
-                        transferDirection={transferDirection}
-                        spotifyReady={spotifyConnected}
-                        youtubeReady={youtubeReady}
+                        source={source}
+                        target={target}
                         selectedCount={selectedCount}
                         readyToTransfer={readyToTransfer}
                         onConfigureDestination={() => setActiveTab('integrations')}
@@ -431,6 +414,10 @@ const HomeTab = ({
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        transfers={transfers}
+                        onResume={onResumeTransfer}
+                        onOpenIntegrations={() => setActiveTab('integrations')}
+                        onOpenHistory={() => setActiveTab('history')}
                     />
                 </motion.aside>
             </motion.div>

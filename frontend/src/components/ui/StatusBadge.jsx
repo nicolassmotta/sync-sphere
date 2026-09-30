@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, KeyRound, PauseCircle, XCircle } from 'lucide-react';
 import Badge from './Badge';
 
 const statusPresets = {
@@ -24,8 +24,18 @@ const statusPresets = {
     },
     pending: {
         icon: <Clock size={12} aria-hidden="true" />,
-        label: 'Processando',
+        label: 'Na fila',
+        tone: 'info',
+    },
+    paused: {
+        icon: <PauseCircle size={12} aria-hidden="true" />,
+        label: 'Pausada',
         tone: 'warning',
+    },
+    needs_auth: {
+        icon: <KeyRound size={12} aria-hidden="true" />,
+        label: 'Reconectar',
+        tone: 'danger',
     },
     processing: {
         icon: <Clock size={12} aria-hidden="true" />,

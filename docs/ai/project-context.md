@@ -30,7 +30,7 @@ Diretório: `backend/`
 - Execução: Node.js com ESM.
 - Framework: Express.
 - Persistência: arquivos JSON cifrados em `backend/data/` (sem banco de dados).
-- Fila: em memória, no próprio processo (sem Redis/BullMQ).
+- Fila: no próprio processo, persistida em `data/queue.json` (sem Redis/BullMQ). Transferências não concluídas voltam para a fila no boot.
 - Tempo real: Socket.io acoplado ao servidor HTTP.
 - Autenticação: nenhuma. Existe um único usuário local implícito (`LOCAL_USER_ID = 'local'`), o dono da máquina.
 - Segurança: Helmet, CORS com credenciais, rate limit, Zod e criptografia das credenciais persistidas.
@@ -42,15 +42,17 @@ Mapa de arquivos:
 - `src/socket/transferSocket.js`: registra o usuário local no socket e controla inscrição em salas de transferência.
 - `src/routes/`: roteamento HTTP.
 - `src/controllers/`: entrada HTTP e orquestração imediata.
-- `src/modules/integrations/`: controllers e utilitários específicos das integrações externas, separados por provedor.
+- `src/providers/`: adaptadores de plataforma (`spotify/`, `youtubeMusic/`, `deezer/`, `tidal/`, `appleMusic/`, `soundcloud/`, `file/`) e `registry.js`, que documenta o contrato. Todo fluxo de integração e transferência passa pelo registro; não chame `spotifyService`/`youtubeMusicService` direto de controllers ou do processador.
+- `src/modules/integrations/`: `providerIntegrationController.js` (rotas genéricas `/integrations/:provider/...`) e utilitários de OAuth.
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.
+- `src/storage/credentialStore.js`: credenciais coladas no painel (ex.: cookie do YouTube Music) em `data/provider-credentials.json`.
 - `src/schemas/`: schemas Zod.
-- `src/services/`: serviços reutilizáveis, como fila em memória e integrações externas.
-- `src/services/queueService.js`: fila de transferências em memória (`addTransferJob`, `registerTransferProcessor`).
+- `src/services/`: serviços reutilizáveis, como a fila local e integrações externas.
+- `src/services/queueService.js`: fila de transferências persistida (`addTransferJob`, `registerTransferProcessor`, `runTransferNow`, `getQueuePosition`), com uma raia (`lane`) por plataforma de destino. O processador pode devolver `{ rescheduleAt }` para o job voltar mais tarde.
 - `src/services/spotify/`: autenticação/token, cliente HTTP, erros, normalizadores e pontuação Spotify usados pela fachada `spotifyService.js`.
 - `src/services/youtubeMusic/`: autenticação por cookie, leitura/criação de playlist e pontuação de correspondência usados pela fachada `youtubeMusicService.js`.
-- `src/services/transfer/TransferProcessor.js`: orquestra a tarefa de migração bidirecional.
+- `src/services/transfer/TransferProcessor.js`: orquestra a migração para qualquer par origem/destino a partir do registro de provedores.
 - `src/services/transfer/startTransferService.js`: caso de uso HTTP para criar transferências e enfileirar tarefas.
 - `src/services/transfer/TrackMatcher.js`: executa correspondência faixa a faixa.
 - `src/services/transfer/ProgressPublisher.js`: publica eventos Socket.io por transferência.
@@ -60,6 +62,10 @@ Mapa de arquivos:
 - `src/config/`: `paths.js` (DATA_DIR e `FRONTEND_DIST_DIR`), CORS e carregamento de ambiente.
 - `src/utils/`: logger, criptografia (chave em env ou auto-gerada em `data/encryption.key`) e erro customizado.
 - `src/errors/UnrecoverableError.js`: erro que sinaliza falha definitiva (a fila não tenta novamente).
+- `src/errors/providerErrors.js`: `classifyProviderError` (`rate_limited`, `auth`, `transient`, `not_found`, `permanent`), `TransferPausedError` e `TransferNeedsAuthError`.
+- `src/services/transfer/TransferTrackStore.js`: estado por faixa em `data/transfer-tracks-<id>.json` (`pending`, `matched`, `not_found`, `retry_queued`, `failed`).
+- `src/services/transfer/TransferMetrics.js`: média móvel do tempo de busca/inserção, ETA e estatísticas por plataforma em `data/provider-stats.json`.
+- `src/services/transfer/transferQueueActions.js`: retry de pendências, retomada manual, retomada após reconectar e recuperação no boot.
 
 ### Front-end
 
@@ -112,9 +118,10 @@ A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1`
 - Use `AppError` para erros esperados de negócio.
 - Use Zod antes de controllers para entradas sensíveis.
 - Armazene credenciais externas criptografadas (via `storage/jsonStore.js`).
-- Use `/api/v1/integrations/status`, `/api/v1/integrations/spotify/login`, `/api/v1/integrations/spotify/playlists` e `/api/v1/integrations/youtube-music/playlist-tracks` para integrações reais.
+- Rotas de integração são genéricas: `GET /integrations/status` (lista `providers` com capacidades e o mapa `integrations`), `GET /integrations/:provider/login` e `/callback` (OAuth), `PUT /integrations/:provider/credentials` (cookie/token), `DELETE /integrations/:provider`, `GET /integrations/:provider/playlists`, `GET /integrations/:provider/playlists/:playlistId/tracks` e `GET /integrations/:provider/playlist-tracks?playlistId=`.
+- `POST /transfer/start` aceita `sourceProvider` e `targetProvider`; `direction` antigo continua aceito.
 - Use `/api/health` para back-end online/offline e `/api/ready` para prontidão (retorna `storage` e `queue`).
-- YouTube Music usa `YTMUSIC_COOKIE` como origem ou destino; Google OAuth e YouTube Data API foram removidos do fluxo.
+- YouTube Music usa cookie (colado no painel ou `YTMUSIC_COOKIE`) como origem ou destino; Google OAuth e YouTube Data API foram removidos do fluxo.
 - Spotify OAuth atua como origem e destino. Para destino Spotify, a conta precisa ser reconectada se o token antigo não tiver escopos de escrita.
 - Use `/api/v1/transfer` para listar o histórico local.
 - Evite logar tokens, cookies ou chaves.

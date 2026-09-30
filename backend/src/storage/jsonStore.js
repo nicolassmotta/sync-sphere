@@ -29,3 +29,7 @@ export const writeStore = (name, data) => {
     ensureDataDir();
     fs.writeFileSync(dataFile(name), encryptText(JSON.stringify(data)), { mode: 0o600 });
 };
+
+export const removeStore = (name) => {
+    fs.rmSync(dataFile(name), { force: true });
+};

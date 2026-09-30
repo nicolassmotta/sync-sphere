@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
-export const useSpotifyPlaylists = ({ enabled = false } = {}) => {
+/**
+ * Playlists da conta conectada em plataformas que listam playlists
+ * (`capabilities.listUserPlaylists`).
+ */
+export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma', enabled = false } = {}) => {
     const [playlists, setPlaylists] = useState([]);
     const [summary, setSummary] = useState({ total: 0, hasMore: false });
     const [loading, setLoading] = useState(false);
@@ -35,7 +39,7 @@ export const useSpotifyPlaylists = ({ enabled = false } = {}) => {
 
         inFlightPromiseRef.current = (async () => {
             try {
-                const response = await api.get('/integrations/spotify/playlists');
+                const response = await api.get(`/integrations/${providerId}/playlists`);
                 const nextPlaylists = response.data.data.playlists || [];
                 updatePlaylists(nextPlaylists);
                 setSummary({
@@ -45,7 +49,7 @@ export const useSpotifyPlaylists = ({ enabled = false } = {}) => {
                 lastSuccessAtRef.current = Date.now();
                 return nextPlaylists;
             } catch (err) {
-                const message = err.response?.data?.message || 'Não foi possível carregar playlists do Spotify.';
+                const message = err.response?.data?.message || `Não foi possível carregar playlists do ${providerLabel}.`;
                 setError(message);
                 updatePlaylists([]);
                 setSummary({ total: 0, hasMore: false });
@@ -62,7 +66,7 @@ export const useSpotifyPlaylists = ({ enabled = false } = {}) => {
         })();
 
         return inFlightPromiseRef.current;
-    }, [enabled]);
+    }, [enabled, providerId, providerLabel]);
 
     useEffect(() => {
         if (enabled) {

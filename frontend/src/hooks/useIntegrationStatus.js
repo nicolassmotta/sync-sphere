@@ -2,27 +2,34 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
-const DEFAULT_INTEGRATIONS = {
-    spotify: { connected: false },
-    youtubeMusic: { connected: false },
+const DEFAULT_STATUS = {
+    integrations: {
+        spotify: { connected: false },
+        youtubeMusic: { connected: false },
+    },
+    providers: [],
 };
 
+/**
+ * Status das plataformas vindo do back-end: `providers` (lista com
+ * capacidades e conexão) e `integrations` (mapa por id).
+ */
 export const useIntegrationStatus = () => {
-    const [integrations, setIntegrations] = useState(DEFAULT_INTEGRATIONS);
+    const [status, setStatus] = useState(DEFAULT_STATUS);
     const [loading, setLoading] = useState(false);
     const inFlightPromiseRef = useRef(null);
     const lastSuccessAtRef = useRef(0);
-    const integrationsRef = useRef(DEFAULT_INTEGRATIONS);
+    const statusRef = useRef(DEFAULT_STATUS);
 
-    const updateIntegrations = (nextIntegrations) => {
-        integrationsRef.current = nextIntegrations;
-        setIntegrations(nextIntegrations);
+    const updateStatus = (nextStatus) => {
+        statusRef.current = nextStatus;
+        setStatus(nextStatus);
     };
 
     const refreshIntegrations = useCallback(async ({ force = false, minIntervalMs = 5000 } = {}) => {
         const now = Date.now();
         if (!force && now - lastSuccessAtRef.current < minIntervalMs) {
-            return integrationsRef.current;
+            return statusRef.current.integrations;
         }
         if (inFlightPromiseRef.current) return inFlightPromiseRef.current;
 
@@ -30,10 +37,13 @@ export const useIntegrationStatus = () => {
         inFlightPromiseRef.current = (async () => {
             try {
                 const response = await api.get('/integrations/status');
-                const nextIntegrations = response.data.data.integrations;
-                updateIntegrations(nextIntegrations);
+                const nextStatus = {
+                    integrations: response.data.data.integrations,
+                    providers: response.data.data.providers || [],
+                };
+                updateStatus(nextStatus);
                 lastSuccessAtRef.current = Date.now();
-                return nextIntegrations;
+                return nextStatus.integrations;
             } catch (err) {
                 toast.error(err.response?.data?.message || 'Não foi possível carregar o status das integrações locais.');
                 throw err;
@@ -46,7 +56,7 @@ export const useIntegrationStatus = () => {
         try {
             return await inFlightPromiseRef.current;
         } catch {
-            return integrationsRef.current;
+            return statusRef.current.integrations;
         }
     }, []);
 
@@ -55,7 +65,8 @@ export const useIntegrationStatus = () => {
     }, [refreshIntegrations]);
 
     return {
-        integrations,
+        integrations: status.integrations,
+        providers: status.providers,
         loading,
         refreshIntegrations,
     };

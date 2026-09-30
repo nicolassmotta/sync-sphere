@@ -6,12 +6,13 @@ import {
     CheckCircle2,
     ExternalLink,
     Loader2,
+    Trash2,
 } from 'lucide-react';
 import PlaylistArtwork from './PlaylistArtwork';
 import PlaylistTrackPreview from './PlaylistTrackPreview';
 import { formatTrackCount } from './formatTrackCount';
 
-const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePreview }) => {
+const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, selected, onSelect, onTogglePreview, onDelete }) => {
     const visibleTrackCount = preview?.totalTracks || playlist.trackCount;
     const unavailable = Boolean(preview?.blocked);
     const checking = Boolean(preview?.loading && !preview?.open);
@@ -29,7 +30,7 @@ const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePrevi
                     <span className="min-w-0">
                         <span className="block truncate text-sm font-extrabold text-white">{playlist.name}</span>
                         <span className="mt-1 block truncate text-xs font-semibold text-muted">
-                            {playlist.ownerName || 'Spotify'} · {formatTrackCount(visibleTrackCount)}
+                            {playlist.ownerName || providerLabel} · {formatTrackCount(visibleTrackCount)}
                         </span>
                     </span>
                 </button>
@@ -47,13 +48,24 @@ const PlaylistRow = memo(({ playlist, preview, selected, onSelect, onTogglePrevi
                     {preview?.open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                 </button>
 
+                {onDelete && (
+                    <button
+                        type="button"
+                        onClick={() => onDelete(playlist.id)}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-red-500/15 hover:text-red-300"
+                        aria-label={`Remover ${playlist.name}`}
+                    >
+                        <Trash2 size={15} />
+                    </button>
+                )}
+
                 {playlist.externalUrl && (
                     <a
                         href={playlist.externalUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                        aria-label={`Abrir ${playlist.name} no Spotify`}
+                        aria-label={`Abrir ${playlist.name} no ${providerLabel}`}
                     >
                         <ExternalLink size={15} />
                     </a>

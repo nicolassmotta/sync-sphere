@@ -1,8 +1,9 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
     Database,
     ExternalLink,
     Info,
+    KeyRound,
     Plug,
     RefreshCw,
     Server,
@@ -17,7 +18,9 @@ import Card from '../ui/Card';
 import CopySnippet from '../ui/CopySnippet';
 import FadeInPage from '../ui/FadeInPage';
 import StatusBadge from '../ui/StatusBadge';
-import { SpotifyIcon, YoutubeIcon } from '../ui/BrandIcons';
+import ProviderIcon from '../ui/ProviderIcon';
+import TextField from '../ui/TextField';
+import { getProviderUi } from '../../constants/providers';
 
 const TechnicalStatusCard = ({ detail, icon: Icon, label, state, tone }) => (
     <div className="rounded-lg border border-white/10 bg-black/35 p-4">
@@ -34,118 +37,311 @@ const TechnicalStatusCard = ({ detail, icon: Icon, label, state, tone }) => (
     </div>
 );
 
-const IntegrationCard = ({
-    accent,
-    children,
-    connected,
-    description,
-    icon,
-    loading,
-    onConnect,
-    onDisconnect,
-    actionLabel,
-    badgeLabel,
-    setupSteps,
-    statusLabel,
-    title,
-}) => (
-    <Card className="relative overflow-hidden p-6 sm:p-7">
-        <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${accent} to-transparent`} />
+const credentialSourceLabels = {
+    panel: 'Salvo pelo painel',
+    env: 'Lido do backend/.env',
+};
 
-        <div className="relative z-10 mb-5 flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/45">
-                {icon}
+const DEFAULT_FIELDS = [{ name: 'cookie', label: 'Cookie' }];
+
+/**
+ * Credenciais coladas no painel (cookie, token). Campos vêm do back-end
+ * (`auth.fields`); campos `optional` podem ficar vazios.
+ */
+const CredentialForm = ({ provider, onSaved }) => {
+    const ui = getProviderUi(provider.id);
+    const fields = provider.auth?.fields?.length ? provider.auth.fields : DEFAULT_FIELDS;
+    const [values, setValues] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [removing, setRemoving] = useState(false);
+    const requiredFilled = fields.every((field) => field.optional || values[field.name]?.trim());
+
+    const save = async () => {
+        setSaving(true);
+        try {
+            const payload = Object.fromEntries(
+                Object.entries(values).map(([name, value]) => [name, value.trim()]).filter(([, value]) => value)
+            );
+            await api.put(`/integrations/${provider.id}/credentials`, { values: payload });
+            setValues({});
+            toast.success(`${provider.label} configurado.`);
+            await onSaved();
+        } catch (err) {
+            toast.error(err.response?.data?.message || `Não foi possível salvar as credenciais do ${provider.label}.`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const remove = async () => {
+        setRemoving(true);
+        try {
+            await api.delete(`/integrations/${provider.id}`);
+            toast.success('Credencial do painel removida.');
+            await onSaved();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Não foi possível remover a credencial.');
+        } finally {
+            setRemoving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            {fields.map((field, index) => (
+                <TextField
+                    key={field.name}
+                    label={field.label}
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={values[field.name] || ''}
+                    onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                    tone={ui.tone}
+                    placeholder={provider.connected && !field.optional ? 'Cole um novo valor para substituir' : field.placeholder || 'Cole o valor'}
+                    hint={index === fields.length - 1 ? 'Fica cifrado em backend/data e tem prioridade sobre a variável do .env.' : undefined}
+                />
+            ))}
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    onClick={save}
+                    variant={ui.buttonVariant}
+                    disabled={!requiredFilled}
+                    loading={saving}
+                    loadingLabel="Validando..."
+                    leftIcon={<KeyRound size={16} />}
+                >
+                    Salvar credencial
+                </Button>
+                {provider.credentialSource === 'panel' && (
+                    <Button
+                        onClick={remove}
+                        variant="secondary"
+                        loading={removing}
+                        loadingLabel="Removendo..."
+                        leftIcon={<Trash2 size={16} />}
+                    >
+                        Remover do painel
+                    </Button>
+                )}
             </div>
-            <div className="min-w-0">
-                <h3 className="text-2xl font-bold text-white">{title}</h3>
-                <div className="mt-2">
-                    <StatusBadge
-                        status={connected ? 'connected' : 'disconnected'}
-                        label={badgeLabel || (connected ? 'Conectado' : 'Pendente')}
-                    />
+        </div>
+    );
+};
+
+const MUSICKIT_SCRIPT = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
+
+const loadMusicKit = () => new Promise((resolve, reject) => {
+    if (window.MusicKit) {
+        resolve(window.MusicKit);
+        return;
+    }
+    document.addEventListener('musickitloaded', () => resolve(window.MusicKit), { once: true });
+    if (!document.querySelector(`script[src="${MUSICKIT_SCRIPT}"]`)) {
+        const script = document.createElement('script');
+        script.src = MUSICKIT_SCRIPT;
+        script.async = true;
+        script.onerror = () => reject(new Error('Não foi possível carregar o MusicKit JS da Apple.'));
+        document.head.appendChild(script);
+    }
+});
+
+/**
+ * Conexão oficial do Apple Music: o MusicKit JS abre o login da Apple e
+ * devolve o Music User Token, que vai para o back-end.
+ */
+const MusicKitConnect = ({ provider, onConnected }) => {
+    const [loading, setLoading] = useState(false);
+
+    const connect = async () => {
+        setLoading(true);
+        try {
+            const tokenResponse = await api.get(`/integrations/${provider.id}/developer-token`);
+            const MusicKit = await loadMusicKit();
+            const music = await MusicKit.configure({
+                developerToken: tokenResponse.data.data.token,
+                app: { name: 'SyncSphere', build: '2.0.0' },
+            });
+            const musicUserToken = await music.authorize();
+            await api.put(`/integrations/${provider.id}/credentials`, { values: { musicUserToken } });
+            toast.success(`${provider.label} conectado.`);
+            await onConnected();
+        } catch (err) {
+            toast.error(err.response?.data?.message || err.message || `Não foi possível conectar o ${provider.label}.`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Button onClick={connect} loading={loading} loadingLabel="Aguardando a Apple..." variant="inverse" fullWidth>
+            {provider.connected ? 'Reconectar com Apple Music' : 'Conectar com Apple Music'}
+        </Button>
+    );
+};
+
+const OAuthActions = ({ provider, onChanged }) => {
+    const ui = getProviderUi(provider.id);
+    const [loading, setLoading] = useState(false);
+
+    const connect = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/integrations/${provider.id}/login`);
+            window.location.href = response.data.data.url;
+        } catch (err) {
+            toast.error(err.response?.data?.message || `Não foi possível abrir a conexão com o ${provider.label}.`);
+            setLoading(false);
+        }
+    };
+
+    const disconnect = async () => {
+        setLoading(true);
+        try {
+            await api.delete(`/integrations/${provider.id}`);
+            await onChanged();
+            toast.success(`${provider.label} desconectado.`);
+        } catch (err) {
+            toast.error(err.response?.data?.message || `Falha ao desconectar ${provider.label}.`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Button
+            onClick={provider.connected ? disconnect : connect}
+            disabled={!provider.connected && provider.configured === false}
+            loading={loading}
+            loadingLabel="Abrindo..."
+            variant={provider.connected ? 'secondary' : ui.buttonVariant}
+            fullWidth
+            leftIcon={provider.connected ? <Trash2 size={16} /> : undefined}
+        >
+            {provider.connected ? `Desconectar ${provider.label}` : `Conectar ${provider.label}`}
+        </Button>
+    );
+};
+
+const describeStatus = (provider) => {
+    if (!provider.connected && provider.canRead) {
+        return 'Lê playlists públicas sem login. Cole a credencial para criar playlists.';
+    }
+    if (!provider.connected) {
+        return provider.auth?.type === 'cookie' ? 'Aguardando cookie' : 'Pendente de conexão';
+    }
+    const source = credentialSourceLabels[provider.credentialSource] || 'Pronto para usar';
+    return provider.accountName ? `${source} · conta ${provider.accountName}` : source;
+};
+
+const ProviderIntegrationCard = ({ provider, onChanged }) => {
+    const ui = getProviderUi(provider.id);
+    const roles = [
+        provider.capabilities?.read && 'origem',
+        provider.capabilities?.write && 'destino',
+    ].filter(Boolean).join(' e ');
+
+    return (
+        <Card className="relative overflow-hidden p-6 sm:p-7">
+            <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${ui.accentGradient} to-transparent`} />
+
+            <div className="relative z-10 mb-5 flex items-start gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/45">
+                    <ProviderIcon providerId={provider.id} size="lg" />
+                </div>
+                <div className="min-w-0">
+                    <h3 className="text-2xl font-bold text-white">{provider.label}</h3>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {!provider.connected && provider.canRead ? (
+                            <StatusBadge status="connected" label="Leitura pública" tone="info" />
+                        ) : (
+                            <StatusBadge status={provider.connected ? 'connected' : 'disconnected'} />
+                        )}
+                        {roles && <Badge tone="neutral">{roles}</Badge>}
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <p className="relative z-10 mb-5 text-sm leading-relaxed text-muted">
-            {description}
-        </p>
+            <p className="relative z-10 mb-5 text-sm leading-relaxed text-muted">{ui.description}</p>
 
-        {setupSteps?.length > 0 && (
-            <div className="mb-5 rounded-lg border border-white/10 bg-black/35 p-4 text-sm text-gray-300">
-                <p className="mb-3 flex items-center gap-2 font-bold text-white">
-                    <Info size={16} className="text-spotify" /> Validação técnica
-                </p>
-                <ol className="list-decimal space-y-1 pl-5 text-xs leading-5 text-muted">
-                    {setupSteps.map((step) => (
-                        <li key={step}>{step}</li>
-                    ))}
-                </ol>
+            {ui.setupSteps?.length > 0 && (
+                <div className="mb-5 rounded-lg border border-white/10 bg-black/35 p-4 text-sm text-gray-300">
+                    <p className="mb-3 flex items-center gap-2 font-bold text-white">
+                        <Info size={16} className="text-spotify" /> Como configurar
+                    </p>
+                    <ol className="list-decimal space-y-1 pl-5 text-xs leading-5 text-muted [overflow-wrap:anywhere]">
+                        {ui.setupSteps.map((step) => (
+                            <li key={step}>{step}</li>
+                        ))}
+                    </ol>
+                </div>
+            )}
+
+            {provider.configured === false && (
+                <Alert tone="warning" title="Falta configurar o back-end" className="mb-5">
+                    {`Defina as variáveis de ${provider.label} no backend/.env (veja abaixo) e reinicie o back-end antes de conectar.`}
+                </Alert>
+            )}
+
+            {ui.credentialWarning && (
+                <Alert tone="warning" title="Credencial sensível" className="mb-5">
+                    {ui.credentialWarning}
+                </Alert>
+            )}
+
+            <div className="relative z-10 space-y-4 rounded-lg border border-white/10 bg-white/[0.045] p-4">
+                <div>
+                    <p className="mb-1 text-xs font-bold uppercase text-white/40">Status atual</p>
+                    <p className={`text-sm font-medium ${provider.connected ? 'text-green-300' : 'text-yellow-300'}`}>
+                        {describeStatus(provider)}
+                    </p>
+                </div>
+                {provider.auth?.type === 'oauth' && <OAuthActions provider={provider} onChanged={onChanged} />}
+                {provider.musicKitAvailable && <MusicKitConnect provider={provider} onConnected={onChanged} />}
+                {provider.auth?.type === 'cookie' && (
+                    provider.musicKitAvailable ? (
+                        <details className="text-sm text-muted">
+                            <summary className="cursor-pointer font-bold text-white/70">Colar tokens manualmente</summary>
+                            <div className="mt-3"><CredentialForm provider={provider} onSaved={onChanged} /></div>
+                        </details>
+                    ) : (
+                        <CredentialForm provider={provider} onSaved={onChanged} />
+                    )
+                )}
+                {provider.auth?.type === 'file' && (
+                    <p className="text-sm text-muted">
+                        Não precisa de conexão. {provider.importedPlaylists
+                            ? `${provider.importedPlaylists} arquivo(s) importado(s).`
+                            : 'Nenhum arquivo importado ainda.'}
+                    </p>
+                )}
             </div>
-        )}
 
-        {children}
-
-        <div className="relative z-10 space-y-4 rounded-lg border border-white/10 bg-white/[0.045] p-4">
-            <div>
-                <p className="mb-1 text-xs font-bold uppercase text-white/40">Status atual</p>
-                <p className={`text-sm font-medium ${connected ? 'text-green-300' : 'text-yellow-300'}`}>
-                    {statusLabel || (connected ? 'Pronto para usar' : 'Pendente de configuração')}
-                </p>
-            </div>
-            <Button
-                onClick={connected ? onDisconnect : onConnect}
-                loading={loading}
-                loadingLabel="Abrindo..."
-                variant={connected ? 'secondary' : 'primary'}
-                fullWidth
-                leftIcon={connected && !actionLabel ? <Trash2 size={16} /> : undefined}
-            >
-                {actionLabel || (connected ? `Desconectar ${title}` : `Conectar ${title}`)}
-            </Button>
-        </div>
-    </Card>
-);
+            {ui.envSnippet && (
+                <div className="mt-5">
+                    <CopySnippet code={ui.envSnippet} label="Alternativa: backend/.env" language="env" />
+                </div>
+            )}
+        </Card>
+    );
+};
 
 const IntegrationsTab = ({
-    integrations,
+    providers = [],
     integrationsLoading,
     refreshIntegrations,
     refreshSystemStatus,
     systemStatus,
     systemStatusLoading,
 }) => {
-    const [connectingSpotify, setConnectingSpotify] = useState(false);
-
-    const spotifyConnected = integrations?.spotify?.connected;
-    const youtubeReady = integrations?.youtubeMusic?.connected;
     const backendOnline = systemStatus?.backend?.status === 'online';
 
-    const startOAuth = async ({ path, setLoading, fallbackMessage }) => {
-        setLoading(true);
-        try {
-            const response = await api.get(path);
-            window.location.href = response.data.data.url;
-        } catch (err) {
-            toast.error(err.response?.data?.message || fallbackMessage);
-            setLoading(false);
-        }
-    };
-
-    const disconnect = async ({ path, successMessage, fallbackMessage }) => {
-        try {
-            await api.delete(path);
-            await refreshIntegrations({ force: true, minIntervalMs: 0 });
-            toast.success(successMessage);
-        } catch (err) {
-            toast.error(err.response?.data?.message || fallbackMessage);
-        }
-    };
+    const refreshProviders = () => refreshIntegrations({ force: true, minIntervalMs: 0 });
 
     const refreshAll = async () => {
         await Promise.all([
             refreshSystemStatus?.(),
-            refreshIntegrations?.({ force: true, minIntervalMs: 0 }),
+            refreshProviders(),
         ]);
     };
 
@@ -157,7 +353,7 @@ const IntegrationsTab = ({
                         <Plug className="text-spotify" /> Integrações locais
                     </h2>
                     <p className="max-w-3xl text-muted">
-                        Status técnico do back-end e dos provedores usados nos fluxos Spotify -&gt; YouTube Music e YouTube Music -&gt; Spotify.
+                        Conecte as plataformas que vai usar como origem ou destino. Credenciais ficam cifradas no seu computador.
                     </p>
                 </div>
                 <Button
@@ -195,7 +391,7 @@ const IntegrationsTab = ({
                         tone={backendOnline ? 'success' : 'danger'}
                     />
                     <TechnicalStatusCard
-                        detail="Credenciais cifradas e histórico em arquivos locais (backend/data); a fila roda no próprio processo."
+                        detail="Credenciais cifradas, histórico e fila em arquivos locais (backend/data); a fila sobrevive a reinícios."
                         icon={Database}
                         label="Dados e fila locais"
                         state={backendOnline ? 'online' : 'offline'}
@@ -205,61 +401,9 @@ const IntegrationsTab = ({
             </Card>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <IntegrationCard
-                    accent="via-spotify"
-                    connected={spotifyConnected}
-                    description="Origem ou destino. O back-end usa OAuth para listar playlists, buscar faixas e criar playlists privadas quando o Spotify for destino."
-                    icon={<SpotifyIcon className="h-8 w-8 fill-spotify" />}
-                    loading={connectingSpotify}
-                    onConnect={() => startOAuth({
-                        path: '/integrations/spotify/login',
-                        setLoading: setConnectingSpotify,
-                        fallbackMessage: 'Não foi possível abrir a conexão com o Spotify.',
-                    })}
-                    onDisconnect={() => disconnect({
-                        path: '/integrations/spotify',
-                        successMessage: 'Spotify desconectado.',
-                        fallbackMessage: 'Falha ao desconectar Spotify.',
-                    })}
-                    setupSteps={[
-                        'Crie um app no painel do Spotify e defina SPOTIFY_CLIENT_ID no backend/.env.',
-                        'Cadastre SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback no Spotify.',
-                        'Reconecte se o app antigo não tiver playlist-modify-private/playlist-modify-public.',
-                        'Clique em "Conectar Spotify" e autorize sua conta no navegador (OAuth + PKCE, sem Client Secret).',
-                    ]}
-                    title="Spotify OAuth"
-                />
-
-                <IntegrationCard
-                    accent="via-youtube"
-                    connected={youtubeReady}
-                    description="Origem ou destino. O back-end lê playlists e cria playlists privadas no YouTube Music usando o cookie local configurado no .env."
-                    icon={<YoutubeIcon className="h-8 w-8 fill-youtube" />}
-                    loading={systemStatusLoading || integrationsLoading}
-                    onConnect={refreshAll}
-                    onDisconnect={refreshAll}
-                    actionLabel="Revalidar cookie"
-                    badgeLabel={youtubeReady ? 'YTMUSIC_COOKIE configurado' : 'YTMUSIC_COOKIE ausente'}
-                    statusLabel={youtubeReady ? 'Cookie detectado no back-end' : 'Aguardando variável local'}
-                    setupSteps={[
-                        'Abra music.youtube.com logado na conta de destino.',
-                        'Copie o cabeçalho Cookie completo de uma requisição da aba Rede.',
-                        'Cole em YTMUSIC_COOKIE no backend/.env e reinicie o back-end.',
-                    ]}
-                    title="YouTube Music"
-                >
-                    <div className="mb-5 space-y-4">
-                        <Alert tone="youtube" title="Destino não usa Google OAuth">
-                            O SyncSphere usa a integração não oficial do YouTube Music via cookie local. Não coloque cookies reais em logs, docs, commits ou capturas de tela.
-                        </Alert>
-                        <CopySnippet
-                            code={`YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
-YTMUSIC_AUTH_USER=0`}
-                            label="backend/.env"
-                            language="env"
-                        />
-                    </div>
-                </IntegrationCard>
+                {providers.map((provider) => (
+                    <ProviderIntegrationCard key={provider.id} provider={provider} onChanged={refreshProviders} />
+                ))}
             </div>
         </FadeInPage>
     );

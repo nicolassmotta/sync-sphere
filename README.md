@@ -19,12 +19,26 @@ SyncSphere é um migrador local e de código aberto de playlists entre Spotify e
 
 ## Arquitetura
 
-- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências em memória.
+- `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion e Lucide.
 - `docs/ai/`: contexto operacional para agentes e decisões recorrentes do projeto.
 - `.agents/skills/sync-sphere/`: skill local usada por agentes que trabalham neste repositório.
 
 Sem MongoDB, sem Redis, sem contas: a aplicação sobe sem nenhuma dependência de infraestrutura externa.
+
+## Plataformas
+
+Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em `backend/src/providers/registry.js`. O painel escolhe origem e destino entre as plataformas registradas; qualquer par funciona.
+
+| Plataforma | Origem | Destino | Autenticação | Observações |
+|---|---|---|---|---|
+| Spotify | sim | sim | OAuth + PKCE (`SPOTIFY_CLIENT_ID`) | Lista as playlists da conta conectada. |
+| YouTube Music | sim | sim | Cookie colado no painel ou `YTMUSIC_COOKIE` | API não oficial; origem por link ou ID de music.youtube.com ou youtube.com. A playlist criada também aparece no YouTube. |
+| Deezer | sim | sim | Nenhuma para ler playlists públicas; cookie `arl` (painel ou `DEEZER_ARL`) para listar suas playlists, ler privadas e criar | Busca exata por ISRC antes da busca por texto. Escrita usa o gateway interno do site (não oficial). |
+| TIDAL | sim | sim | OAuth + PKCE (`TIDAL_CLIENT_ID`; `TIDAL_CLIENT_SECRET` opcional para ler sem login) | API oficial v2. Busca por ISRC. Playlists criadas como "não listadas" (a API não cria privadas). |
+| Apple Music | sim | sim | Nenhuma para ler playlists do catálogo; conta via MusicKit (chave `APPLE_*`) ou cookie `media-user-token` para biblioteca e escrita | Busca por ISRC. Sem chave MusicKit usa o token público do web player (não oficial). |
+| SoundCloud | sim | sim | Nenhuma para ler playlists públicas; cookie `oauth_token` (painel ou `SOUNDCLOUD_OAUTH_TOKEN`) para escrever | API do site (a oficial exige Artist Pro). Catálogo com muito upload de terceiros: só aceita faixa do mesmo artista. |
+| Arquivo | sim | sim | Nenhuma | Importa CSV (Exportify e genérico), JSON, M3U/M3U8 e TXT "Artista - Título"; exporta nos mesmos formatos. Arquivo -> Arquivo converte formatos. |
 
 ## Requisitos
 
@@ -96,7 +110,7 @@ curl http://localhost:8000/api/health
 curl http://localhost:8000/api/ready
 ```
 
-`/api/ready` retorna `storage: "local"` e `queue: "in-memory"`.
+`/api/ready` retorna `storage: "local"` e `queue: "local-persistent"`.
 
 ## 3. Spotify OAuth
 
@@ -112,14 +126,15 @@ No painel de desenvolvedores (`https://developer.spotify.com/dashboard`):
 
 ## 4. Cookie do YouTube Music
 
-YouTube Music usa `YTMUSIC_COOKIE` no back-end local como origem ou destino.
+YouTube Music usa o cookie da sua sessão no navegador como origem ou destino.
 
-1. Abra `https://music.youtube.com` logado na conta de destino.
+1. Abra `https://music.youtube.com` logado na conta que vai usar.
 2. Abra as ferramentas de desenvolvedor, aba Rede.
 3. Clique em uma requisição para `music.youtube.com`.
 4. Copie o cabeçalho `Cookie` completo.
-5. Cole em `YTMUSIC_COOKIE` no `backend/.env`.
-6. Reinicie o back-end e clique em `Revalidar cookie` no painel.
+5. Cole na aba `Integrações` do painel e clique em `Salvar cookie`. O cookie fica cifrado em `backend/data/` e vale na hora, sem reiniciar.
+
+Alternativa: cole em `YTMUSIC_COOKIE` no `backend/.env` e reinicie o back-end. O cookie salvo pelo painel tem prioridade sobre o do `.env`.
 
 Use apenas valores demonstrativos em issues, docs, commits e capturas de tela.
 
@@ -168,7 +183,9 @@ O front-end inclui um tutorial embutido:
 
 - Credenciais de integrações são criptografadas antes de persistir.
 - Axios mantém `withCredentials`.
-- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo.
+- Transferências longas rodam fora do ciclo HTTP, em uma fila no próprio processo que sobrevive a reinícios.
+- Cada faixa tem estado próprio. Se o YouTube Music limitar as buscas ou um token expirar, a transferência pausa (ou espera a reconexão) e continua de onde parou, sem refazer buscas.
+- O painel mostra tempo estimado, faixas por minuto, contadores e as últimas faixas analisadas. Faixas que falharam ficam em "Pendências" no Histórico, com botão para tentar de novo.
 - Socket.io publica progresso para o painel.
 - Como tudo roda local, mantenha `backend/data/` e o `.env` fora de qualquer repositório público.
 
@@ -176,7 +193,7 @@ O front-end inclui um tutorial embutido:
 
 - Front-end não conecta: confira `VITE_API_URL`, `FRONTEND_URL`, porta `8000` e CORS.
 - Spotify OAuth falha: confirme se `SPOTIFY_CLIENT_ID` está no `.env` e se `SPOTIFY_REDIRECT_URI` é idêntico no `.env` e no painel do Spotify.
-- YouTube Music fica pendente: preencha `YTMUSIC_COOKIE`, reinicie o back-end e revalide no painel.
+- YouTube Music fica pendente: cole o cookie em `Integrações` (ou preencha `YTMUSIC_COOKIE` e reinicie o back-end).
 - Playlist não lista faixas: o Spotify pode bloquear playlists sem permissão de leitura; tente outra playlist ou reconecte OAuth.
 - YouTube Music -> Spotify falha ao criar destino: reconecte o Spotify para conceder os escopos de escrita.
 

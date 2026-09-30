@@ -20,3 +20,10 @@ export const transferLimiter = rateLimit({
     max: 10,
     message: { message: 'Cota anti-spam excedida: você atingiu o máximo de transferências permitidas por hora (10). Aguarde.' }
 });
+
+// 4. Ações sobre transferências existentes (retomar, tentar de novo).
+export const transferActionLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    message: { message: 'Muitas ações de retomada em sequência. Aguarde alguns minutos.' }
+});

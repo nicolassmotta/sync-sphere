@@ -1,21 +1,45 @@
-import { ArrowRight, Link2 } from 'lucide-react';
+import { ArrowRight, Clock, Link2 } from 'lucide-react';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
 import TextField from '../../ui/TextField';
 import PlaylistArtwork from './PlaylistArtwork';
 import { formatTrackCount } from './formatTrackCount';
+import { formatEta } from '../../../utils/formatDuration';
+
+const EstimateNotice = ({ estimate, targetLabel }) => {
+    if (!estimate?.trackCount) return null;
+
+    return (
+        <div className="mb-5 rounded-lg border border-white/10 bg-black/30 p-3 text-xs font-semibold leading-5 text-white/70">
+            <p className="flex items-center gap-2 text-sm font-extrabold text-white">
+                <Clock size={15} className="text-spotify" />
+                {formatEta(estimate.etaSeconds)} para {formatTrackCount(estimate.trackCount)}
+            </p>
+            <p className="mt-1">
+                Cerca de {estimate.tracksPerMinute} faixas por minuto no {targetLabel}, com base nas últimas migrações.
+                {estimate.queueAheadSeconds > 0 && ` Antes dela, a fila ainda tem ${formatEta(estimate.queueAheadSeconds)} de trabalho.`}
+            </p>
+            <p className="mt-1 text-muted">
+                Se a plataforma limitar as buscas, a migração pausa e continua sozinha, sem perder faixas.
+            </p>
+        </div>
+    );
+};
 
 const TransferConfirmModal = ({
     isOpen,
     onClose,
-    sourceLabel = 'Spotify',
-    targetLabel = 'YouTube Music',
+    sourceLabel,
+    targetLabel,
+    playlistUrlExample,
+    allowLink = true,
     selectedPlaylists,
     sourcePlaylistId,
     onManualPlaylistChange,
     onStartTransfer,
     selectedCount,
     isTransferring,
+    estimate,
 }) => (
     <Modal
         isOpen={isOpen}
@@ -51,17 +75,21 @@ const TransferConfirmModal = ({
             </div>
         )}
 
-        <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase text-spotify">
-            <Link2 size={14} /> Colar link da playlist
-        </p>
-        <TextField
-            label={`Link da playlist no ${sourceLabel}`}
-            value={sourcePlaylistId}
-            onChange={onManualPlaylistChange}
-            placeholder={sourceLabel === 'YouTube Music'
-                ? 'https://music.youtube.com/playlist?list=PL...'
-                : 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}
-        />
+        <EstimateNotice estimate={estimate} targetLabel={targetLabel} />
+
+        {allowLink && (
+            <>
+                <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase text-spotify">
+                    <Link2 size={14} /> Colar link da playlist
+                </p>
+                <TextField
+                    label={`Link da playlist no ${sourceLabel}`}
+                    value={sourcePlaylistId}
+                    onChange={onManualPlaylistChange}
+                    placeholder={playlistUrlExample || 'Link da playlist'}
+                />
+            </>
+        )}
     </Modal>
 );
 

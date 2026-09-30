@@ -7,7 +7,7 @@ const DashboardLayout = ({ children, user, activeTab, setActiveTab }) => {
         <div className="app-shell flex min-h-screen overflow-hidden text-ink selection:bg-spotify/30">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
-            <div className="relative z-10 flex flex-1 flex-col border-l border-white/10 bg-black/35 backdrop-blur-3xl shadow-2xl">
+            <div className="relative z-10 flex min-w-0 flex-1 flex-col border-l border-white/10 bg-black/35 backdrop-blur-3xl shadow-2xl">
                 <Header user={user} activeTab={activeTab} />
 
                 <nav className="flex gap-2 overflow-x-auto border-b border-white/10 px-4 py-3 md:hidden" aria-label="Navegação do painel">

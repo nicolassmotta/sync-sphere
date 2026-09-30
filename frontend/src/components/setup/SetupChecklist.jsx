@@ -50,8 +50,26 @@ const ChecklistItem = ({ detail, icon: Icon, state, title }) => (
     </li>
 );
 
+const isReady = (provider, role) => Boolean(role === 'source'
+    ? provider.canRead ?? provider.connected
+    : provider.canWrite ?? provider.connected);
+
+const describeConnection = (provider, role) => {
+    if (isReady(provider, role)) {
+        if (!provider.connected) return `${provider.label} lê playlists públicas sem login.`;
+        return role === 'source'
+            ? `${provider.label} conectado para ler playlists.`
+            : `${provider.label} conectado para criar playlists.`;
+    }
+    return provider.auth?.type === 'cookie'
+        ? `Cole o cookie do ${provider.label} em Integrações.`
+        : `Conecte o ${provider.label} em Integrações.`;
+};
+
 const SetupChecklist = ({
     integrations,
+    source,
+    target,
     isTransferring,
     onOpenHistory,
     onOpenIntegrations,
@@ -60,15 +78,14 @@ const SetupChecklist = ({
     refreshLoading,
     readyToTransfer,
     selectedCount = 0,
-    sourceLabel = 'Spotify',
-    targetLabel = 'YouTube Music',
     systemStatus,
 }) => {
     const backendOnline = systemStatus?.backend?.status === 'online';
-    const spotifyConnected = Boolean(integrations?.spotify?.connected);
-    const youtubeReady = Boolean(integrations?.youtubeMusic?.connected);
     const hasSelection = selectedCount > 0;
     const migrationReady = Boolean(readyToTransfer);
+    // Sem par escolhido (Guia local): mostra as plataformas padrão.
+    const sourceProvider = source || { label: 'Spotify', ...integrations?.spotify };
+    const targetProvider = target || { label: 'YouTube Music', ...integrations?.youtubeMusic };
 
     const checklist = [
         {
@@ -80,26 +97,22 @@ const SetupChecklist = ({
             state: backendOnline ? 'done' : 'blocked',
         },
         {
-            title: 'Spotify OAuth',
-            detail: spotifyConnected
-                ? 'OAuth conectado para listar playlists.'
-                : 'Configure credenciais e conecte o Spotify.',
+            title: `Origem: ${sourceProvider.label}`,
+            detail: describeConnection(sourceProvider, 'source'),
             icon: Plug,
-            state: spotifyConnected ? 'done' : 'pending',
+            state: isReady(sourceProvider, 'source') ? 'done' : 'pending',
         },
         {
-            title: 'YTMUSIC_COOKIE',
-            detail: youtubeReady
-                ? 'Cookie configurado no back-end.'
-                : 'Cole o cookie no backend/.env e reinicie a API.',
+            title: `Destino: ${targetProvider.label}`,
+            detail: describeConnection(targetProvider, 'target'),
             icon: ShieldCheck,
-            state: youtubeReady ? 'done' : 'pending',
+            state: isReady(targetProvider, 'target') ? 'done' : 'pending',
         },
         {
             title: 'Playlist escolhida',
             detail: hasSelection
                 ? `${selectedCount} playlist${selectedCount === 1 ? '' : 's'} selecionada${selectedCount === 1 ? '' : 's'}.`
-                : `Selecione uma playlist do ${sourceLabel} ou cole um link.`,
+                : `Selecione uma playlist do ${sourceProvider.label} ou cole um link.`,
             icon: ListMusic,
             state: hasSelection ? 'done' : 'pending',
         },
@@ -107,13 +120,13 @@ const SetupChecklist = ({
             title: 'Migração',
             detail: isTransferring
                 ? 'Tarefa em andamento com progresso via Socket.io.'
-                : migrationReady ? `Pronto para criar playlist no ${targetLabel}.` : 'Aguarde destino e seleção.',
+                : migrationReady ? `Pronto para criar playlist no ${targetProvider.label}.` : 'Aguarde destino e seleção.',
             icon: ListChecks,
             state: isTransferring || migrationReady ? 'done' : 'pending',
         },
         {
             title: 'Histórico',
-            detail: 'Transferências concluídas e falhas aparecem na aba Histórico.',
+            detail: 'Transferências concluídas, pendências e falhas aparecem na aba Histórico.',
             icon: History,
             state: 'pending',
         },

@@ -3,16 +3,26 @@ import {
     applyAuthHeaders,
     buildSapisidAuthorization,
     buildYoutubeMusicAuthError,
+    clearYoutubeMusicCookie,
+    getYoutubeMusicCookie,
+    getYoutubeMusicCookieSource,
     hydrateCookieJarForMusicDomains,
     normalizeCookieHeader,
+    saveYoutubeMusicCookie,
     validateYoutubeMusicCookieDestinationConfig,
 } from './youtubeMusic/youtubeMusicCookieAuth.js';
 import { scoreYoutubeMusicCandidate } from './youtubeMusic/youtubeMusicMatchScoring.js';
 
-export { validateYoutubeMusicCookieDestinationConfig };
+export {
+    clearYoutubeMusicCookie,
+    getYoutubeMusicCookieSource,
+    saveYoutubeMusicCookie,
+    validateYoutubeMusicCookieDestinationConfig,
+};
 
 let publicSearchClientPromise = null;
 let authenticatedClientPromise = null;
+let authenticatedClientCookie = null;
 
 const YTMUSIC_COOKIE_DESTINATION = 'ytmusic-cookie';
 const YOUTUBE_MUSIC_PLAYLIST_MAX_ITEMS = 1000;
@@ -22,7 +32,7 @@ export const isYoutubeMusicCookieDestinationEnabled = () => (
 );
 
 export const isYoutubeMusicCookieDestinationConfigured = () => (
-    Boolean(process.env.YTMUSIC_COOKIE?.trim())
+    Boolean(getYoutubeMusicCookie().trim())
 );
 
 export const normalizeYoutubeMusicPlaylistId = (input) => {
@@ -73,9 +83,15 @@ const createPublicSearchClient = async () => {
 };
 
 const createAuthenticatedClient = async () => {
-    const cookieHeader = normalizeCookieHeader(process.env.YTMUSIC_COOKIE);
-    validateYoutubeMusicCookieDestinationConfig();
+    const cookieHeader = normalizeCookieHeader(getYoutubeMusicCookie());
+    validateYoutubeMusicCookieDestinationConfig(cookieHeader);
     const authorization = buildSapisidAuthorization(cookieHeader);
+
+    // Cookie trocado pelo painel: descarta o cliente autenticado anterior.
+    if (authenticatedClientCookie !== cookieHeader) {
+        authenticatedClientPromise = null;
+        authenticatedClientCookie = cookieHeader;
+    }
 
     if (!authenticatedClientPromise) {
         authenticatedClientPromise = (async () => {

@@ -5,8 +5,8 @@ import { readStore, writeStore } from '../storage/jsonStore.js';
  * que é a pessoa dona da máquina. Este módulo mantém a mesma API que o restante
  * do código já consumia do model Mongoose (`User.findById(...).select(...)` e
  * `instance.save()`), mas guarda apenas os tokens do Spotify em um arquivo local
- * cifrado (`data/credentials.json`). O cookie do YouTube Music continua vindo de
- * `process.env.YTMUSIC_COOKIE`.
+ * cifrado (`data/credentials.json`). Cookies de outros provedores ficam em
+ * `storage/credentialStore.js`.
  */
 const CREDENTIALS_STORE = 'credentials.json';
 export const LOCAL_USER_ID = 'local';

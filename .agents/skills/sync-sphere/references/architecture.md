@@ -1,6 +1,6 @@
 # Referência de Arquitetura do SyncSphere
 
-SyncSphere migra playlists entre Spotify e YouTube Music. É local-first single-user: sem contas, sem banco de dados e sem Redis. Dados em arquivos cifrados (`backend/data/`) e fila em memória.
+SyncSphere migra playlists entre Spotify e YouTube Music. É local-first single-user: sem contas, sem banco de dados e sem Redis. Dados em arquivos cifrados (`backend/data/`) e fila local persistida.
 
 Back-end:
 
@@ -8,11 +8,14 @@ Back-end:
 - `backend/src/app.js`: app Express, middleware de segurança, CORS, JSON, cookies, limite de taxa, rotas e tratamento de erros.
 - `backend/src/socket/transferSocket.js`: registra o usuário local no socket e inscrição em salas de transferência.
 - `backend/src/controllers`: orquestração HTTP.
+- `backend/src/providers`: um adaptador por plataforma e `registry.js` com o contrato (auth, capacidades, leitura, busca, destino). Nova plataforma = novo adaptador + registro.
+- `backend/src/modules/integrations/controllers/providerIntegrationController.js`: rotas genéricas `/integrations/:provider/...`.
 - `backend/src/services`: serviços de negócio reutilizáveis.
-- `backend/src/services/queueService.js`: fila de transferências em memória.
+- `backend/src/services/queueService.js`: fila de transferências persistida em `data/queue.json`, com reagendamento (`rescheduleAt`).
+- `backend/src/errors/providerErrors.js`: classificação de erros das plataformas (`rate_limited`, `auth`, `transient`, `not_found`, `permanent`).
 - `backend/src/services/spotify`: autenticação Spotify, cliente HTTP, erros e formatadores usados por `spotifyService.js`.
 - `backend/src/services/youtubeMusic`: autenticação por cookie do YouTube Music e pontuação de correspondência usadas por `youtubeMusicService.js`.
-- `backend/src/services/transfer`: casos de uso de transferência, processador do trabalhador, snapshots de progresso, repositório e correspondência.
+- `backend/src/services/transfer`: casos de uso de transferência, processador do trabalhador, estado por faixa (`TransferTrackStore`), métricas/ETA (`TransferMetrics`), ações de fila (`transferQueueActions`), snapshots de progresso, repositório e correspondência.
 - `backend/src/storage`: armazenamento local em arquivos JSON cifrados.
 - `backend/src/workers`: registra o processador da fila local.
 - `backend/src/models`: acesso aos dados locais (`User` = usuário local, `Transfer` = histórico).
@@ -24,7 +27,8 @@ Front-end:
 - `frontend/src/services/api.js`: Axios base client, `withCredentials`.
 - `frontend/src/store/useAuthStore.js`: usuário local fixo.
 - `frontend/src/components/dashboard`: abas do painel.
-- `frontend/src/components/dashboard/home`: subcomponentes da aba Início.
+- `frontend/src/components/dashboard/home`: subcomponentes da aba Início (`ProviderPairCard`, `ProviderPlaylistListCard`, `ProviderPlaylistLinkCard`).
+- `frontend/src/constants/providers.js`: visual e textos de ajuda por plataforma; a lista vem de `GET /integrations/status`.
 - `frontend/src/components/layout`: estrutura do app.
 
 Preserve:
