@@ -5,7 +5,7 @@ Interface React/Vite do SyncSphere. O front-end funciona como painel de migraç�
 ## Tecnologias
 
 - React 18
-- Vite
+- Vite 6
 - React Router
 - Zustand
 - Axios com `withCredentials`
@@ -56,14 +56,15 @@ Portas esperadas:
 
 ## Fluxo no Front-end
 
-1. Página inicial explica o fluxo local Spotify <-> YouTube Music.
+1. Página inicial explica a migração local entre os sete provedores.
 2. O painel abre direto, sem login (não há contas).
-3. Início mostra checklist de back-end, Spotify OAuth, `YTMUSIC_COOKIE`, seleção, fila e histórico.
-4. Integrações mostra back-end online/offline, Spotify conectado/desconectado e cookie configurado/não configurado.
+3. Início mostra checklist, seleção de origem e destino, playlists, fila e progresso.
+4. Integrações mostra o estado e a configuração de cada provedor, incluindo leitura pública sem conexão quando disponível.
 5. Guia local traz comandos copiáveis, variáveis de ambiente e solução de problemas.
-6. Seleção de playlists carrega Spotify via OAuth e permite escolher uma ou várias playlists.
+6. Seleção de playlists lista a conta, recebe link/ID ou permite importar um arquivo, conforme a plataforma.
 7. Migração usa `/transfer/start`, a fila local e Socket.io.
-8. Histórico lista status, falhas de correspondência e playlist criada no destino.
+8. Histórico lista status, pendências, faixas não encontradas e saída criada no destino, com downloads para Arquivo.
+9. Revisão manual permite ajustar título/artista, conferir uma alternativa e confirmar sua inserção pela fila.
 
 ## Configuração Local Referenciada pela UI
 

@@ -1,23 +1,25 @@
 # SyncSphere
 
-SyncSphere é um migrador local e de código aberto de playlists entre Spotify e YouTube Music. Ele combina back-end Express, Socket.io e front-end React para guiar a configuração, escolher a direção, iniciar migrações e acompanhar o histórico.
+Versão 1.1.0 em preparação. Consulte as [notas da versão](docs/releases/v1.1.0.md) e o [plano das fases](docs/roadmap.md).
 
-É **self-hosted single-user**: você clona, configura suas credenciais do Spotify e do YouTube Music, e usa na sua própria máquina. Não há contas, login, banco de dados, MongoDB, Redis ou serviços externos. Os dados ficam em arquivos locais cifrados e a fila roda no próprio processo.
+SyncSphere é um migrador local e de código aberto de playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e arquivos CSV, JSON, M3U ou TXT. O painel guia a configuração, permite escolher origem e destino e acompanha progresso, retomadas e revisão de músicas não encontradas.
+
+É **self-hosted single-user**: você clona e usa na sua própria máquina, configurando apenas as plataformas escolhidas. A conversão entre arquivos e a leitura pública de algumas plataformas funcionam sem conectar uma conta. Os dados ficam em arquivos locais cifrados e a fila persiste no próprio processo, sem banco de dados nem Redis.
 
 ## Fluxo Local
 
 1. Instale dependências e gere o build do front-end com `npm run setup`.
 2. Configure o back-end (`backend/.env`).
-3. Configure Spotify OAuth.
-4. Configure `YTMUSIC_COOKIE`.
-5. Suba o servidor único com `npm start`.
-6. Abra `http://localhost:8000`.
-7. Valide integrações no painel.
-8. Escolha a direção da transferência.
-9. Escolha uma ou mais playlists do Spotify ou cole um link/ID do YouTube Music.
-10. Inicie a migração e acompanhe progresso/histórico.
+3. Suba o servidor único com `npm start`.
+4. Abra `http://localhost:8000`.
+5. Em Integrações, conecte as plataformas necessárias ao seu fluxo.
+6. Escolha origem e destino.
+7. Selecione uma playlist da conta, cole seu link/ID ou importe um arquivo.
+8. Inicie a migração e acompanhe progresso e histórico. Revise manualmente as faixas não encontradas quando necessário.
 
 ## Arquitetura
+
+Para contribuir, consulte [CONTRIBUTING.md](CONTRIBUTING.md). Relatos de segurança seguem [SECURITY.md](SECURITY.md).
 
 - `backend/`: Node.js + Express em ESM, Socket.io, Zod. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion e Lucide.
@@ -28,7 +30,7 @@ Sem MongoDB, sem Redis, sem contas: a aplicação sobe sem nenhuma dependência 
 
 ## Plataformas
 
-Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em `backend/src/providers/registry.js`. O painel escolhe origem e destino entre as plataformas registradas; qualquer par funciona.
+Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em `backend/src/providers/registry.js`. O painel permite escolher pares diferentes de origem e destino, além de Arquivo -> Arquivo para converter formatos. A disponibilidade de leitura e escrita depende das credenciais e do catálogo de cada serviço.
 
 | Plataforma | Origem | Destino | Autenticação | Observações |
 |---|---|---|---|---|
@@ -43,8 +45,10 @@ Cada plataforma é um adaptador em `backend/src/providers/<id>/`, registrado em 
 ## Requisitos
 
 - Node.js 20+
-- App Spotify com OAuth configurado para leitura e criação de playlists
-- cookie do YouTube Music em `YTMUSIC_COOKIE`
+- Credenciais apenas das plataformas que você pretende conectar, conforme a tabela acima.
+- Para Spotify: app com OAuth configurado. Para YouTube Music: cookie colado em Integrações ou definido em `YTMUSIC_COOKIE`.
+
+Apps Spotify em modo de desenvolvimento exigem Premium na conta proprietária do app e têm restrições para playlists de terceiros. Consulte o [guia oficial do Spotify](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).
 
 ## 1. Uso Local em `localhost:8000`
 
@@ -61,7 +65,7 @@ No Windows PowerShell, use:
 Copy-Item backend/.env.example backend/.env
 ```
 
-Preencha `backend/.env`, configure o callback do Spotify e inicie:
+Preencha `backend/.env` conforme as plataformas escolhidas e inicie:
 
 ```bash
 npm start
