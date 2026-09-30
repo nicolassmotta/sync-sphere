@@ -69,6 +69,23 @@ export const transferIdSchema = z.object({
     params: transferIdParams,
 });
 
+const manualTrackParams = transferIdParams.extend({
+    trackIndex: z.string().regex(/^\d+$/, 'Índice da faixa inválido.').max(6),
+});
+
+export const manualMatchSearchSchema = z.object({
+    params: manualTrackParams,
+    body: z.object({
+        name: z.string().trim().min(1, 'Informe o título.').max(300),
+        artist: z.string().trim().min(1, 'Informe o artista.').max(300),
+    }),
+});
+
+export const manualMatchConfirmSchema = z.object({
+    params: manualTrackParams,
+    body: z.object({ candidateId: z.string().uuid('Alternativa inválida.') }),
+});
+
 export const transferTracksSchema = z.object({
     params: transferIdParams,
     query: z.object({

@@ -96,6 +96,7 @@ const toCandidate = (track) => {
         id: normalized.soundcloudId,
         name: normalized.name,
         rawName: track.title,
+        externalUrl: normalized.uri,
         artists: normalized.artists,
         durationMs: normalized.durationMs,
         isrc: normalized.isrc,

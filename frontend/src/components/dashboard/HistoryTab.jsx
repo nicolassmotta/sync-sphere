@@ -21,6 +21,7 @@ import LoadingState from '../ui/LoadingState';
 import Modal from '../ui/Modal';
 import StatusBadge from '../ui/StatusBadge';
 import TextField from '../ui/TextField';
+import ManualTrackReview from './ManualTrackReview';
 
 const formatDate = (date) => {
     if (!date) return '-';
@@ -71,18 +72,23 @@ const legacyTracks = (item) => (item.errors || []).map((error, index) => ({
     status: error.status || (error.reason?.includes('Nenhum resultado') ? 'not_found' : 'failed'),
 }));
 
-const TransferDetails = ({ item }) => {
+const TransferDetails = ({ item, onQueued }) => {
     const [tracks, setTracks] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
+    const [reviewing, setReviewing] = useState(null);
+    const [hasTrackStore, setHasTrackStore] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
         setTracks(null);
+        setReviewing(null);
+        setHasTrackStore(false);
 
         api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found' } })
             .then((response) => {
                 if (cancelled) return;
                 const loaded = response.data.data.tracks || [];
+                setHasTrackStore(Boolean(response.data.data.counts?.total));
                 setTracks(loaded.length || response.data.data.counts?.total ? loaded : legacyTracks(item));
             })
             .catch(() => {
@@ -96,6 +102,14 @@ const TransferDetails = ({ item }) => {
 
     const tab = DETAIL_TABS.find((candidate) => candidate.id === activeTab);
     const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status));
+    const canReview = hasTrackStore && ['completed', 'failed'].includes(item.status)
+        && getTransferProviders(item).targetProvider !== 'file';
+
+    if (reviewing) return (
+        <ManualTrackReview transferId={item._id} track={reviewing}
+            providerLabel={getProviderLabel(getTransferProviders(item).targetProvider)}
+            onBack={() => setReviewing(null)} onQueued={onQueued} />
+    );
 
     return (
         <div className="space-y-4 text-sm leading-relaxed text-gray-300">
@@ -162,10 +176,15 @@ const TransferDetails = ({ item }) => {
                         {track.status === 'not_found'
                             ? <XCircle size={15} className="mt-0.5 shrink-0 text-yellow-300" />
                             : <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />}
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                             <p className="truncate font-bold text-white">{track.name} - {track.artist}</p>
                             <p className="text-xs text-muted">{track.lastError}</p>
                         </div>
+                        {canReview && ['not_found', 'failed'].includes(track.status) && !track.inserted && (
+                            <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>
+                                Escolher alternativa
+                            </Button>
+                        )}
                     </div>
                 ))}
             </div>
@@ -229,6 +248,13 @@ const HistoryTab = ({ onTransfersQueued }) => {
             setRetrying(null);
         }
     }, [fetchHistory, history, onTransfersQueued]);
+
+    const handleReviewQueued = (response) => {
+        toast.success(response.message);
+        onTransfersQueued?.([response.data.transfer._id]);
+        setSelectedLog(null);
+        fetchHistory();
+    };
 
     const filteredHistory = history.filter(item =>
         item.playlistName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -389,7 +415,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                     </>
                 )}
             >
-                {selectedLog && <TransferDetails item={selectedLog} />}
+                {selectedLog && <TransferDetails item={selectedLog} onQueued={handleReviewQueued} />}
             </Modal>
         </FadeInPage>
     );
