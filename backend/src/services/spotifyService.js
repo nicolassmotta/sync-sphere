@@ -144,6 +144,7 @@ const getSpotifyPublicPlaylistPathfinderTracks = async ({ playlistId, accessToke
     const tracks = [];
     let offset = 0;
     let totalCount = 0;
+    let moreItems = false;
 
     while (tracks.length < maxItems) {
         const limit = Math.min(SPOTIFY_PUBLIC_PLAYLIST_PAGE_LIMIT, maxItems - tracks.length);
@@ -156,6 +157,7 @@ const getSpotifyPublicPlaylistPathfinderTracks = async ({ playlistId, accessToke
 
         tracks.push(...page.tracks);
         totalCount = page.totalCount ?? totalCount;
+        moreItems = Boolean(page.nextOffset && page.nextOffset > offset && (!totalCount || page.nextOffset < totalCount));
 
         if (!page.nextOffset || page.nextOffset <= offset || (totalCount && page.nextOffset >= totalCount)) {
             break;
@@ -166,8 +168,10 @@ const getSpotifyPublicPlaylistPathfinderTracks = async ({ playlistId, accessToke
 
     return {
         tracks,
-        totalCount: totalCount || tracks.length,
-        hasMore: totalCount ? totalCount > tracks.length : false,
+        totalCount: totalCount || (moreItems ? null : tracks.length),
+        hasMore: totalCount ? totalCount > tracks.length : moreItems,
+        truncated: tracks.length >= maxItems && moreItems,
+        omittedTracks: tracks.length >= maxItems && moreItems && totalCount ? Math.max(0, totalCount - tracks.length) : null,
     };
 };
 
@@ -217,6 +221,8 @@ const getSpotifyPublicPlaylistEmbedSnapshot = async ({ playlistId, playlist, max
         totalTracks: publicPage.totalCount,
         returnedTracks: tracks.length,
         hasMore: publicPage.hasMore,
+        truncated: Boolean(publicPage.truncated),
+        omittedTracks: publicPage.omittedTracks ?? (publicPage.truncated ? null : 0),
         source: 'spotify-public-embed',
         tracks,
     };
@@ -231,7 +237,7 @@ const getSpotifyPlaylistTracksWithPublicFallback = async ({ playlistId, accessTo
         });
     } catch (error) {
         if ((error instanceof SpotifyPlaylistAccessError || error?.isPermanentTransferError) && playlist?.public === true) {
-            return (await getSpotifyPublicPlaylistEmbedSnapshot({ playlistId, playlist })).tracks;
+            return getSpotifyPublicPlaylistEmbedSnapshot({ playlistId, playlist });
         }
 
         decorateSpotifyPlaylistAccessError(error, playlist);
@@ -288,7 +294,7 @@ const getSpotifyPlaylistTracks = async ({ playlistId, accessToken, itemsReferenc
             });
     }
 
-    return tracks;
+    return { tracks, totalTracks: total, truncated: false, omittedTracks: 0, unavailableTracks: Math.max(0, total - tracks.length) };
 };
 
 export const getSpotifyPlaylistSnapshot = async ({ playlistId, userId }) => {
@@ -298,7 +304,7 @@ export const getSpotifyPlaylistSnapshot = async ({ playlistId, userId }) => {
         playlistId: normalizedPlaylistId,
         accessToken,
     });
-    const tracks = await getSpotifyPlaylistTracksWithPublicFallback({
+    const snapshot = await getSpotifyPlaylistTracksWithPublicFallback({
         playlistId: normalizedPlaylistId,
         accessToken,
         playlist,
@@ -310,8 +316,11 @@ export const getSpotifyPlaylistSnapshot = async ({ playlistId, userId }) => {
         description: playlist.description || '',
         ownerName: playlist.owner?.display_name || '',
         imageUrl: getSpotifyFirstImageUrl(playlist.images),
-        totalTracks: tracks.length,
-        tracks,
+        totalTracks: snapshot.totalTracks,
+        tracks: snapshot.tracks,
+        truncated: snapshot.truncated,
+        omittedTracks: snapshot.omittedTracks,
+        unavailableTracks: snapshot.unavailableTracks,
     };
 };
 

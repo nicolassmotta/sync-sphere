@@ -38,7 +38,9 @@ const getDirectionLabel = (item) => {
     return `${getProviderLabel(sourceProvider)} -> ${getProviderLabel(targetProvider)}`;
 };
 
-const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0);
+const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0) + (item.pendingInsertCount || 0);
+
+const getInsertedCount = (item) => Math.max(0, (item.matchedCount ?? item.processedTracks ?? 0) - (item.pendingInsertCount || 0));
 
 const getStatusLabel = (item) => {
     if (item.status === 'completed' && getPendingCount(item)) return 'Concluída com pendências';
@@ -59,7 +61,7 @@ const TransferStatusBadge = ({ item }) => (
 const canRetry = (item) => item.status !== 'processing' && (getPendingCount(item) > 0 || item.status === 'failed');
 
 const DETAIL_TABS = [
-    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued'] },
+    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued', 'matched'] },
     { id: 'not_found', label: 'Não encontradas', statuses: ['not_found'] },
 ];
 
@@ -84,7 +86,7 @@ const TransferDetails = ({ item, onQueued }) => {
         setReviewing(null);
         setHasTrackStore(false);
 
-        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found' } })
+        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found,matched' } })
             .then((response) => {
                 if (cancelled) return;
                 const loaded = response.data.data.tracks || [];
@@ -101,7 +103,7 @@ const TransferDetails = ({ item, onQueued }) => {
     }, [item]);
 
     const tab = DETAIL_TABS.find((candidate) => candidate.id === activeTab);
-    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status));
+    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted));
     const canReview = hasTrackStore && ['completed', 'failed'].includes(item.status)
         && getTransferProviders(item).targetProvider !== 'file';
 
@@ -143,7 +145,7 @@ const TransferDetails = ({ item, onQueued }) => {
 
             <div className="flex gap-2" role="tablist">
                 {DETAIL_TABS.map((candidate) => {
-                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status)).length;
+                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted)).length;
                     return (
                         <button
                             key={candidate.id}
@@ -178,7 +180,7 @@ const TransferDetails = ({ item, onQueued }) => {
                             : <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />}
                         <div className="min-w-0 flex-1">
                             <p className="truncate font-bold text-white">{track.name} - {track.artist}</p>
-                            <p className="text-xs text-muted">{track.lastError}</p>
+                            <p className="text-xs text-muted">{track.status === 'matched' ? 'Correspondência preservada. Aguardando inserção no destino.' : track.lastError}</p>
                         </div>
                         {canReview && ['not_found', 'failed'].includes(track.status) && !track.inserted && (
                             <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>
@@ -291,7 +293,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                             {totalPending} {totalPending === 1 ? 'faixa pendente' : 'faixas pendentes'} em {playlistsWithPending} {playlistsWithPending === 1 ? 'playlist' : 'playlists'}
                         </p>
                         <p className="mt-1 text-sm text-white/65">
-                            São faixas que falharam por bloqueio, token expirado ou erro temporário. Nada foi perdido: dá para tentar de novo.
+                            Inclui falhas de busca e faixas encontradas que ainda aguardam inserção. Tentar de novo preserva as correspondências já resolvidas.
                         </p>
                     </div>
                     <Button
@@ -346,7 +348,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                     </td>
                                     <td className="p-5"><TransferStatusBadge item={item} /></td>
                                     <td className="p-5 font-medium text-gray-300">
-                                        <span className="text-green-400">{item.matchedCount ?? item.processedTracks ?? 0}</span>
+                                        <span className="text-green-400">{getInsertedCount(item)}</span>
                                         <span className="px-1 text-gray-600">/</span>
                                         {item.totalTracks}
                                         <span className="px-1 text-gray-600">/</span>
@@ -385,7 +387,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                 isOpen={Boolean(selectedLog)}
                 onClose={() => setSelectedLog(null)}
                 title={selectedLog ? `Relatório: ${selectedLog.playlistName}` : ''}
-                description={selectedLog ? `${selectedLog.matchedCount ?? selectedLog.processedTracks ?? 0}/${selectedLog.totalTracks} faixas migradas - ${formatDate(selectedLog.updatedAt)}` : ''}
+                description={selectedLog ? `${getInsertedCount(selectedLog)}/${selectedLog.totalTracks} faixas migradas - ${formatDate(selectedLog.updatedAt)}` : ''}
                 footer={selectedLog && (
                     <>
                         {canRetry(selectedLog) && (

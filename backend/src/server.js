@@ -7,6 +7,7 @@ import { registerTransferSocket } from './socket/transferSocket.js';
 import { startWorker } from './workers/transferWorker.js';
 import logger from './utils/logger.js';
 import { socketCorsOptions } from './config/cors.js';
+import { validateEssentialStores } from './storage/jsonStore.js';
 
 const PORT = process.env.PORT || 8000;
 
@@ -18,6 +19,7 @@ const isWorkerDisabled = () => (
 // em arquivos cifrados e a fila roda no próprio processo.
 const startServer = async () => {
     try {
+        validateEssentialStores();
         // Acopla servidor HTTP e Socket.io por cima do Express.
         const server = http.createServer(app);
         const io = new Server(server, {

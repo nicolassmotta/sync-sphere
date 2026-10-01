@@ -387,3 +387,150 @@ describe('TransferProcessor: YouTube Music para Spotify', () => {
         expect(transferRecord).toMatchObject({ status: 'needs_auth', retryQueuedCount: 1 });
     });
 });
+
+describe('regressões de recuperação e leitura', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockGetSpotifyPlaylistSnapshot.mockResolvedValue({ id: 'origem', name: 'Playlist', totalTracks: 1, tracks: [{ name: 'A', artist: 'X' }] });
+    });
+
+    it('não publica falha terminal na tentativa transitória de inserção', async () => {
+        const error = Object.assign(new Error('Serviço temporariamente indisponível'), { status: 503 });
+        const { processor, publisher, destinationClient } = buildProcessor({ destinationOverrides: {
+            addVideosToPlaylist: jest.fn().mockRejectedValueOnce(error).mockResolvedValue(undefined),
+        } });
+        await expect(processor.process(spotifyJob)).rejects.toBe(error);
+        expect(publisher.emit.mock.calls.some(([, snapshot]) => snapshot.status === 'failed')).toBe(false);
+        await processor.process(spotifyJob);
+        expect(destinationClient.createPlaylist).toHaveBeenCalledTimes(1);
+    });
+
+    it('recusa snapshot cortado antes de buscar ou criar destino', async () => {
+        mockGetSpotifyPlaylistSnapshot.mockResolvedValue({ id: 'origem', name: 'Playlist', totalTracks: 3, truncated: true, omittedTracks: 2, tracks: [{ name: 'A', artist: 'X' }] });
+        const { processor, transferRecord, searchClient, destinationClient } = buildProcessor();
+        await expect(processor.process(spotifyJob)).rejects.toMatchObject({ name: 'UnrecoverableError' });
+        expect(transferRecord).toMatchObject({ sourceTotalTracks: 3, sourceOmittedTracks: 2, sourceTruncated: true, status: 'failed' });
+        expect(searchClient.searchBestMatch).not.toHaveBeenCalled();
+        expect(destinationClient.createPlaylist).not.toHaveBeenCalled();
+    });
+});
+
+it('retoma escrita parcial preservando repetições, playlist, busca e ocorrências confirmadas', async () => {
+    const { getMissingTrackIds } = await import('../src/services/transfer/reconcileTrackIds.js');
+    const existing = ['A'];
+    let attempt = 0;
+    const insert = jest.fn(async ({ videoIds, expectedIds }) => {
+        const pending = getMissingTrackIds({ ids: videoIds, existingIds: existing, expectedIds });
+        if (attempt++ === 0) {
+            existing.push(pending[0]);
+            throw Object.assign(new Error('Falha parcial'), { status: 503 });
+        }
+        existing.push(...pending);
+    });
+    const trackStore = buildTrackStore([
+        { index: 0, name: 'A', status: TRACK_STATUS.MATCHED, targetId: 'A', inserted: true, matchSource: 'manual', matchScore: 95 },
+        { index: 1, name: 'B', status: TRACK_STATUS.MATCHED, targetId: 'B', inserted: false, matchSource: 'search', matchScore: 90 },
+        { index: 2, name: 'A', status: TRACK_STATUS.MATCHED, targetId: 'A', inserted: false, matchSource: 'manual', matchScore: 95 },
+    ]);
+    const { processor, searchClient, destinationClient, transferRecord } = buildProcessor({ trackStore,
+        transferRecord: buildTransferRecord({ status: 'failed', targetPlaylistId: 'existente', playlistName: 'Playlist' }),
+        destinationOverrides: { addVideosToPlaylist: insert },
+    });
+    await expect(processor.process(spotifyJob)).rejects.toMatchObject({ status: 503 });
+    expect(existing).toEqual(['A', 'B']);
+    await processor.process(spotifyJob);
+    expect(existing).toEqual(['A', 'B', 'A']);
+    expect(searchClient.searchBestMatch).not.toHaveBeenCalled();
+    expect(destinationClient.createPlaylist).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenLastCalledWith({ playlistId: 'existente', videoIds: ['B', 'A'], expectedIds: ['A', 'B', 'A'] });
+    expect(transferRecord.status).toBe('completed');
+    expect(trackStore.store.tracks.every((track) => track.inserted)).toBe(true);
+});
+
+it.each([
+    { totalTracks: undefined },
+    { totalTracks: 3, truncated: false, unavailableTracks: 2 },
+])('snapshot sem corte por limite conclui mesmo com total desconhecido ou itens indisponíveis: %j', async (metadata) => {
+    mockGetSpotifyPlaylistSnapshot.mockResolvedValue({ id: 'origem', name: 'Playlist', tracks: [{ name: 'A', artist: 'X' }], ...metadata });
+    const { processor, transferRecord } = buildProcessor();
+    await processor.process(spotifyJob);
+    expect(transferRecord.status).toBe('completed');
+    expect(transferRecord.sourceTruncated).toBe(false);
+    expect(transferRecord.sourceTotalTracks).toBe(metadata.totalTracks ?? null);
+});
+
+describe('integração do trabalhador com fila persistida', () => {
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+    let queue;
+    beforeEach(async () => {
+        queue = await import('../src/services/queueService.js');
+        queue.resetQueueForTests();
+        process.env.YT_MUSIC_SEARCH_DELAY_MS = '0';
+        const { resetMatchCacheForTests } = await import('../src/services/matching/MatchCache.js');
+        resetMatchCacheForTests();
+        const { default: Transfer } = await import('../src/models/Transfer.js');
+        for (const record of await Transfer.find({})) { record.status = 'completed'; await record.save(); }
+        const { removeStore } = await import('../src/storage/jsonStore.js');
+        removeStore('match-cache.json');
+        const { writeStore } = await import('../src/storage/jsonStore.js');
+        writeStore('queue.json', []);
+        jest.useFakeTimers({ doNotFake: ['setImmediate'] });
+        mockGetSpotifyPlaylistSnapshot.mockResolvedValue({ id: 'origem', name: 'Playlist', totalTracks: 1, tracks: [{ name: 'A', artist: 'X' }] });
+    });
+    afterEach(() => { queue.resetQueueForTests(); jest.useRealTimers(); delete process.env.YT_MUSIC_SEARCH_DELAY_MS; });
+
+    const runWorker = async (insert) => {
+        const { default: Transfer } = await import('../src/models/Transfer.js');
+        const { addTransferJob } = queue;
+        const { startWorker } = await import('../src/workers/transferWorker.js');
+        const { readStore } = await import('../src/storage/jsonStore.js');
+        const [record] = await Transfer.insertMany([{ user: 'local', sourcePlaylistId: 'origem', status: 'completed' }]);
+        const search = jest.fn().mockResolvedValue({ videoId: 'video', matchScore: 95 });
+        const create = jest.fn().mockResolvedValue('existente');
+        mockCreateYoutubeMusicSearchClient.mockReturnValue({ searchBestMatch: search });
+        mockCreateYoutubeMusicCookieDestinationClient.mockReturnValue({ createPlaylist: create, addVideosToPlaylist: insert, getPlaylistUrl: () => 'https://example.test/playlist' });
+        const snapshots = [];
+        startWorker({ to: () => ({ emit: (event, snapshot) => snapshots.push(snapshot) }) });
+        await flush();
+        record.status = 'pending';
+        await record.save();
+        await addTransferJob(record._id, 'local', 'origem');
+        await flush();
+        return { record, snapshots, search, create, readStore };
+    };
+
+    it('503 publica pausa com o horário do job e depois sucesso sem repetir busca ou criação', async () => {
+        const error = Object.assign(new Error('Falha temporária de inserção'), { status: 503 });
+        const context = await runWorker(jest.fn().mockRejectedValueOnce(error).mockResolvedValue(undefined));
+        expect(context.record.status).toBe('paused');
+        expect(context.record.resumeAt).toBe(context.readStore('queue.json', [])[0].runAfter);
+        expect(context.snapshots.some((snapshot) => snapshot.status === 'failed')).toBe(false);
+        expect(context.snapshots.at(-1)).toMatchObject({ status: 'paused', pauseReason: 'retry_scheduled', resumeAt: context.record.resumeAt });
+        await jest.advanceTimersByTimeAsync(5000);
+        await flush();
+        expect(context.record.status).toBe('completed');
+        expect(context.snapshots.at(-1).status).toBe('completed');
+        expect(context.search).toHaveBeenCalledTimes(1);
+        expect(context.create).toHaveBeenCalledTimes(1);
+        expect(context.readStore('queue.json', [])).toEqual([]);
+    });
+
+    it('esgotamento das três tentativas persiste e publica falha definitiva', async () => {
+        const context = await runWorker(jest.fn().mockRejectedValue(Object.assign(new Error('Falha temporária'), { status: 503 })));
+        await jest.advanceTimersByTimeAsync(5000);
+        await flush();
+        expect(context.record.status).toBe('paused');
+        await jest.advanceTimersByTimeAsync(10000);
+        await flush();
+        expect(context.record).toMatchObject({ status: 'failed', resumeAt: null, phase: 'done' });
+        expect(context.snapshots.at(-1).status).toBe('failed');
+        expect(context.readStore('queue.json', [])).toEqual([]);
+    });
+
+    it('erro irrecuperável termina sem agendar nova tentativa', async () => {
+        const context = await runWorker(jest.fn().mockRejectedValue(Object.assign(new Error('Operação recusada'), { status: 403 })));
+        expect(context.record.status).toBe('failed');
+        expect(context.readStore('queue.json', [])).toEqual([]);
+        expect(context.snapshots.some((snapshot) => snapshot.status === 'paused')).toBe(false);
+    });
+});

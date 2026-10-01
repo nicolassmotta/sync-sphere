@@ -19,10 +19,13 @@ export const getOwnedTransfer = async ({ transferId, userId }) => {
     return transfer;
 };
 
-export const listOwnedTransfers = ({ userId, limit = 50 }) => {
-    return Transfer.find({ user: userId })
-        .sort({ createdAt: -1 })
-        .limit(limit);
+export const listOwnedTransfers = async ({ userId, limit = 50 }) => {
+    const transfers = await Transfer.find({ user: userId }).sort({ createdAt: -1 }).limit(limit);
+    return transfers.map((transfer) => ({
+        ...transfer,
+        pendingInsertCount: transfer.pendingInsertCount
+            ?? summarizeTransferTracks(loadTransferTracks(transfer._id) || []).pendingInserts,
+    }));
 };
 
 export const listTransferTracks = async ({ transferId, userId, status }) => {

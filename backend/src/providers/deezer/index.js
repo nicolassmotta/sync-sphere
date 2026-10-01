@@ -76,6 +76,8 @@ const readPlaylist = async (playlistId, { limit = DEEZER_PLAYLIST_MAX_ITEMS } = 
             : null,
         totalTracks: Number(data.NB_SONG) || tracks.length,
         tracks,
+        truncated: songs.length > limit,
+        omittedTracks: Math.max(0, songs.length - limit),
     };
 };
 

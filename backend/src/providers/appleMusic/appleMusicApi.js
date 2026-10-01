@@ -48,7 +48,7 @@ export const appleRequest = async (path, { params = {}, method = 'GET', body, us
     return data;
 };
 
-const paginate = async (path, { params, user, limit = Infinity }) => {
+const paginate = async (path, { params, user, limit = Infinity, withReadInfo = false }) => {
     const items = [];
     let next = path;
     let query = { limit: PAGE_LIMIT, ...params };
@@ -59,7 +59,8 @@ const paginate = async (path, { params, user, limit = Infinity }) => {
         next = page?.next || null;
         query = {};
     }
-    return items.slice(0, limit);
+    const result = items.slice(0, limit);
+    return withReadInfo ? { items: result, truncated: Boolean(next) || items.length > limit } : result;
 };
 
 export const toAppleTrack = (song) => {
@@ -88,19 +89,20 @@ export const getStorefront = async () => {
 export const getCatalogPlaylist = async ({ storefront, playlistId, limit }) => {
     const data = await appleRequest(`/v1/catalog/${storefront}/playlists/${encodeURIComponent(playlistId)}`);
     const playlist = data?.data?.[0];
-    const songs = await paginate(`/v1/catalog/${storefront}/playlists/${encodeURIComponent(playlistId)}/tracks`, { limit });
-    return { playlist, songs };
+    const snapshot = await paginate(`/v1/catalog/${storefront}/playlists/${encodeURIComponent(playlistId)}/tracks`, { limit, withReadInfo: true });
+    return { playlist, songs: snapshot.items, truncated: snapshot.truncated };
 };
 
 export const getLibraryPlaylist = async ({ playlistId, limit }) => {
     const data = await appleRequest(`/v1/me/library/playlists/${encodeURIComponent(playlistId)}`, { user: true });
     const playlist = data?.data?.[0];
-    const songs = await paginate(`/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`, {
+    const snapshot = await paginate(`/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`, {
         params: { include: 'catalog' },
         user: true,
         limit,
+        withReadInfo: true,
     });
-    return { playlist, songs };
+    return { playlist, songs: snapshot.items, truncated: snapshot.truncated };
 };
 
 export const listLibraryPlaylists = () => paginate('/v1/me/library/playlists', { user: true, limit: 1000 });

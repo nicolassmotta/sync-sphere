@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import transferRoutes from './routes/transferRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
+import { validateEssentialStores } from './storage/jsonStore.js';
 
 const app = express();
 
@@ -58,8 +59,15 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/ready', (req, res) => {
-    // No modo local não há dependências externas: o armazenamento é em arquivo
-    // e a fila roda no próprio processo.
+    try {
+        validateEssentialStores();
+    } catch (error) {
+        return res.status(503).json({
+            status: 'not_ready',
+            dependencies: { storage: 'unreadable', queue: 'blocked' },
+            message: error.message,
+        });
+    }
     res.status(200).json({
         status: 'ready',
         dependencies: {
