@@ -53,19 +53,27 @@ O backend usa ESM, Express e Zod. O frontend usa React 18, Vite 6, React Router,
 
 Controllers e processador trabalham com esse contrato. Integrações específicas ficam dentro do provedor ou do serviço usado por ele.
 
+## Integridade do snapshot de origem
+
+Snapshots informam `truncated` quando o limite interrompe a paginação ou corta itens efetivamente retornados. `omittedTracks` informa quantas ocorrências foram cortadas, ou `null` quando essa quantidade não pode ser determinada. `unavailableTracks`, quando identificável, separa itens indisponíveis ou não suportados de um corte por limite. Um total maior que as faixas migráveis, sozinho, não prova truncamento.
+
+A transferência persiste `sourceTotalTracks`, `sourceTruncated`, `sourceOmittedTracks` e `sourceUnavailableTracks`. Snapshots truncados são recusados antes de persistir faixas, buscar correspondências ou criar o destino, com orientação para dividir a playlist. Total desconhecido permanece `null` quando o provedor não consegue determiná-lo. Prévia e snapshot têm limites distintos; `hasMore` da prévia não determina sozinho a recusa da migração.
+
 ## Fila e estado por faixa
 
 A fila tem uma raia por destino. Cada raia processa um job por vez, enquanto destinos diferentes podem avançar em paralelo. Jobs, tentativas e horários de retomada são persistidos em `queue.json`.
 
 O estado da transferência usa `pending`, `processing`, `paused`, `needs_auth`, `completed` ou `failed`. As fases de progresso são `queued`, `reading`, `matching`, `inserting` e `done`.
 
+O retry de inserção preserva `matched`, ID, pontuação e revisão manual. `pendingInsertCount` informa ocorrências resolvidas ainda não confirmadas no destino. Jobs existentes e ações simultâneas impedem outro retry.
+
 Cada faixa usa `pending`, `matched`, `not_found`, `retry_queued` ou `failed`, além de `inserted`. Os checkpoints permitem pular buscas já resolvidas ao retomar.
 
-Erros de limite de requisições pausam o fluxo. Erros de credencial pedem reconexão. Falhas temporárias recebem tentativas limitadas. Falhas definitivas e resultados ausentes ficam disponíveis no Histórico.
+Erros de limite de requisições pausam o fluxo. Erros de credencial pedem reconexão. Falhas temporárias recebem até três tentativas de job. A fila persiste o backoff e o trabalhador publica `paused` com `pauseReason=retry_scheduled` e o mesmo `resumeAt` do job. `failed` é publicado somente para falha definitiva ou esgotamento. O socket continua inscrito durante a pausa. Falhas definitivas e resultados ausentes ficam disponíveis no Histórico.
 
 ## Correspondência e revisão
 
-O cache usa uma chave derivada do destino, contexto do catálogo e metadados da gravação. Ele guarda apenas correspondências aceitas, com validade de sete dias e limite de 5.000 entradas. Acertos pulam busca e atraso, sem alterar a média de latência externa usada nas métricas.
+O cache usa uma chave derivada do destino, contexto do catálogo e metadados da gravação. Ele guarda apenas correspondências aceitas, com validade de sete dias e limite de 5.000 entradas. Acertos pulam busca e atraso, sem alterar a média de latência externa usada nas métricas. Um índice em memória é compartilhado por todas as raias do processo. A persistência cifrada e atômica ocorre a cada cem mudanças, após um segundo ou ao encerrar a etapa de busca. Uma interrupção pode perder até 99 atualizações desde o último checkpoint; a perda afeta somente esse cache descartável. Não há coordenação entre múltiplos processos escritores, que continuam fora do modelo suportado.
 
 Na revisão manual, o servidor busca usando título e artista ajustados, sem forçar o ISRC da origem. A proposta é persistida com UUID e validade de dez minutos. Confirmar marca a faixa como `matched` com origem `manual` e reenfileira a inserção. O serviço rejeita propostas expiradas e revisão concorrente com processamento.
 
@@ -97,10 +105,12 @@ Uma criação remota pode terminar antes de seu ID ser persistido. Não existe u
 
 Os JSONs são cifrados com AES-256-GCM; o leitor preserva compatibilidade com dados antigos em AES-256-CBC. A escrita cria um temporário exclusivo com permissão `0600`, sincroniza seu conteúdo e renomeia no mesmo diretório.
 
-Isso reduz o risco de truncamento durante uma falha de processo. Não substitui backup e não garante uma transação entre todos os arquivos. Leitura com falha ou chave incompatível devolve o estado padrão na implementação atual.
+Isso reduz o risco de truncamento durante uma falha de processo. Não substitui backup e não garante uma transação entre todos os arquivos. Somente arquivo inexistente usa o estado padrão. Falha de leitura, decifração ou interpretação de coleção essencial gera erro explícito e bloqueia gravação posterior pelo leitor. A mensagem orienta conferir `DATA_DIR`, `ENCRYPTION_KEY` e backup. Uma chave local inválida também interrompe a inicialização sem substituição. O servidor verifica os arquivos essenciais antes de iniciar HTTP/trabalhador; `/api/ready` repete a verificação e retorna 503 se detectar falha. Cache e estatísticas podem ser descartados e sua indisponibilidade não impede a transferência.
 
 ## Segurança e testes
 
 Não há autenticação própria de HTTP ou Socket.io: o usuário local é implícito. CORS, Helmet, limites de requisições e validação ajudam o fluxo, mas não são uma barreira de login para exposição pública.
 
 Os testes usam diretórios temporários isolados e respostas simuladas de plataformas. O CI executa testes, lint, build e verificação da aplicação empacotada. Veja [CONTRIBUTING.md](../CONTRIBUTING.md), [API](api.md) e [SECURITY.md](../SECURITY.md).
+
+Evidências das correções de integridade e recuperação: [Validação local](validation-transfer-integrity.md).

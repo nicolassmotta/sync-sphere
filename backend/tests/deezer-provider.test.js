@@ -171,4 +171,11 @@ describe('provedor Deezer', () => {
         await expect(deezerProvider.createDestinationClient().createPlaylist({ title: 'T' })).resolves.toBe('42');
         expect(new URL(global.fetch.mock.calls[3][0]).searchParams.get('api_token')).toBe('new');
     });
+    it('preserva total e omissões ao atingir o limite público', async () => {
+        const { getPublicPlaylist } = await import('../src/providers/deezer/deezerPublicApi.js');
+        global.fetch.mockResolvedValueOnce(jsonResponse({ id: 123, nb_tracks: 3, tracks: { data: [deezerTrack(1, 'A', 'X')], next: 'https://api.deezer.com/playlist/123/tracks?index=1' } }));
+        expect(await getPublicPlaylist('123', { limit: 1 })).toMatchObject({ totalTracks: 3, truncated: true, omittedTracks: 2 });
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
 });

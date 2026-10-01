@@ -115,7 +115,7 @@ export const getPlaylist = async ({ token, countryCode, playlistId }) => {
     return data.data;
 };
 
-export const getPlaylistTrackIds = async ({ token, countryCode, playlistId, limit = Infinity }) => {
+export const getPlaylistTrackIds = async ({ token, countryCode, playlistId, limit = Infinity, withReadInfo = false }) => {
     const ids = [];
     let next = `/playlists/${encodeURIComponent(playlistId)}/relationships/items`;
     let params = { countryCode };
@@ -128,7 +128,8 @@ export const getPlaylistTrackIds = async ({ token, countryCode, playlistId, limi
         next = nextPath(page.links?.next);
         params = {};
     }
-    return ids.slice(0, limit);
+    const result = ids.slice(0, limit);
+    return withReadInfo ? { ids: result, truncated: Boolean(next) || ids.length > limit } : result;
 };
 
 export const listUserPlaylists = async ({ token, countryCode }) => {

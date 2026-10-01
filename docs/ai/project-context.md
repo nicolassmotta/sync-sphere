@@ -48,6 +48,7 @@ Mapa de arquivos:
 - `src/modules/integrations/`: `providerIntegrationController.js` (rotas genéricas `/integrations/:provider/...`) e utilitários de OAuth.
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.
+- Leitura essencial só aceita fallback para arquivo ausente. Falhas bloqueiam gravação pelo leitor, interrompem o boot e retornam 503 em `/api/ready`. Chave local inválida nunca é substituída. Cache e estatísticas são tolerantes e não bloqueiam transferências.
 - Escritas no storage usam temporário exclusivo com permissão `0600`, `fsync` e `rename` no mesmo diretório para evitar truncar o estado anterior durante uma falha de processo.
 - `src/storage/credentialStore.js`: credenciais coladas no painel (ex.: cookie do YouTube Music) em `data/provider-credentials.json`.
 - `src/schemas/`: schemas Zod.
@@ -58,7 +59,7 @@ Mapa de arquivos:
 - `src/services/transfer/TransferProcessor.js`: orquestra a migração para qualquer par origem/destino a partir do registro de provedores.
 - `src/services/transfer/startTransferService.js`: caso de uso HTTP para criar transferências e enfileirar tarefas.
 - `src/services/transfer/TrackMatcher.js`: executa correspondência faixa a faixa.
-- `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache.
+- `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache. Índice compartilhado entre raias; persistência a cada cem mudanças, após um segundo ou no fim da busca. Interrupção pode perder até 99 entradas novas, sem afetar histórico/checkpoints.
 - `src/services/transfer/manualMatchService.js`: revisão manual de `not_found` e `failed` em transferências terminadas. Busca por título/artista ajustados, sem ISRC da origem; guarda proposta com UUID e validade de dez minutos. Confirmação aceita apenas o UUID persistido, marca a faixa como `matched`/`manual` e reenfileira para inserção. Bloqueia revisão concorrente ou com job existente. Rotas `POST /transfer/:transferId/tracks/:trackIndex/search` e `/confirm`, com validação Zod.
 - `src/services/transfer/reconcileTrackIds.js`: reconciliação por quantidade de ocorrências. `addTracks` recebe `ids` pendentes e `expectedIds` com todas as faixas resolvidas, incluindo já inseridas. Adaptadores devem consultar o destino antes de escrever, preservando repetições e pulando ocorrências já presentes. Arquivo reconstrói a lista esperada; destinos remotos acrescentam o que falta.
 - `src/services/transfer/ProgressPublisher.js`: publica eventos Socket.io por transferência.
@@ -71,6 +72,8 @@ Mapa de arquivos:
 - `src/errors/providerErrors.js`: `classifyProviderError` (`rate_limited`, `auth`, `transient`, `not_found`, `permanent`), `TransferPausedError` e `TransferNeedsAuthError`.
 - `src/services/transfer/TransferTrackStore.js`: estado por faixa em `data/transfer-tracks-<id>.json` (`pending`, `matched`, `not_found`, `retry_queued`, `failed`).
 - `src/services/transfer/TransferMetrics.js`: média móvel do tempo de busca/inserção, ETA e estatísticas por plataforma em `data/provider-stats.json`.
+- Retry inclui `matched` sem `inserted` e preserva IDs/revisão/playlist. `pendingInsertCount` alimenta Histórico e retry geral. A fila persiste backoff e o trabalhador publica `paused` com `resumeAt` do job; `failed` fica reservado à falha final.
+- Snapshots cortados (`truncated`) são recusados antes de busca/criação; `sourceTotalTracks`, `sourceOmittedTracks` e `sourceUnavailableTracks` preservam total, corte e indisponibilidade separadamente. Limites dos provedores permanecem os mesmos.
 - `src/services/transfer/transferQueueActions.js`: retry de pendências, retomada manual, retomada após reconectar e recuperação no boot.
 
 ### Front-end

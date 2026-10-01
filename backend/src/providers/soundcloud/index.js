@@ -88,6 +88,9 @@ const readPlaylist = async (playlistRef, { limit = PLAYLIST_MAX_ITEMS } = {}) =>
         imageUrl: playlist.artwork_url?.replace('-large', '-t500x500') || null,
         totalTracks: playlist.track_count ?? tracks.length,
         tracks,
+        truncated: (playlist.tracks || []).length > limit,
+        omittedTracks: Math.max(0, (playlist.tracks || []).length - limit),
+        unavailableTracks: Math.max(0, Math.min((playlist.tracks || []).length, limit) - tracks.length),
     };
 };
 

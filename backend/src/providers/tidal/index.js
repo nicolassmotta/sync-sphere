@@ -40,10 +40,11 @@ const getCountryCode = () => (
 const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => {
     const token = await getTidalCatalogToken();
     const countryCode = getCountryCode();
-    const [playlist, trackIds] = await Promise.all([
+    const [playlist, snapshot] = await Promise.all([
         getPlaylist({ token, countryCode, playlistId }),
-        getPlaylistTrackIds({ token, countryCode, playlistId, limit }),
+        getPlaylistTrackIds({ token, countryCode, playlistId, limit, withReadInfo: true }),
     ]);
+    const trackIds = snapshot.ids;
     const tracks = await getTracksByIds({ token, countryCode, ids: trackIds });
 
     return {
@@ -51,8 +52,11 @@ const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => 
         name: playlist?.attributes?.name || 'Playlist TIDAL',
         description: playlist?.attributes?.description || '',
         imageUrl: null,
-        totalTracks: playlist?.attributes?.numberOfItems ?? tracks.length,
+        totalTracks: playlist?.attributes?.numberOfItems ?? (snapshot.truncated ? null : tracks.length),
         tracks,
+        truncated: snapshot.truncated,
+        omittedTracks: snapshot.truncated ? null : 0,
+        unavailableTracks: Math.max(0, trackIds.length - tracks.length),
     };
 };
 

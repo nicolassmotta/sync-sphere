@@ -119,6 +119,7 @@ export default class TransferProcessor {
         transferRecord.totalTracks = counts.total;
         transferRecord.analyzedCount = counts.analyzed;
         transferRecord.matchedCount = counts.matched;
+        transferRecord.pendingInsertCount = counts.pendingInserts;
         transferRecord.notFoundCount = counts.notFound;
         transferRecord.retryQueuedCount = counts.retryQueued;
         transferRecord.failedCount = counts.failed;
@@ -178,7 +179,7 @@ export default class TransferProcessor {
                 || error?.isPermanentTransferError
                 || classifyProviderError(error) === ERROR_KINDS.PERMANENT;
 
-            if (transferRecord) {
+            if (transferRecord && isPermanentTransferError) {
                 transferRecord.phase = TRANSFER_PHASES.DONE;
                 transferRecord.etaSeconds = null;
                 await this.repository.markFailed(
@@ -224,11 +225,18 @@ export default class TransferProcessor {
         await this.repository.update(transferRecord, {
             playlistName: playlist.name,
             totalTracks: playlist.tracks.length,
-            sourceTotalTracks: playlist.totalTracks,
+            sourceTotalTracks: playlist.totalTracks ?? null,
+            sourceTruncated: Boolean(playlist.truncated),
+            sourceOmittedTracks: playlist.omittedTracks ?? null,
+            sourceUnavailableTracks: playlist.unavailableTracks ?? null,
             sourcePlaylistDescription: playlist.description || '',
             sourcePlaylistImageUrl: playlist.imageUrl || null,
             lastMessage: `Playlist "${playlist.name}" carregada com ${playlist.tracks.length} faixas.`,
         });
+
+        if (playlist.truncated) {
+            throw permanentError(`Leitura interrompida pelo limite do ${config.sourceLabel}: ${playlist.tracks.length} faixas migráveis lidas de ${playlist.totalTracks ?? 'total desconhecido'}. ${playlist.omittedTracks ?? 'Há'} itens ficaram fora do snapshot. Divida a playlist em partes menores e tente novamente. Nenhuma playlist de destino foi criada.`);
+        }
 
         if (!playlist.tracks.length) {
             throw new Error(`A playlist do ${config.sourceLabel} não possui faixas migráveis.`);
@@ -293,6 +301,7 @@ export default class TransferProcessor {
                 onCheckpoint: saveCheckpoint,
             });
         } finally {
+            matchCache?.flush?.();
             metrics.persist();
         }
 
@@ -320,6 +329,9 @@ export default class TransferProcessor {
         const pendingNote = counts.failed
             ? ` ${counts.failed} ${counts.failed === 1 ? 'faixa ficou' : 'faixas ficaram'} nas pendências.`
             : '';
+        const sourceNote = transferRecord.sourceUnavailableTracks
+            ? ` ${transferRecord.sourceUnavailableTracks} itens da origem estavam indisponíveis ou não eram suportados.`
+            : '';
         await this.repository.update(transferRecord, {
             status: 'completed',
             phase: TRANSFER_PHASES.DONE,
@@ -327,7 +339,7 @@ export default class TransferProcessor {
             resumeAt: null,
             pauseReason: null,
             retryRound: 0,
-            lastMessage: `Migração concluída no ${config.targetLabel}: ${counts.matched}/${counts.total} faixas adicionadas.${pendingNote}`,
+            lastMessage: `Migração concluída no ${config.targetLabel}: ${counts.matched}/${counts.total} faixas adicionadas.${pendingNote}${sourceNote}`,
         });
 
         logger.info(`[Trabalhador] Transferência ${transferId} concluída. Sucesso: ${counts.matched}/${counts.total}.`);

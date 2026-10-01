@@ -214,4 +214,14 @@ describe('provedor TIDAL', () => {
         expect(existing).toEqual(ids);
         expect(global.fetch.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(1);
     });
+    it('sinaliza corte sem confundir vídeos ou faixas indisponíveis', async () => {
+        connect();
+        const { getPlaylistTrackIds } = await import('../src/providers/tidal/tidalApi.js');
+        global.fetch.mockResolvedValueOnce(response({ data: [{ id: '1', type: 'tracks' }, { id: 'v', type: 'videos' }], links: { next: '/playlists/demo/relationships/items?page[cursor]=next' } }));
+        const snapshot = await getPlaylistTrackIds({ token: 'fictício', countryCode: 'BR', playlistId: 'demo', limit: 1, withReadInfo: true });
+        expect(snapshot).toEqual({ ids: ['1'], truncated: true });
+        global.fetch.mockResolvedValueOnce(response({ data: [{ id: '1', type: 'tracks' }, { id: 'v', type: 'videos' }], links: {} }));
+        expect(await getPlaylistTrackIds({ token: 'fictício', countryCode: 'BR', playlistId: 'demo', limit: 1, withReadInfo: true })).toEqual({ ids: ['1'], truncated: false });
+    });
+
 });

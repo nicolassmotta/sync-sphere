@@ -398,4 +398,21 @@ describe('compatibilidade de itens de playlist no spotifyService', () => {
             expect.objectContaining({ name: 'Música Incorporada Um' }),
         ]);
     });
+    it('preserva corte e total do snapshot público alternativo', async () => {
+        global.fetch
+            .mockResolvedValueOnce(spotifyResponse({ id: 'playlist-1', name: 'Grande', public: true, images: [] }))
+            .mockResolvedValueOnce(spotifyResponse({ error: { status: 403, message: 'Proibido' } }, { ok: false, status: 403 }))
+            .mockResolvedValueOnce({ ok: true, text: async () => buildEmbedHtml() });
+        const page = await buildPathfinderPlaylistResponse({ totalCount: 1200, nextOffset: 500 }).json();
+        const item = page.data.playlistV2.content.items[0];
+        page.data.playlistV2.content.items = Array.from({ length: 500 }, () => item);
+        global.fetch.mockResolvedValueOnce(spotifyResponse(page));
+        const second = structuredClone(page);
+        second.data.playlistV2.content.pagingInfo.nextOffset = 1000;
+        global.fetch.mockResolvedValueOnce(spotifyResponse(second));
+        const snapshot = await getSpotifyPlaylistSnapshot({ playlistId: 'playlist-1', userId: 'local' });
+        expect(snapshot).toMatchObject({ totalTracks: 1200, truncated: true, omittedTracks: 200 });
+        expect(snapshot.tracks).toHaveLength(1000);
+    });
+
 });

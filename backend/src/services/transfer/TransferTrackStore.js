@@ -52,6 +52,7 @@ export const summarizeTransferTracks = (tracks = []) => {
         total: tracks.length,
         analyzed: 0,
         matched: 0,
+        pendingInserts: 0,
         notFound: 0,
         retryQueued: 0,
         failed: 0,
@@ -60,8 +61,10 @@ export const summarizeTransferTracks = (tracks = []) => {
 
     for (const track of tracks) {
         if (isTrackAnalyzed(track)) counts.analyzed += 1;
-        if (track.status === TRACK_STATUS.MATCHED) counts.matched += 1;
-        else if (track.status === TRACK_STATUS.NOT_FOUND) counts.notFound += 1;
+        if (track.status === TRACK_STATUS.MATCHED) {
+            counts.matched += 1;
+            if (!track.inserted && track.targetId) counts.pendingInserts += 1;
+        } else if (track.status === TRACK_STATUS.NOT_FOUND) counts.notFound += 1;
         else if (track.status === TRACK_STATUS.RETRY_QUEUED) counts.retryQueued += 1;
         else if (track.status === TRACK_STATUS.FAILED) counts.failed += 1;
         else counts.pending += 1;

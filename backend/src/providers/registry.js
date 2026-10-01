@@ -19,7 +19,7 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - ensureReadable({ userId }) / ensureWritable({ userId }): lançam AppError com o motivo
  * - normalizePlaylistId(input)
  * - listPlaylists({ userId }) quando `listUserPlaylists`
- * - getPlaylistSnapshot({ playlistId, userId }) -> { id, name, description, imageUrl, totalTracks, tracks }
+ * - getPlaylistSnapshot({ playlistId, userId }) -> { id, name, description, imageUrl, totalTracks, tracks, truncated, omittedTracks, unavailableTracks }
  * - getPlaylistPreview({ playlistId, userId, limit })
  * - createSearchClient({ userId }) -> { searchBestMatch({ track }) } e getMatchId(match)
  * - createDestinationClient({ userId }) -> { createPlaylist, addTracks({ playlistId, ids, expectedIds }), getPlaylistUrl, setPlaylistImage? }
