@@ -38,19 +38,18 @@ Tenha Git e Node.js com npm instalados. Recomendamos **Node.js 22 ou 24 LTS**; o
 git clone https://github.com/nicolassmotta/sync-sphere.git
 cd sync-sphere
 npm run setup
-cp backend/.env.example backend/.env
-npm start
+npm run open
 ```
 
-No PowerShell, substitua a cópia por:
+O iniciador abre o painel no navegador. Use **Experimentar sem contas** para carregar uma playlist fictícia, conferir as músicas e migrar de Arquivo para Arquivo. O Histórico oferece o arquivo exportado e relatórios CSV/JSON. Veja [Sua primeira migração](docs/primeira-migracao.md).
 
-```powershell
-Copy-Item backend/.env.example backend/.env
-```
+Para migrar entre serviços, siga as etapas **Origem > Destino > Conexões > Playlists > Resultado**. O assistente prepara apenas as plataformas escolhidas. Client IDs do Spotify e TIDAL podem ser salvos pelo painel. O [guia de instalação](docs/getting-started.md) mostra o passo a passo completo.
 
-Abra **[http://localhost:8000](http://localhost:8000)**. Para testar agora, escolha **Arquivo** como origem e destino, importe [a playlist de exemplo](docs/examples/playlist.csv), selecione-a e inicie a transferência. O Histórico oferece o download nos formatos disponíveis.
+## Abrir sem instalar Node.js
 
-Para migrar entre serviços, configure apenas as plataformas escolhidas em **Integrações**. O [guia de instalação](docs/getting-started.md) mostra o passo a passo completo.
+O projeto também permite gerar [pacotes portáteis](docs/distribution.md) com o runtime incluído. Extraia a pasta e abra **Iniciar** no seu sistema. A 1.1.0 continua em preparação: gerar pacotes locais não publica uma Release, e cada plataforma precisa de conferência no seu sistema antes de distribuição validada.
+
+Em **Ajuda e segurança**, você encontra orientação por sintoma, [backup protegido por senha](docs/backups.md) e diagnóstico revisável antes de compartilhar. Nenhum diagnóstico é enviado automaticamente. A interface e a documentação permanecem em português nesta etapa.
 
 ## Plataformas e conexão
 
@@ -81,6 +80,9 @@ Os [limites documentados](docs/usage.md#limites-atuais) ajudam a escolher o tama
 
 | Quero… | Guia |
 |---|---|
+| Fazer a primeira migração com orientação | [Fluxo guiado](docs/primeira-migracao.md) |
+| Proteger ou recuperar dados locais | [Backup e restauração](docs/backups.md) |
+| Abrir ou gerar um pacote portátil | [Distribuição local](docs/distribution.md) |
 | Instalar e testar sem conectar uma conta | [Primeiros passos](docs/getting-started.md) |
 | Conectar uma plataforma | [Integrações](docs/integrations.md) |
 | Configurar portas, credenciais e fila | [Configuração](docs/configuration.md) |

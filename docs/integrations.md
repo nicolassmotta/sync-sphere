@@ -22,8 +22,8 @@ Cada provedor implementa leitura, busca e criação de destino. Configure apenas
 
 1. Crie ou abra um app no [painel de desenvolvedores](https://developer.spotify.com/dashboard).
 2. Cadastre exatamente `http://127.0.0.1:8000/api/v1/integrations/spotify/callback` em **Redirect URIs**.
-3. Defina `SPOTIFY_CLIENT_ID` no `backend/.env`.
-4. Reinicie o servidor e use **Conectar Spotify** em Integrações.
+3. Em Integrações, salve o Client ID pelo assistente. O endereço de retorno correto para a porta atual aparece no painel.
+4. Use **Conectar Spotify**, autorize no navegador e volte à migração. A configuração por `SPOTIFY_CLIENT_ID` no `.env` continua disponível como alternativa avançada.
 
 O fluxo usa Authorization Code + PKCE e não requer Client Secret. Se mudar a porta, ajuste também `SPOTIFY_REDIRECT_URI` e o cadastro no Spotify.
 
@@ -52,14 +52,14 @@ Playlists públicas e busca funcionam sem login. Para listar a conta, ler playli
 3. Copie o valor de `arl`.
 4. Cole no campo do Deezer em Integrações ou defina `DEEZER_ARL` no `.env`.
 
-O painel valida a credencial ao salvar. A escrita usa o gateway interno do site, não uma API oficial de criação de playlists.
+O painel valida a credencial ao usar **Validar e conectar**. A escrita usa o gateway interno do site, não uma API oficial de criação de playlists.
 
 ## TIDAL
 
 1. Configure um app em [developer.tidal.com](https://developer.tidal.com).
 2. Cadastre `http://127.0.0.1:8000/api/v1/integrations/tidal/callback` como retorno.
-3. Defina `TIDAL_CLIENT_ID` no `.env`; ajuste `TIDAL_REDIRECT_URI` se necessário.
-4. Reinicie e conecte a conta em Integrações.
+3. Salve o Client ID pelo assistente de Integrações. A configuração por `TIDAL_CLIENT_ID` no `.env` continua disponível.
+4. Conecte a conta no navegador e volte à migração. Se mudar a porta, cadastre o endereço de retorno mostrado no painel.
 
 `TIDAL_CLIENT_SECRET` é opcional e habilita o fluxo de credenciais do app para leitura pública e busca, conforme o acesso concedido ao app. A escrita continua exigindo autorização da conta.
 
@@ -98,3 +98,5 @@ O conteúdo é persistido cifrado no diretório de dados. Não há upload para u
 Credenciais de sessão dão acesso à conta da plataforma. Cole-as somente na instalação local e mantenha-as fora de capturas, issues e mensagens públicas. Desconectar no painel remove o valor salvo localmente; valores do `.env` precisam ser removidos do arquivo para deixar de ser usados.
 
 Consulte [Configuração](configuration.md) para variáveis e [Solução de problemas](troubleshooting.md) para falhas de autorização.
+
+Client IDs salvos pelo painel ficam cifrados em `provider-settings.json`, são reaplicados no boot e têm prioridade sobre os identificadores do `.env`. Alterar um Client ID exige desconectar a conta e aguardar a fila terminar. O assistente marca as escritas ainda sem confirmação real como experimentais.

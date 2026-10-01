@@ -12,7 +12,7 @@ A origem oferece, conforme suas capacidades:
 - Link ou ID de uma playlist.
 - Importação de CSV, JSON, M3U/M3U8 ou TXT.
 
-Selecione as playlists, confira a estimativa e confirme a transferência. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
+Siga Origem, Destino e Conexões. Em Playlists, selecione a origem, confira a estimativa e confirme a transferência. Resultado mostra o progresso. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
 
 ## Acompanhar o processamento
 
@@ -94,3 +94,10 @@ A busca compara título, artista e duração; ISRC é usado quando a origem o in
 Se a chave não corresponder aos dados ou um arquivo essencial estiver corrompido, o servidor interrompe a inicialização. Se a falha surgir durante a execução, `/api/ready` retorna 503 e operações sobre esses dados falham explicitamente. Os arquivos não são tratados como listas vazias.
 
 Confira se `DATA_DIR` aponta para a instalação correta e se `ENCRYPTION_KEY` corresponde à chave original. Preserve os arquivos e restaure um backup compatível antes de retomar. Não gere outra chave para tentar abrir dados existentes. Cache e estatísticas são descartáveis; falhas nesses arquivos permitem continuar sem reutilizar suas informações.
+
+
+## Relatório e ajuda
+
+Em **Histórico > Ver detalhes**, baixe o relatório CSV ou JSON. Ele diferencia faixas adicionadas, correspondências aguardando inserção, músicas não encontradas e pendências. Também preserva total original, omissões e indisponibilidade quando conhecidos. Registros antigos sem estado por faixa informam essa limitação.
+
+Em **Ajuda e segurança**, escolha o sintoma para encontrar a próxima ação, crie um [backup protegido](backups.md) ou revise o diagnóstico. O diagnóstico contém contagens e informações de versão, sem credenciais, nomes de playlists, caminhos ou logs. Nada é enviado automaticamente à comunidade.

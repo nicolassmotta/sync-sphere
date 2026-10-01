@@ -96,3 +96,12 @@ npm start
 Confira saúde, integrações e histórico antes de começar uma nova migração. Preserve a chave de criptografia ao reutilizar dados existentes. As [notas da versão](releases/v1.1.0.md) descrevem compatibilidade e limites.
 
 Para desenvolvimento com Vite, siga [CONTRIBUTING.md](../CONTRIBUTING.md). Para problemas de instalação, consulte [Solução de problemas](troubleshooting.md).
+
+
+## Iniciador e primeira experiência
+
+Depois de `npm run setup`, use `npm run open`. O iniciador prepara a configuração somente se estiver ausente, abre o painel e informa como manter a janela ativa. Uma instalação que já esteja usando a mesma porta é identificada antes de abrir outra pasta por engano.
+
+No painel, **Experimentar sem contas** importa dados fictícios e prepara Arquivo para Arquivo. Não é necessário localizar o CSV no repositório. Veja [Sua primeira migração](primeira-migracao.md), [pacotes portáteis](distribution.md) e [backup protegido](backups.md).
+
+O servidor escuta em `127.0.0.1` por padrão. `HOST` é uma configuração avançada para outro endereço. Backup e diagnóstico continuam restritos a conexões locais.
