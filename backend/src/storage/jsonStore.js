@@ -33,7 +33,7 @@ export const readStore = (name, fallback) => {
 export const validateEssentialStores = () => {
     ensureDataDir();
     for (const name of fs.readdirSync(DATA_DIR)) {
-        if (/^(credentials|provider-credentials|transfers|queue|file-imports|file-exports)\.json$/.test(name)
+        if (/^(credentials|provider-credentials|provider-settings|transfers|queue|file-imports|file-exports)\.json$/.test(name)
             || /^transfer-tracks-.*\.json$/.test(name)) readStore(name, null);
     }
 };

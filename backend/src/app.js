@@ -12,6 +12,7 @@ import { globalLimiter } from './middlewares/rateLimiter.js';
 import authRoutes from './routes/authRoutes.js';
 import transferRoutes from './routes/transferRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
 import { validateEssentialStores } from './storage/jsonStore.js';
 
@@ -41,6 +42,7 @@ app.use(cookieParser()); // Intercepta cookies e coloca automaticamente em req.c
 app.use('/api', globalLimiter);
 
 // Rotas principais.
+app.use('/api/v1/system', systemRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/transfer', transferRoutes);
 app.use('/api/v1/integrations', integrationRoutes);
@@ -49,6 +51,9 @@ app.use('/api/v1/integrations', integrationRoutes);
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
+        application: 'SyncSphere',
+        pid: process.pid,
+        version: '1.1.0',
         message: 'API da Migração funcionando perfeitamente!',
         env: {
             nodeEnv,

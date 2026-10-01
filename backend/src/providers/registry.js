@@ -60,6 +60,11 @@ export const describeProvider = (provider) => ({
     label: provider.label,
     auth: provider.auth,
     capabilities: provider.capabilities,
+    validation: {
+        write: ['deezer', 'tidal', 'appleMusic', 'soundcloud'].includes(provider.id) ? 'experimental' : 'supported',
+        method: provider.id === 'appleMusic' ? 'oficial e alternativa não oficial'
+            : ['youtubeMusic', 'soundcloud', 'deezer'].includes(provider.id) ? 'não oficial ou misto' : 'oficial ou local',
+    },
     playlistUrlExample: provider.playlistUrlExample,
 });
 
