@@ -33,7 +33,9 @@ O tempo estimado usa medições anteriores de busca e inserção. Ele pode mudar
 
 O estado de cada faixa e a fila ficam persistidos. Após reiniciar o servidor, trabalhos inacabados podem continuar. A leitura do destino e a comparação das quantidades evitam reenviar ocorrências já presentes em uma escrita parcial.
 
-Falhas temporárias recebem novas tentativas. Quando esgotadas, ficam em **Pendências** no Histórico. Use **Tentar de novo** para a playlist ou **Tentar todas** para pendências de várias playlists.
+Falhas temporárias de leitura ou inserção ficam como **Pausada**, com horário de retomada automática. O painel continua acompanhando enquanto a fila tenta recuperar. Quando esgotadas, ficam em **Pendências** no Histórico. Use **Tentar de novo** para a playlist ou **Tentar todas** para pendências de várias playlists.
+
+Faixas encontradas que ainda aguardam inserção também aparecem em **Pendências** e entram em **Tentar todas**. O retry conserva as correspondências e reutiliza a playlist já criada, inserindo apenas ocorrências ausentes. Não é permitido outro retry enquanto houver job para a transferência.
 
 Essa ação não refaz automaticamente as faixas marcadas como não encontradas. Elas têm revisão manual própria.
 
@@ -76,7 +78,7 @@ Estes valores descrevem a implementação atual do SyncSphere, não limites univ
 | Histórico na consulta padrão | Até 50 transferências mais recentes. |
 | Cache de correspondências | 5.000 entradas com validade de sete dias. |
 
-Algumas plataformas podem retornar faixas indisponíveis, restritas ou sem metadados suficientes. Confira o total lido no progresso; divida playlists maiores antes de migrar para evitar uma leitura parcial nos provedores com limite de snapshot.
+Quando o provedor confirma corte por limite, o SyncSphere recusa a transferência antes de criar o destino. O Histórico mostra o total original conhecido, quantas faixas foram lidas e as omissões conhecidas. Divida a playlist em partes menores e inicie novas transferências. Itens indisponíveis ou não suportados, quando identificáveis, são contabilizados separadamente e não provocam automaticamente essa recusa.
 
 ## Ordem, repetições e catálogo
 
@@ -85,3 +87,10 @@ A inserção inicial respeita a ordem das ocorrências resolvidas. Recuperaçõe
 Os adaptadores preservam repetições intencionais na solicitação e reconciliam quantidades antes de inserir. A aceitação final de cada faixa depende da API e do catálogo. Escritas reais nos quatro provedores adicionais continuam pendentes de validação com contas.
 
 A busca compara título, artista e duração; ISRC é usado quando a origem o informa e o destino suporta esse método. Música ao vivo, remix, versão acústica e uploads de terceiros podem precisar de conferência manual.
+
+
+## Erro ao abrir dados locais
+
+Se a chave não corresponder aos dados ou um arquivo essencial estiver corrompido, o servidor interrompe a inicialização. Se a falha surgir durante a execução, `/api/ready` retorna 503 e operações sobre esses dados falham explicitamente. Os arquivos não são tratados como listas vazias.
+
+Confira se `DATA_DIR` aponta para a instalação correta e se `ENCRYPTION_KEY` corresponde à chave original. Preserve os arquivos e restaure um backup compatível antes de retomar. Não gere outra chave para tentar abrir dados existentes. Cache e estatísticas são descartáveis; falhas nesses arquivos permitem continuar sem reutilizar suas informações.

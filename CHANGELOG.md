@@ -4,6 +4,14 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Integridade e recuperação
+
+- Dados essenciais ilegíveis agora interrompem leitura e inicialização, preservando arquivos e chave local. Prontidão retorna 503 ao detectar falha de armazenamento.
+- Retry recupera inserções pendentes sem repetir buscas, perder revisão manual ou criar outra playlist persistida. Histórico e ação geral incluem essas pendências.
+- Falhas temporárias de job publicam pausa com o horário persistido pela fila; falha terminal só ocorre quando definitiva ou após esgotar tentativas.
+- Snapshots cortados por limite são recusados antes de criar o destino, com total e omissões preservados e orientação para dividir a playlist.
+- Cache de correspondências usa índice compartilhado em memória e checkpoints cifrados, preservando validade, limite e isolamento entre destinos.
+
 ### Documentação e apresentação
 
 - README reorganizado com apresentação visual, instalação rápida, demonstração sem contas e navegação dos guias públicos.
