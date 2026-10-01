@@ -4,7 +4,7 @@ import Spinner from './Spinner';
 
 const variants = {
     primary: 'border border-spotify/30 bg-spotify text-black hover:bg-spotify/90',
-    youtube: 'bg-youtube text-white shadow-[0_18px_50px_rgba(255,0,0,0.18)] hover:bg-youtube/90',
+    youtube: 'bg-red-700 text-white shadow-[0_18px_50px_rgba(255,0,0,0.18)] hover:bg-red-800',
     secondary: 'border border-white/10 bg-white/10 text-white hover:bg-white/20',
     ghost: 'bg-white/5 text-gray-200 hover:bg-white/10',
     danger: 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20',

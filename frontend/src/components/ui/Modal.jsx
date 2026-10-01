@@ -23,26 +23,31 @@ const Modal = ({
     const descriptionId = useId();
     const closeButtonRef = useRef(null);
     const dialogRef = useRef(null);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
     useEffect(() => {
         if (!isOpen) return undefined;
 
         const previousActiveElement = document.activeElement;
         const previousOverflow = document.body.style.overflow;
+        const root = document.getElementById('root');
+        const previousInert = root?.inert;
+        if (root) root.inert = true;
         document.body.style.overflow = 'hidden';
         closeButtonRef.current?.focus();
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                onClose?.();
+                onCloseRef.current?.();
                 return;
             }
 
             if (event.key !== 'Tab' || !dialogRef.current) return;
 
-            const focusableElements = dialogRef.current.querySelectorAll(
+            const focusableElements = [...dialogRef.current.querySelectorAll(
                 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            );
+            )].filter((element) => element.getClientRects().length > 0);
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -65,9 +70,10 @@ const Modal = ({
         return () => {
             document.body.style.overflow = previousOverflow;
             document.removeEventListener('keydown', handleKeyDown);
-            previousActiveElement?.focus?.();
+            if (root) root.inert = previousInert;
+            if (previousActiveElement?.isConnected) previousActiveElement.focus?.();
         };
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

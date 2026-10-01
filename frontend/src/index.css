@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Sora:wght@400;500;600;700;800&display=swap');
+@font-face {
+  font-family: 'Sora';
+  src: url('/fonts/Sora.ttf') format('truetype');
+  font-weight: 100 800;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -39,35 +44,12 @@
 
 @layer components {
   .app-shell {
-    background:
-      linear-gradient(180deg, rgba(16, 19, 19, 0.96), #070808 58%, #050505 100%),
-      linear-gradient(90deg, rgba(29, 185, 84, 0.06), transparent 38%, rgba(255, 0, 0, 0.045));
-  }
-
-  .app-shell::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 72%);
-  }
-
-  .app-shell::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.32;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.24'/%3E%3C/svg%3E");
+    background: #070808;
   }
 
   .glass-effect,
   .elevated-card {
-    @apply border border-white/10 bg-white/[0.055] backdrop-blur-xl shadow-panel;
+    @apply border border-white/15 bg-surfaceCard shadow-panel;
   }
 
   .elevated-card {
@@ -103,3 +85,24 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transform: translateY(-150%);
+  padding: 12px 16px;
+  color: #070808;
+  background: #F4F7F5;
+  border-radius: 8px;
+}
+.skip-link:focus { transform: translateY(0); }
+:where(button, a, summary, select, input, textarea):focus-visible {
+  outline: 2px solid #F4F7F5;
+  outline-offset: 3px;
+}
+
+:where(button, a, summary) { touch-action: manipulation; }
+[role="dialog"] { overscroll-behavior: contain; }
+h1, h2, h3 { scroll-margin-top: 24px; text-wrap: balance; }

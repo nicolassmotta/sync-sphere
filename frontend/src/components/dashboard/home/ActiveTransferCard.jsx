@@ -212,15 +212,15 @@ const ActiveTransferCard = ({
     const running = transfers.filter((transfer) => !TERMINAL_STATUSES.includes(transfer.status));
     const totalEta = running.reduce((sum, transfer) => sum + (transfer.etaSeconds || 0), 0);
     const hasPendingTracks = transfers.some((transfer) => (
-        (transfer.counts?.failed || 0) + (transfer.counts?.retryQueued || 0) > 0
+        (transfer.counts?.failed || 0) + (transfer.counts?.retryQueued || 0) + (transfer.counts?.pendingInserts || 0) > 0
     ));
 
     return (
         <div className="elevated-card p-6">
             <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-xs font-bold uppercase text-white/40">Migração ativa</p>
-                    <h3 className="mt-1 text-xl font-black text-white">{progress}% concluído</h3>
+                    <p className="text-xs font-bold text-gray-300">Migração ativa</p>
+                    <h2 className="mt-1 text-xl font-black text-white">{progress}% concluído</h2>
                     {isTransferring && totalEta > 0 && (
                         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-spotify">
                             <Clock size={13} /> {formatEta(totalEta)} restantes
@@ -231,8 +231,8 @@ const ActiveTransferCard = ({
             </div>
 
             <ProgressBar value={progress} />
-            <p className="mt-4 text-sm font-semibold leading-6 text-white/70">
-                {isTransferring ? (progressMessage || 'Sincronizando faixas...') : 'Nenhuma transferência em execução.'}
+            <p role="status" className="mt-4 text-sm font-semibold leading-6 text-white/70">
+                {isTransferring ? (progressMessage || 'Sincronizando faixas...') : (transfers.length ? 'Processamento encerrado. Confira o resultado de cada playlist abaixo.' : 'Nenhuma transferência em execução.')}
             </p>
 
             {transfers.length > 0 ? (

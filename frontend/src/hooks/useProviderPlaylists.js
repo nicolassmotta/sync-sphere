@@ -12,6 +12,8 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const inFlightPromiseRef = useRef(null);
+    const requestIdRef = useRef(0);
+    const pendingProviderRef = useRef(null);
     const lastSuccessAtRef = useRef(0);
     const playlistsRef = useRef([]);
 
@@ -32,14 +34,17 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
         if (!force && now - lastSuccessAtRef.current < minIntervalMs) {
             return playlistsRef.current;
         }
-        if (inFlightPromiseRef.current) return inFlightPromiseRef.current;
+        if (inFlightPromiseRef.current && pendingProviderRef.current === providerId) return inFlightPromiseRef.current;
 
+        const requestId = ++requestIdRef.current;
+        pendingProviderRef.current = providerId;
         setLoading(true);
         setError('');
 
         inFlightPromiseRef.current = (async () => {
             try {
                 const response = await api.get(`/integrations/${providerId}/playlists`);
+                if (requestId !== requestIdRef.current) return [];
                 const nextPlaylists = response.data.data.playlists || [];
                 updatePlaylists(nextPlaylists);
                 setSummary({
@@ -49,6 +54,7 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
                 lastSuccessAtRef.current = Date.now();
                 return nextPlaylists;
             } catch (err) {
+                if (requestId !== requestIdRef.current) return [];
                 const message = err.response?.data?.message || `Não foi possível carregar playlists do ${providerLabel}.`;
                 setError(message);
                 updatePlaylists([]);
@@ -60,8 +66,10 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
 
                 return [];
             } finally {
-                setLoading(false);
-                inFlightPromiseRef.current = null;
+                if (requestId === requestIdRef.current) {
+                    setLoading(false);
+                    inFlightPromiseRef.current = null;
+                }
             }
         })();
 
@@ -69,11 +77,15 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
     }, [enabled, providerId, providerLabel]);
 
     useEffect(() => {
+        lastSuccessAtRef.current = 0;
         if (enabled) {
             refreshPlaylists({ silent: true, force: true });
-            return;
+            return () => { requestIdRef.current += 1; inFlightPromiseRef.current = null; };
         }
 
+        requestIdRef.current += 1;
+        inFlightPromiseRef.current = null;
+        setLoading(false);
         updatePlaylists([]);
         setSummary({ total: 0, hasMore: false });
         setError('');

@@ -18,12 +18,13 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
     const checking = Boolean(preview?.loading && !preview?.open);
 
     return (
-        <div className={`rounded-lg border p-2 transition-colors ${unavailable ? 'border-youtube/35 bg-youtube/10' : selected ? 'border-spotify/60 bg-spotify/10' : 'border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.055]'}`}>
+        <div className={`[content-visibility:auto] [contain-intrinsic-size:auto_80px] rounded-lg border p-2 transition-colors ${unavailable ? 'border-youtube/35 bg-youtube/10' : selected ? 'border-spotify/60 bg-spotify/10' : 'border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.055]'}`}>
             <div className="flex items-center gap-3">
                 <button
                     type="button"
                     onClick={() => onSelect(playlist.id)}
                     disabled={unavailable || checking}
+                    aria-pressed={selected}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-70"
                 >
                     <PlaylistArtwork imageUrl={playlist.imageUrl} name={playlist.name} />

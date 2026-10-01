@@ -12,6 +12,7 @@ const tabIcons = {
 const SidebarItem = ({ icon: Icon, label, isActive, onClick }) => (
     <motion.button
         onClick={onClick}
+        aria-current={isActive ? 'page' : undefined}
         whileHover={{ x: 3 }}
         whileTap={{ scale: 0.98 }}
         className={`relative flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors duration-300 ${
@@ -40,12 +41,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     <div className="grid h-10 w-10 place-items-center rounded-lg border border-spotify/25 bg-spotify/15">
                         <RefreshCw size={20} className="text-spotify" />
                     </div>
-                    <h2 className="text-xl font-extrabold text-white">SyncSphere</h2>
+                    <p className="text-xl font-extrabold text-white">SyncSphere</p>
                 </div>
             </div>
 
             <nav className="flex-1 space-y-2 px-4 py-6">
-                <p className="mb-4 px-4 text-xs font-bold uppercase text-white/35">Menu</p>
+                <p className="mb-4 px-4 text-xs font-bold uppercase text-gray-300">Menu</p>
                 <LayoutGroup>
                     {DASHBOARD_TABS.map((tab) => (
                         <SidebarItem

@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react';
 import FadeInPage from '../ui/FadeInPage';
 import LocalSetupGuide from '../setup/LocalSetupGuide';
+import SupportCenter from '../setup/SupportCenter';
 import SetupChecklist from '../setup/SetupChecklist';
 
 const SettingsTab = ({
@@ -15,15 +16,19 @@ const SettingsTab = ({
     return (
         <FadeInPage className="mx-auto w-full max-w-6xl">
             <div className="mb-8">
-                <h2 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
-                    <BookOpen className="text-spotify" /> Guia local
-                </h2>
+                <h1 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
+                    <BookOpen className="text-spotify" aria-hidden="true" /> Ajuda e segurança
+                </h1>
                 <p className="max-w-3xl text-muted">
-                    Tutorial embutido para rodar o projeto, validar dependências e resolver erros comuns sem sair do painel.
+                    Orientação para continuar sua migração, proteger seus dados e pedir ajuda sem compartilhar credenciais.
                 </p>
             </div>
 
             <div className="space-y-6">
+                <SupportCenter onOpenTab={setActiveTab} />
+                <details>
+                    <summary className="cursor-pointer text-lg font-semibold text-white">Configuração avançada e instalação pelo código</summary>
+                <div className="mt-5 space-y-6">
                 <SetupChecklist
                     integrations={integrations}
                     onOpenHistory={() => setActiveTab('history')}
@@ -34,6 +39,8 @@ const SettingsTab = ({
                     systemStatus={systemStatus}
                 />
                 <LocalSetupGuide />
+                </div>
+                </details>
             </div>
         </FadeInPage>
     );
