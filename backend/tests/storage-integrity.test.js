@@ -19,7 +19,7 @@ const run = (dir, key, script) => spawnSync(process.execPath, ['--input-type=mod
 const storeImport = `const { readStore, writeStore } = await import(${JSON.stringify(pathToFileURL(path.join(root, 'storage/jsonStore.js')).href)});`;
 afterAll(() => directories.forEach((dir) => fs.rmSync(dir, { recursive: true, force: true })));
 
-it.each(['credentials.json', 'provider-credentials.json', 'transfers.json', 'queue.json', 'transfer-tracks-demo.json', 'file-imports.json', 'file-exports.json'])(
+it.each(['credentials.json', 'provider-credentials.json', 'provider-settings.json', 'transfers.json', 'queue.json', 'transfer-tracks-demo.json', 'file-imports.json', 'file-exports.json'])(
     'chave trocada em outro processo preserva %s byte por byte', (name) => {
         const dir = temporary();
         expect(run(dir, 'a'.repeat(64), `${storeImport} writeStore('${name}', [{ id: 'fictício' }]);`).status).toBe(0);
@@ -56,4 +56,19 @@ it('cache cifrado é reutilizado em outro processo após checkpoint', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('"targetId":"id-fictício"');
     expect(fs.readFileSync(path.join(dir, 'match-cache.json'), 'utf8')).not.toContain('id-fictício');
+});
+
+
+it('backup protegido é restaurado em outro processo com uma chave local diferente', () => {
+    const source = temporary();
+    const destination = temporary();
+    const password = 'senha-ficticia-para-transferir-backup';
+    const backupModule = JSON.stringify(pathToFileURL(path.join(root, 'services/system/backupService.js')).href);
+    const restoreModule = JSON.stringify(pathToFileURL(path.join(root, 'services/system/restoreService.js')).href);
+    const saved = run(source, 'a'.repeat(64), `${storeImport} writeStore('credentials.json', { spotifyToken: 'ficticio' }); const { createBackup } = await import(${backupModule}); console.log(createBackup('${password}'));`);
+    expect(saved.status).toBe(0);
+    const restored = run(destination, 'b'.repeat(64), `${storeImport} const { restoreBackup } = await import(${restoreModule}); restoreBackup(${JSON.stringify(saved.stdout.trim())}, '${password}'); console.log(readStore('credentials.json', {}).spotifyToken === 'ficticio');`);
+    expect(restored.status).toBe(0);
+    expect(restored.stdout).toContain('true');
+    expect(fs.readFileSync(path.join(destination, 'credentials.json'), 'utf8')).not.toContain('ficticio');
 });

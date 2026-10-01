@@ -65,3 +65,18 @@ Para problemas de segurança, siga [SECURITY.md](SECURITY.md). O plano das fases
 As capturas públicas devem usar dados demonstrativos, com origem descrita em `docs/media-kit.md`. Os exemplos de playlist precisam ser aceitos pelo importador e não devem conter credenciais ou links privados. Verifique links locais, referências de configuração e comandos antes de abrir o PR.
 
 Preserve a diferença entre uma capacidade implementada, uma resposta externa simulada em teste e uma operação confirmada em conta real. Mantenha a versão em preparação identificada até sua publicação. O material para apresentação está em [docs/media-kit.md](docs/media-kit.md).
+
+
+## Primeiras contribuições
+
+Você pode começar com uma tarefa pequena e verificável:
+
+- Conferir o fluxo por teclado ou em tela pequena e relatar a dificuldade encontrada.
+- Executar um pacote portátil no seu sistema, usando dados demonstrativos, e registrar versão e resultado.
+- Melhorar uma instrução do assistente de conexão ou um exemplo de arquivo.
+- Rodar o [roteiro com pessoas que estão começando](docs/usability-testing.md) e registrar observações sem dados privados.
+- Conferir relatórios e documentação contra uma transferência Arquivo para Arquivo.
+
+O [guia de distribuição](docs/distribution.md) explica como gerar um pacote local. Não anuncie suporte validado a um sistema operacional somente porque o arquivo foi gerado. Para bugs, Ajuda e segurança permite revisar e baixar um diagnóstico sem credenciais; anexá-lo à issue é opcional.
+
+A tradução ficará para uma etapa posterior ao ajuste dos textos do fluxo. Neste momento, preserve português e use frases curtas, com ação e próxima etapa claras.

@@ -27,6 +27,7 @@ const quickSnippets = setupSnippets.filter((snippet) => (
 const Landing = () => {
     const navigate = useNavigate();
     const goToApp = () => navigate('/dashboard');
+    const goToDemo = () => navigate('/dashboard?demo=1');
     const scrollToTutorial = () => document.getElementById('tutorial-local')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
@@ -80,8 +81,8 @@ const Landing = () => {
                                 <Button onClick={goToApp} variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>
                                     Abrir painel local
                                 </Button>
-                                <Button onClick={scrollToTutorial} variant="secondary" size="lg" leftIcon={<Terminal size={18} />}>
-                                    Ver comandos
+                                <Button onClick={goToDemo} variant="secondary" size="lg">
+                                    Experimentar sem contas
                                 </Button>
                             </div>
                         </motion.div>

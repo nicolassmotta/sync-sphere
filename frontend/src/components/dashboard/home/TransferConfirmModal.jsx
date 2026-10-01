@@ -46,7 +46,7 @@ const TransferConfirmModal = ({
         onClose={onClose}
         size="sm"
         title="Confirmar transferência"
-        description={`Revise a seleção antes de criar as playlists no ${targetLabel}.`}
+        description={`Vamos copiar as músicas para ${targetLabel}. Suas playlists de origem não serão apagadas.`}
         footer={(
             <Button
                 onClick={onStartTransfer}
@@ -76,6 +76,7 @@ const TransferConfirmModal = ({
         )}
 
         <EstimateNotice estimate={estimate} targetLabel={targetLabel} />
+        <p className="mb-4 text-sm leading-6 text-muted">O aplicativo copia a lista de músicas, sem baixar arquivos de áudio. Algumas músicas podem não existir no catálogo de destino. Ao terminar, você poderá conferir o resultado e escolher alternativas no Histórico.</p>
 
         {allowLink && (
             <>

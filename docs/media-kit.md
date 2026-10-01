@@ -63,3 +63,10 @@ O catálogo e a autenticação condicionam o resultado. A versão 1.1.0 ainda n�
 ## Participação
 
 Para convidar contribuições, use [CONTRIBUTING.md](../CONTRIBUTING.md), o [plano das fases](roadmap.md) e as [issues](https://github.com/nicolassmotta/sync-sphere/issues). A política de relato de vulnerabilidades está em [SECURITY.md](../SECURITY.md).
+
+
+## Fluxo guiado em português
+
+As capturas `assets/primeira-migracao-inicio.png`, `assets/primeira-migracao-selecao.png`, `assets/primeira-migracao-resultado.png` e `assets/primeira-migracao-relatorio.png` mostram a primeira experiência com uma instalação temporária e dados fictícios. A migração Arquivo para Arquivo usa API, fila e trabalhador reais; não há acesso a contas externas.
+
+O vídeo `assets/primeira-migracao.webm` registra o mesmo percurso. O painel oferece a cópia local com legendas e descrição textual, em Ajuda e segurança. Os materiais não comprovam escrita em serviços remotos ou testes de usabilidade com participantes reais.

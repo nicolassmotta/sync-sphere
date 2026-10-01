@@ -8,6 +8,9 @@ import { startWorker } from './workers/transferWorker.js';
 import logger from './utils/logger.js';
 import { socketCorsOptions } from './config/cors.js';
 import { validateEssentialStores } from './storage/jsonStore.js';
+import { acquireDataDirectoryLock } from './storage/dataDirectoryLock.js';
+import { applyProviderSettings } from './services/system/providerSetupService.js';
+import { recoverInterruptedRestore } from './services/system/restoreService.js';
 
 const PORT = process.env.PORT || 8000;
 
@@ -19,7 +22,13 @@ const isWorkerDisabled = () => (
 // em arquivos cifrados e a fila roda no próprio processo.
 const startServer = async () => {
     try {
+        const release = acquireDataDirectoryLock();
+        process.once('exit', release);
+        process.once('SIGTERM', () => process.exit(0));
+        process.once('SIGINT', () => process.exit(0));
+        recoverInterruptedRestore();
         validateEssentialStores();
+        applyProviderSettings();
         // Acopla servidor HTTP e Socket.io por cima do Express.
         const server = http.createServer(app);
         const io = new Server(server, {
@@ -33,7 +42,7 @@ const startServer = async () => {
             process.exit(1);
         });
 
-        server.listen(PORT, () => {
+        server.listen(PORT, process.env.HOST || '127.0.0.1', () => {
              logger.info(`[Servidor] Rodando com NODE_ENV=${nodeEnv} APP_ENV=${appEnv} na porta ${PORT}`);
 
              // Liga o processamento da fila local em segundo plano com emissão via Socket.io.

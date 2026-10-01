@@ -1,5 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
+import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useIntegrationStatus } from '../hooks/useIntegrationStatus';
@@ -40,11 +39,25 @@ const DashboardTabFallback = () => (
     </div>
 );
 
+const readMigrationSession = () => {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem('syncsphere-migration-v1') || '{}');
+        return {
+            pair: Object.hasOwn(PROVIDER_UI, saved.sourceProvider) && Object.hasOwn(PROVIDER_UI, saved.targetProvider)
+                ? { sourceProvider: saved.sourceProvider, targetProvider: saved.targetProvider } : null,
+            step: Number.isInteger(saved.step) && saved.step >= 0 && saved.step <= 4 ? saved.step : 0,
+        };
+    } catch { return { pair: null, step: 0 }; }
+};
+
 const Dashboard = () => {
-    const user = useAuthStore((state) => state.user);
     const location = useLocation();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('home');
+    const [wizardStep, setWizardStep] = useState(() => readMigrationSession().step);
+    const [demoLoading, setDemoLoading] = useState(false);
+    const [demoMode, setDemoMode] = useState(false);
+    const demoRequestedRef = useRef(false);
     const {
         integrations,
         providers: loadedProviders,
@@ -59,10 +72,13 @@ const Dashboard = () => {
     } = useLocalSystemStatus();
     
     const [showModal, setShowModal] = useState(false);
-    const [providerPair, setProviderPair] = useState({
+    const [providerPair, setProviderPair] = useState(() => readMigrationSession().pair || {
         sourceProvider: DEFAULT_SOURCE_PROVIDER,
         targetProvider: DEFAULT_TARGET_PROVIDER,
     });
+    useEffect(() => {
+        try { sessionStorage.setItem('syncsphere-migration-v1', JSON.stringify({ ...providerPair, step: wizardStep })); } catch { /* A navegação funciona mesmo sem armazenamento do navegador. */ }
+    }, [providerPair, wizardStep]);
     const source = useMemo(() => (
         providers.find((provider) => provider.id === providerPair.sourceProvider)
         || { id: providerPair.sourceProvider, label: getProviderLabel(providerPair.sourceProvider), capabilities: {} }
@@ -106,6 +122,13 @@ const Dashboard = () => {
                     .map((transfer) => transfer._id);
                 if (activeIds.length) {
                     setTransferIds((currentIds) => (currentIds.length ? currentIds : activeIds));
+                } else {
+                    const saved = readMigrationSession();
+                    if (saved.step === 4) {
+                        const recent = (response.data.data.transfers || []).find((transfer) => transfer.sourceProvider === saved.pair?.sourceProvider && transfer.targetProvider === saved.pair?.targetProvider);
+                        if (recent) setTransferIds([recent._id]);
+                        else setWizardStep(0);
+                    }
                 }
             })
             .catch(() => {});
@@ -130,22 +153,6 @@ const Dashboard = () => {
         }
     }, []);
 
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const tab = params.get('tab');
-        const providerId = params.get('provider');
-        const connectionStatus = params.get('status');
-        const providerLabel = getProviderLabel(providerId);
-
-        if (tab) setActiveTab(tab);
-        if (providerId && connectionStatus === 'connected') toast.success(`${providerLabel} conectado com sucesso.`);
-        if (providerId && connectionStatus === 'denied') toast.error(`Conexão com ${providerLabel} cancelada.`);
-
-        if (tab || providerId) {
-            refreshIntegrations();
-            navigate('/dashboard', { replace: true });
-        }
-    }, [location.search, navigate, refreshIntegrations]);
 
     // Nova migração entra na lista sem esconder as que ainda estão pausadas ou na fila.
     const handleTransferQueued = useCallback((nextTransferIds) => {
@@ -154,6 +161,7 @@ const Dashboard = () => {
             .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
             .map((transfer) => String(transfer.transferId));
         setTransferIds([...new Set([...stillActiveIds, ...ids])]);
+        setWizardStep(4);
     }, [transfers]);
 
     const handleBeforeTransferStart = useCallback(() => {
@@ -168,7 +176,40 @@ const Dashboard = () => {
             setSourcePlaylistIds([]);
         }
         setProviderPair(nextPair);
+        setDemoMode(false);
     }, [providerPair.sourceProvider]);
+
+    const startDemo = useCallback(async () => {
+        setDemoLoading(true);
+        try {
+            const response = await api.post('/system/demo');
+            setProviderPair({ sourceProvider: 'file', targetProvider: 'file' });
+            setSourcePlaylistId('');
+            setSourcePlaylistIds([response.data.data.playlist.id]);
+            setDemoMode(true);
+            setWizardStep(3);
+        } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível carregar a demonstração. Confira se o aplicativo está iniciado.'); }
+        finally { setDemoLoading(false); }
+    }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const demo = params.get('demo') === '1';
+        const tab = params.get('tab');
+        const providerId = params.get('provider');
+        const connectionStatus = params.get('status');
+        const providerLabel = getProviderLabel(providerId);
+
+        if (tab) setActiveTab(tab);
+        if (providerId && connectionStatus === 'connected') toast.success(`${providerLabel} conectado com sucesso.`);
+        if (providerId && connectionStatus === 'denied') toast.error(`Conexão com ${providerLabel} cancelada.`);
+
+        if (demo && !demoRequestedRef.current) { demoRequestedRef.current = true; startDemo(); }
+        if (tab || providerId || demo) {
+            refreshIntegrations();
+            navigate('/dashboard', { replace: true });
+        }
+    }, [location.search, navigate, refreshIntegrations, startDemo]);
 
     const startTransferProcess = useStartTransfer({
         sourceProvider: source.id,
@@ -187,11 +228,15 @@ const Dashboard = () => {
     });
 
     return (
-        <DashboardLayout user={user} activeTab={activeTab} setActiveTab={setActiveTab}>
+        <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
             <Suspense fallback={<DashboardTabFallback />}>
                 {activeTab === 'home' && (
                     <HomeTab 
-                        user={user}
+                        wizardStep={wizardStep}
+                        setWizardStep={setWizardStep}
+                        onStartDemo={startDemo}
+                        demoLoading={demoLoading}
+                        demoMode={demoMode}
                         providers={providers}
                         source={source}
                         target={target}
@@ -226,6 +271,8 @@ const Dashboard = () => {
                 {activeTab === 'integrations' && (
                     <IntegrationsTab
                         providers={providers}
+                        preferredProviderIds={[source.id, target.id]}
+                        onContinue={() => { setActiveTab('home'); setWizardStep(2); }}
                         integrations={integrations}
                         integrationsLoading={integrationsLoading}
                         refreshIntegrations={refreshIntegrations}

@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+    downloadTransferReport,
     getTransferEstimate,
     getTransferStatus,
     getTransferTracks,
@@ -31,6 +32,7 @@ router.post('/start', transferLimiter, validate(transferStartSchema), startTrans
 router.get('/', listTransfers);
 router.get('/estimate', validate(transferEstimateSchema), getTransferEstimate);
 router.post('/retry-all', transferActionLimiter, retryAllTransferTracks);
+router.get('/:transferId/report', validate(transferIdSchema), downloadTransferReport);
 router.get('/:transferId', getTransferStatus);
 router.get('/:transferId/tracks', validate(transferTracksSchema), getTransferTracks);
 router.post('/:transferId/tracks/:trackIndex/search', transferActionLimiter, validate(manualMatchSearchSchema), searchTrackAlternative);

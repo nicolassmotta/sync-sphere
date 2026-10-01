@@ -70,7 +70,7 @@ const TextField = forwardRef(({
                     required={required}
                     aria-invalid={Boolean(error) || undefined}
                     aria-describedby={describedBy}
-                    className={cn('w-full bg-transparent py-3 text-sm outline-none placeholder:text-white/25', className)}
+                    className={cn('w-full bg-transparent py-3 text-sm outline-none placeholder:text-gray-400', className)}
                     {...props}
                 />
                 {trailingElement}

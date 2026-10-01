@@ -10,6 +10,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { downloadFile, getDownloadError } from '../../utils/downloadFile';
 import api, { resolveApiUrl } from '../../services/api';
 import { FILE_EXPORT_FORMATS, getProviderLabel, getTransferProviders } from '../../constants/providers';
 import { cn } from '../../utils/cn';
@@ -79,6 +80,15 @@ const TransferDetails = ({ item, onQueued }) => {
     const [activeTab, setActiveTab] = useState('pending');
     const [reviewing, setReviewing] = useState(null);
     const [hasTrackStore, setHasTrackStore] = useState(false);
+    const [downloading, setDownloading] = useState(null);
+    const downloadReport = async (format) => {
+        setDownloading(format);
+        try {
+            const response = await api.get(`/transfer/${item._id}/report`, { params: { format }, responseType: 'blob' });
+            downloadFile(response.data, `syncsphere-relatorio.${format}`);
+        } catch (error) { toast.error(await getDownloadError(error, 'Não foi possível baixar o relatório.')); }
+        finally { setDownloading(null); }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -143,7 +153,11 @@ const TransferDetails = ({ item, onQueued }) => {
                 )}
             </div>
 
-            <div className="flex gap-2" role="tablist">
+            <div className="flex flex-wrap gap-2">
+                <Button size="sm" loading={downloading === 'csv'} disabled={Boolean(downloading)} onClick={() => downloadReport('csv')}>Baixar relatório CSV</Button>
+                <Button size="sm" loading={downloading === 'json'} disabled={Boolean(downloading)} onClick={() => downloadReport('json')}>Baixar relatório JSON</Button>
+            </div>
+            <div className="flex gap-2" role="tablist" aria-label="Situação das músicas">
                 {DETAIL_TABS.map((candidate) => {
                     const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted)).length;
                     return (
@@ -151,7 +165,19 @@ const TransferDetails = ({ item, onQueued }) => {
                             key={candidate.id}
                             type="button"
                             role="tab"
+                            id={`track-tab-${candidate.id}`}
+                            aria-controls="track-details-panel"
                             aria-selected={activeTab === candidate.id}
+                            tabIndex={activeTab === candidate.id ? 0 : -1}
+                            onKeyDown={(event) => {
+                                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                                event.preventDefault();
+                                const current = DETAIL_TABS.findIndex((entry) => entry.id === candidate.id);
+                                const next = event.key === 'Home' ? 0 : event.key === 'End' ? DETAIL_TABS.length - 1
+                                    : (current + (event.key === 'ArrowRight' ? 1 : -1) + DETAIL_TABS.length) % DETAIL_TABS.length;
+                                setActiveTab(DETAIL_TABS[next].id);
+                                document.getElementById(`track-tab-${DETAIL_TABS[next].id}`)?.focus();
+                            }}
                             onClick={() => setActiveTab(candidate.id)}
                             className={cn(
                                 'rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors',
@@ -166,10 +192,10 @@ const TransferDetails = ({ item, onQueued }) => {
                 })}
             </div>
 
-            <div className="h-64 overflow-y-auto rounded-lg border border-white/10 bg-black/60 p-3">
+            <div id="track-details-panel" role="tabpanel" aria-labelledby={`track-tab-${activeTab}`} className="h-64 overflow-y-auto rounded-lg border border-white/10 bg-black/60 p-3">
                 {tracks === null && <LoadingState label="Carregando faixas..." />}
                 {tracks !== null && visibleTracks.length === 0 && (
-                    <p className="p-2 text-gray-500">
+                    <p className="p-2 text-gray-400">
                         {activeTab === 'pending' ? 'Nenhuma faixa pendente.' : 'Todas as faixas foram encontradas.'}
                     </p>
                 )}
@@ -268,9 +294,9 @@ const HistoryTab = ({ onTransfersQueued }) => {
         <FadeInPage className="w-full max-w-6xl mx-auto">
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
-                        <History className="text-spotify" /> Histórico de migrações
-                    </h2>
+                    <h1 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
+                        <History className="text-spotify" aria-hidden="true" /> Histórico de migrações
+                    </h1>
                     <p className="text-muted">Veja o que já foi migrado e quais músicas precisam de atenção.</p>
                 </div>
 
@@ -279,7 +305,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                         aria-label="Buscar playlist"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        leadingIcon={<Search size={18} className="text-gray-500" />}
+                        leadingIcon={<Search size={18} className="text-gray-400" />}
                         placeholder="Buscar playlist..."
                     />
                 </div>
@@ -316,7 +342,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Playlist</th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Direção</th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Status</th>
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Músicas <span className="text-[10px] lowercase text-gray-500">(migradas / total / pendentes)</span></th>
+                                <th className="p-5 text-xs font-bold uppercase text-white/45">Músicas <span className="text-[10px] lowercase text-gray-400">(migradas / total / pendentes)</span></th>
                                 <th className="p-5 text-xs font-bold uppercase text-white/45">Data</th>
                                 <th className="p-5 text-right text-xs font-bold uppercase text-white/45">Ação</th>
                             </tr>
@@ -348,11 +374,11 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                     </td>
                                     <td className="p-5"><TransferStatusBadge item={item} /></td>
                                     <td className="p-5 font-medium text-gray-300">
-                                        <span className="text-green-400">{getInsertedCount(item)}</span>
-                                        <span className="px-1 text-gray-600">/</span>
+                                        <span className="tabular-nums text-green-300">{getInsertedCount(item)}</span>
+                                        <span className="px-1 text-gray-400">/</span>
                                         {item.totalTracks}
-                                        <span className="px-1 text-gray-600">/</span>
-                                        <span className={getPendingCount(item) ? 'text-sky-300' : 'text-gray-500'}>{getPendingCount(item)}</span>
+                                        <span className="px-1 text-gray-400">/</span>
+                                        <span className={getPendingCount(item) ? 'text-sky-300' : 'text-gray-400'}>{getPendingCount(item)}</span>
                                     </td>
                                     <td className="p-5 font-medium text-gray-400 text-sm">{formatDate(item.createdAt)}</td>
                                     <td className="p-5 text-right">

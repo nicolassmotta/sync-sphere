@@ -118,7 +118,7 @@ Back-end `.env.example`:
 - `ENCRYPTION_KEY` opcional (64 caracteres hex; se ausente, gerada em `data/encryption.key`)
 - `DATA_DIR` opcional (padrão `backend/data`)
 
-A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1` quando o React é servido pelo back-end e tenta `http://localhost:8000/api/v1` quando roda no Vite. Mantém `http://localhost:4001/api/v1` apenas como fallback técnico para ambientes locais antigos.
+O cliente HTTP em `frontend/src/services/api.js` usa `/api/v1` no app servido pelo back-end e `http://localhost:8000/api/v1` no Vite. `VITE_API_URL` configura outra origem explicitamente. Falhas de rede não fazem o painel procurar outras instalações em portas diferentes; erro 401 de plataforma mantém a tela atual para reconexão.
 
 ## Padrões de Trabalho
 
@@ -148,3 +148,15 @@ A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1`
 - Progresso de transferência deve ser emitido em tempo real por Socket.io.
 - `withCredentials` deve ser mantido no Axios para o fluxo de OAuth do Spotify.
 - Integrações externas precisam prever rate limit, falhas parciais e logs de músicas não encontradas.
+
+
+## Primeira experiência e suporte
+
+- Início usa cinco etapas: Origem, Destino, Conexões, Playlists e Resultado. O par e a etapa são preservados na sessão do navegador; não persista credenciais no front.
+- Demonstração integrada usa `/system/demo` e o fluxo real Arquivo para Arquivo. Dados são fictícios e a repetição intencional aparece no resultado.
+- `provider-settings.json` é essencial e cifrado. Client IDs salvos pelo painel têm prioridade sobre o `.env`; a conta deve ser desconectada antes de alterar o identificador.
+- Escritas de Deezer, TIDAL, Apple Music e SoundCloud são marcadas experimentais até a conferência com contas reais. Não declare essa validação com base em mocks.
+- Suporte em `services/system/`: diagnóstico por lista permitida, backup cifrado por senha e restauração offline com bloqueio/journal de rollback. As rotas `/system` aceitam apenas loopback.
+- `scripts/start-local.mjs` inicia e abre o painel; não sobrescreve `.env` existente. `scripts/package-local.mjs` gera pacotes com Node.js oficial verificado por SHA-256 e somente dependências de produção. `artifacts/` e backups `.ssb` ficam ignorados.
+- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Tradução fica para uma etapa posterior.
+- Guias: `docs/primeira-migracao.md`, `docs/backups.md`, `docs/distribution.md` e `docs/usability-testing.md`.

@@ -3,11 +3,12 @@ import { cn } from '../../../utils/cn';
 import Button from '../../ui/Button';
 import ProviderIcon from '../../ui/ProviderIcon';
 
-const ProviderChip = ({ provider, active, onClick }) => (
+const ProviderChip = ({ provider, active, onClick, showExperimental }) => (
     <button
         type="button"
         onClick={onClick}
         aria-pressed={active}
+        aria-label={`${provider.label}${showExperimental && provider.validation?.write === 'experimental' ? ' (experimental)' : ''}`}
         className={cn(
             'flex min-w-0 items-center gap-3 rounded-lg border p-3 text-left transition-all',
             active
@@ -25,26 +26,28 @@ const ProviderChip = ({ provider, active, onClick }) => (
                 provider.connected ? 'text-spotify' : provider.canRead ? 'text-sky-300' : 'text-amber-300'
             )}>
                 {provider.connected ? <CheckCircle2 size={12} /> : <CircleDashed size={12} />}
-                {provider.connected ? 'conectado' : provider.canRead ? 'leitura pública' : 'pendente'}
+                {provider.connected ? 'conectado' : provider.canRead ? 'leitura pública' : 'precisa conectar'}
+                {showExperimental && provider.validation?.write === 'experimental' && <span className="block text-amber-200">experimental</span>}
             </span>
         </span>
     </button>
 );
 
-const ProviderRow = ({ title, providers, selectedId, onSelect }) => (
-    <div>
-        <p className="mb-2 text-xs font-bold uppercase text-white/40">{title}</p>
+export const ProviderRow = ({ title, providers, selectedId, onSelect, showExperimental = false }) => (
+    <fieldset>
+        <legend className="mb-3 text-lg font-bold text-white">{title}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
             {providers.map((provider) => (
                 <ProviderChip
                     key={provider.id}
                     provider={provider}
+                    showExperimental={showExperimental}
                     active={provider.id === selectedId}
                     onClick={() => onSelect(provider.id)}
                 />
             ))}
         </div>
-    </div>
+    </fieldset>
 );
 
 /**
@@ -91,7 +94,7 @@ const ProviderPairCard = ({ providers, sourceProvider, targetProvider, onChange 
 
             <div className="space-y-5">
                 <ProviderRow title="Origem" providers={sources} selectedId={sourceProvider} onSelect={selectSource} />
-                <ProviderRow title="Destino" providers={targets} selectedId={targetProvider} onSelect={selectTarget} />
+                <ProviderRow title="Destino" showExperimental providers={targets} selectedId={targetProvider} onSelect={selectTarget} />
             </div>
         </div>
     );

@@ -24,6 +24,10 @@ Descreva o erro e o resultado esperado.
 - Navegador:
 - Execução empacotada ou Vite:
 
+## Diagnóstico opcional
+
+Abra Ajuda e segurança > Revisar diagnóstico. Confira o conteúdo antes de anexar o JSON. O aplicativo exclui credenciais, logs, caminhos e nomes de playlists; nada é enviado automaticamente.
+
 ## Evidências
 
 Inclua a mensagem de erro e, se necessário, um exemplo mínimo com dados fictícios. Remova cookies, tokens, links privados e dados pessoais. Vulnerabilidades devem seguir o canal descrito em SECURITY.md.
