@@ -40,6 +40,6 @@ Retomadas em destinos remotos acrescentam faixas recuperadas ao fim da playlist.
 
 ## Primeira experiência
 
-Fluxo guiado, demonstração integrada, assistentes de conexão, relatórios, ajuda por sintoma, diagnóstico revisável, backup protegido e geração de pacotes portáteis fazem parte da próxima entrega em português. A tradução é uma etapa posterior à estabilização desses textos.
+Fluxo guiado, demonstração integrada, assistentes de conexão, relatórios, ajuda por sintoma, diagnóstico revisável, backup protegido e geração de pacotes portáteis estão implementados. A interface PT/EN, o README em inglês e os guias iniciais traduzidos vêm na etapa seguinte, ainda em preparação. Referências técnicas completas e prompts de terminal permanecem em português. Veja [idiomas](localization.md).
 
 Além da confirmação real das integrações, ficam pendentes a execução dos pacotes em sistemas/arquiteturas não disponíveis na máquina de desenvolvimento, sessões de usabilidade com participantes reais e eventual assinatura de instaladores. O [roteiro de conferência](usability-testing.md) descreve como obter evidência sem pedir credenciais aos participantes.

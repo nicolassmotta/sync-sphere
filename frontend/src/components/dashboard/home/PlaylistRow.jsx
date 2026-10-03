@@ -1,3 +1,4 @@
+import { useText } from '../../../i18n/useText';
 import { memo } from 'react';
 import {
     AlertTriangle,
@@ -13,6 +14,7 @@ import PlaylistTrackPreview from './PlaylistTrackPreview';
 import { formatTrackCount } from './formatTrackCount';
 
 const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, selected, onSelect, onTogglePreview, onDelete }) => {
+    const { t } = useText();
     const visibleTrackCount = preview?.totalTracks || playlist.trackCount;
     const unavailable = Boolean(preview?.blocked);
     const checking = Boolean(preview?.loading && !preview?.open);
@@ -44,7 +46,7 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
                     type="button"
                     onClick={() => onTogglePreview(playlist.id)}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                    aria-label={`Ver faixas de ${playlist.name}`}
+                    aria-label={t("Ver faixas de {{value0}}", { value0: playlist.name })}
                 >
                     {preview?.open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                 </button>
@@ -54,7 +56,7 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
                         type="button"
                         onClick={() => onDelete(playlist.id)}
                         className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-red-500/15 hover:text-red-300"
-                        aria-label={`Remover ${playlist.name}`}
+                        aria-label={t("Remover {{value0}}", { value0: playlist.name })}
                     >
                         <Trash2 size={15} />
                     </button>
@@ -66,7 +68,7 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
                         target="_blank"
                         rel="noreferrer"
                         className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                        aria-label={`Abrir ${playlist.name} no ${providerLabel}`}
+                        aria-label={t("Abrir {{value0}} no {{value1}}", { value0: playlist.name, value1: providerLabel })}
                     >
                         <ExternalLink size={15} />
                     </a>

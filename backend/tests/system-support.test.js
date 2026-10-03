@@ -106,6 +106,14 @@ it('relatório diferencia correspondência de inserção e protege fórmulas CSV
     expect(json.omittedTracks).toBe(1);
     const csv = await buildTransferReport({ transferId: transfer._id, userId: 'local', format: 'csv' });
     expect(csv.body).toContain("'=HYPERLINK");
+    const english = JSON.parse((await buildTransferReport({ transferId: transfer._id, userId: 'local', locale: 'en' })).body);
+    expect(english.tracks[0].outcome).toBe('awaiting insertion');
+    expect(english.tracks[1].outcome).toBe('added');
+    expect(english.tracks[0].name).toBe(tracks[0].name);
+    expect(english.note).toBe('The report describes the state confirmed by the application.');
+    const englishCsv = await buildTransferReport({ transferId: transfer._id, userId: 'local', locale: 'en', format: 'csv' });
+    expect(englishCsv.body).toContain('"Position","Track","Artist","Outcome","Match","Score"');
+    expect(englishCsv.body).toContain("'=HYPERLINK");
 });
 
 it('configura Client ID local sem editar .env e sem devolver o valor salvo', async () => {

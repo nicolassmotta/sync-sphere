@@ -1,3 +1,4 @@
+import { useText } from '../i18n/useText';
 import { useCallback, useEffect, useState } from 'react';
 import { API_ORIGIN } from '../services/api';
 
@@ -23,6 +24,7 @@ const readJson = async (response) => {
 };
 
 export const useLocalSystemStatus = () => {
+    const { t } = useText();
     const [systemStatus, setSystemStatus] = useState(DEFAULT_STATUS);
     const [loading, setLoading] = useState(false);
 
@@ -40,7 +42,7 @@ export const useLocalSystemStatus = () => {
         const nextStatus = {
             backend: {
                 status: 'offline',
-                message: `Sem resposta em ${healthUrl}`,
+                message: t("Sem resposta em {{value0}}", { value0: healthUrl }),
                 uptimeSeconds: null,
             },
             dependencies: {
@@ -54,7 +56,7 @@ export const useLocalSystemStatus = () => {
             const healthPayload = await readJson(healthResult.value);
             nextStatus.backend = {
                 status: healthResult.value.ok ? 'online' : 'offline',
-                message: healthPayload.message || (healthResult.value.ok ? 'Back-end respondeu ao endpoint de saúde.' : 'Back-end respondeu com erro.'),
+                message: healthPayload.message || (healthResult.value.ok ? t("Back-end respondeu ao endpoint de saúde.") : t("Back-end respondeu com erro.")),
                 uptimeSeconds: healthPayload.uptimeSeconds ?? null,
             };
         }
@@ -70,7 +72,7 @@ export const useLocalSystemStatus = () => {
         setSystemStatus(nextStatus);
         setLoading(false);
         return nextStatus;
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         refreshSystemStatus();

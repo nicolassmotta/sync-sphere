@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -19,6 +20,7 @@ const Modal = ({
     size = 'md',
     title,
 }) => {
+    const { t } = useText();
     const titleId = useId();
     const descriptionId = useId();
     const closeButtonRef = useRef(null);
@@ -99,7 +101,7 @@ const Modal = ({
                 <button
                     ref={closeButtonRef}
                     type="button"
-                    aria-label="Fechar"
+                    aria-label={t("Fechar")}
                     onClick={onClose}
                     className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-muted transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify"
                 >
@@ -108,8 +110,8 @@ const Modal = ({
 
                 {(title || description) && (
                     <div className="mb-6 shrink-0 pr-10">
-                        {title && <h2 id={titleId} className="text-2xl font-bold text-white">{title}</h2>}
-                        {description && <p id={descriptionId} className="mt-2 text-sm leading-6 text-muted">{description}</p>}
+                        {title && <h2 id={titleId} className="text-2xl font-bold text-white">{t(title)}</h2>}
+                        {description && <p id={descriptionId} className="mt-2 text-sm leading-6 text-muted">{t(description)}</p>}
                     </div>
                 )}
 

@@ -32,6 +32,7 @@ it('iniciador preserva ambiente, reutiliza sua instância e recusa outra instala
     fs.mkdirSync(backend);
     fs.cpSync(path.join(project, 'backend', 'src'), path.join(backend, 'src'), { recursive: true });
     fs.copyFileSync(path.join(project, 'backend', 'package.json'), path.join(backend, 'package.json'));
+    fs.cpSync(path.join(project, 'shared'), path.join(workspace, 'shared'), { recursive: true });
     fs.symlinkSync(path.join(project, 'backend', 'node_modules'), path.join(backend, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
     const script = path.join(workspace, 'scripts', 'start-local.mjs');
     fs.copyFileSync(path.join(project, 'scripts', 'start-local.mjs'), script);

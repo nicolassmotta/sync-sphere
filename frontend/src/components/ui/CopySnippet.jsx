@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../utils/cn';
@@ -26,6 +27,7 @@ const CopySnippet = ({
     label = 'Comando',
     language = 'bash',
 }) => {
+    const { t } = useText();
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -37,14 +39,14 @@ const CopySnippet = ({
     return (
         <div className={cn('overflow-hidden rounded-lg border border-white/10 bg-black/55', className)}>
             <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.045] px-4 py-3">
-                <p className="min-w-0 truncate text-xs font-bold uppercase text-white/45">{label}</p>
+                <p className="min-w-0 truncate text-xs font-bold uppercase text-white/45">{t(label)}</p>
                 <Button
                     onClick={handleCopy}
                     size="sm"
                     variant="ghost"
                     leftIcon={copied ? <Check size={14} /> : <Copy size={14} />}
                 >
-                    {copied ? 'Copiado' : 'Copiar'}
+                    {copied ? t("Copiado") : t("Copiar")}
                 </Button>
             </div>
             <pre className="max-h-72 overflow-x-auto p-4 text-xs leading-6 text-gray-200 sm:text-sm">

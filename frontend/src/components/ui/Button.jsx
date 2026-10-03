@@ -1,3 +1,4 @@
+import { translate as text } from '../../i18n/index';
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import Spinner from './Spinner';
@@ -23,7 +24,7 @@ const Button = forwardRef(({
     disabled,
     fullWidth = false,
     loading = false,
-    loadingLabel = 'Carregando...',
+    loadingLabel = text("Carregando..."),
     leftIcon,
     rightIcon,
     size = 'md',

@@ -32,7 +32,7 @@ try {
     const common = path.join(workspace, 'common');
     fs.mkdirSync(common);
     // Lista explícita: não inclui .env, credenciais, dados, logs ou arquivos da máquina.
-    for (const relative of ['backend/src', 'backend/package.json', 'backend/package-lock.json', 'backend/.env.example', 'frontend/dist', 'scripts/start-local.mjs', 'scripts/restore-backup.mjs', 'docs', 'LICENSE', 'package.json']) copy(relative, common);
+    for (const relative of ['shared', 'backend/src', 'backend/package.json', 'backend/package-lock.json', 'backend/.env.example', 'frontend/dist', 'scripts/start-local.mjs', 'scripts/restore-backup.mjs', 'docs', 'README.md', 'README.pt-BR.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CHANGELOG.md', 'LICENSE', 'package.json']) copy(relative, common);
     const cleanEnvironment = { ...process.env, NODE_ENV: 'production' };
     const install = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['ci', '--omit=dev', '--prefix', 'backend'], { cwd: common, env: cleanEnvironment, stdio: 'inherit' });
     if (install.status !== 0) throw new Error('Não foi possível preparar as dependências de produção.');
@@ -69,6 +69,7 @@ try {
             fs.writeFileSync(path.join(bundle, `Restaurar-backup.${extension}`), prefix + './runtime/node scripts/restore-backup.mjs --interactive\n', { mode: 0o755 });
         }
         fs.writeFileSync(path.join(bundle, 'LEIA-ME.txt'), 'SyncSphere 1.1.0 em preparação\n\nExtraia toda a pasta antes de abrir. Windows: Iniciar.cmd. macOS: Iniciar.command. Linux: Iniciar.sh. Mantenha a janela aberta durante as migrações. Não precisa instalar Node.js.\n\nNo painel, use Experimentar sem contas para começar. Para proteger seus dados, abra Ajuda e segurança. Encerre o aplicativo antes de atualizar ou restaurar. Guarde a pasta backend/data da instalação anterior.\n\nPacotes ainda sem assinatura de instalador. Escritas experimentais são identificadas no painel. Consulte docs/primeira-migracao.md e docs/backups.md.\n');
+        fs.writeFileSync(path.join(bundle, 'README.txt'), 'SyncSphere 1.1.0 in preparation\n\nExtract the complete folder. Open Iniciar.cmd on Windows, Iniciar.command on macOS, or Iniciar.sh on Linux. Keep the terminal open during transfers. Node.js is included. Terminal prompts and filenames currently remain in Portuguese.\n\nChoose English in the browser header, then Try without accounts. See docs/en/README.md for installation, backups and recovery. Stop the app before updating or restoring. Protect your data and original key. Packages are unsigned preparation artifacts, not a published release.\n');
         fs.writeFileSync(path.join(bundle, 'package-manifest.json'), JSON.stringify({ format: 'syncsphere-local-package', version: '1.1.0-preparacao', target, nodeVersion, runtimeArchiveSha256: expected }, null, 2));
         const output = path.join(artifacts, `${name}.${target.startsWith('win-') ? 'zip' : 'tar.gz'}`);
         if (target.startsWith('win-')) run('zip', ['-qr', output, name], workspace);

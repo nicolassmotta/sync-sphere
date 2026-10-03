@@ -4,6 +4,14 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+
+### Idiomas em preparação
+
+- Interface PT/EN com preferência local, datas localizadas e mensagens de progresso nos dois idiomas.
+- API com negociação de idioma e relatórios localizados, preservando metadados e estados técnicos.
+- README principal em inglês, apresentação em português preservada e guias iniciais nos dois idiomas.
+- Legendas em inglês para a demonstração gravada em português.
+
 ### Primeira experiência e suporte
 
 - Fluxo guiado de migração com escolha de origem/destino, conexões, seleção, confirmação e resultado.

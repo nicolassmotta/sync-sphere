@@ -1,3 +1,4 @@
+import { translate } from '../i18n';
 /**
  * Metadados visuais das plataformas. O back-end é a fonte da verdade sobre
  * quais plataformas existem e o que cada uma suporta (`GET /integrations/status`);
@@ -127,9 +128,12 @@ const GENERIC_UI = {
     setupSteps: [],
 };
 
-export const getProviderUi = (providerId) => PROVIDER_UI[providerId] || { ...GENERIC_UI, label: providerId };
+export const getProviderUi = (providerId) => {
+    const value = PROVIDER_UI[providerId] || { ...GENERIC_UI, label: providerId };
+    return { ...value, label: translate(value.label), description: translate(value.description), setupSteps: value.setupSteps.map((step) => translate(step)), credentialWarning: translate(value.credentialWarning) };
+};
 
-export const getProviderLabel = (providerId, providers = []) => (
+export const getProviderLabel = (providerId, providers = []) => translate(
     providers.find((provider) => provider.id === providerId)?.label
     || PROVIDER_UI[providerId]?.label
     || providerId

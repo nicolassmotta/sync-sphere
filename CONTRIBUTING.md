@@ -1,5 +1,7 @@
 # Como contribuir
 
+[English contribution guide](docs/en/contributing.md)
+
 O SyncSphere é um aplicativo local para uma pessoa, com dados cifrados em arquivos e fila no processo. Mudanças devem preservar esse modelo e o contrato dos provedores de música.
 
 ## Preparar o ambiente
@@ -27,7 +29,7 @@ Para trabalhar na interface com atualização automática, rode `npm run dev:bac
 5. Acrescente testes para regras de negócio e falhas relevantes.
 6. Atualize o guia público relevante e o changelog quando o comportamento visível mudar. Preserve o índice em `docs/README.md`.
 
-Use identificadores de código em inglês. UI, mensagens, documentação e commits usam português. Commits seguem Conventional Commits, por exemplo `fix: corrigir retomada da playlist`.
+Use identificadores de código em inglês. UI e mensagens próprias oferecem português e inglês. Documentação pública inicial tem versões nos dois idiomas; manutenção e commits usam português. Commits seguem Conventional Commits, por exemplo `fix: corrigir retomada da playlist`.
 
 Formate apenas os arquivos alterados. Examine o diff antes de abrir o PR. Credenciais de teste devem ser fictícias; `.env`, dados locais e logs pessoais ficam fora do Git.
 
@@ -43,6 +45,7 @@ Informe claramente no README se a integração é oficial ou não oficial, quais
 
 ```bash
 npm test
+npm run test:i18n --prefix frontend
 npm run lint
 npm run build
 npm audit --omit=dev --prefix backend
@@ -79,4 +82,4 @@ Você pode começar com uma tarefa pequena e verificável:
 
 O [guia de distribuição](docs/distribution.md) explica como gerar um pacote local. Não anuncie suporte validado a um sistema operacional somente porque o arquivo foi gerado. Para bugs, Ajuda e segurança permite revisar e baixar um diagnóstico sem credenciais; anexá-lo à issue é opcional.
 
-A tradução ficará para uma etapa posterior ao ajuste dos textos do fluxo. Neste momento, preserve português e use frases curtas, com ação e próxima etapa claras.
+Para alterar textos, mantenha os catálogos PT/EN alinhados e preserve dados fornecidos pela pessoa. Confira o [guia de idiomas](docs/localization.md). Use frases curtas, com ação e próxima etapa claras.
