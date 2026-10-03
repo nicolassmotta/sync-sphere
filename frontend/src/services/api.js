@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { currentLocale } from '../i18n';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL;
 const isBrowser = typeof window !== 'undefined';
@@ -16,6 +17,11 @@ export const API_ORIGIN = /^https?:\/\//i.test(API_BASE_URL)
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+    config.headers['Accept-Language'] = currentLocale();
+    return config;
 });
 
 // O aplicativo não tem login próprio. Um 401 orienta reconexão na tela atual.

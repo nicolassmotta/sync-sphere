@@ -1,3 +1,4 @@
+import { localizeText } from '../i18n/localization.js';
 import { saveImport } from '../providers/file/fileLibrary.js';
 import { buildDiagnostic } from '../services/system/diagnosticService.js';
 import { getProviderSetup, saveProviderSetup } from '../services/system/providerSetupService.js';
@@ -19,12 +20,13 @@ export const downloadBackup = (req, res, next) => {
 
 export const importDemo = (req, res, next) => {
     try {
+        const t = (message) => localizeText(message, req.locale);
         const record = saveImport({ filename: 'demonstracao.json', playlist: {
-            name: 'Minha primeira playlist', format: 'json', description: 'Demonstração do SyncSphere com dados fictícios.',
+            name: t('Minha primeira playlist'), format: 'json', description: t('Demonstração do SyncSphere com dados fictícios.'),
             tracks: [
-                { name: 'Primeiro acorde', artist: 'Banda de exemplo', album: 'Começar', durationMs: 180000 },
-                { name: 'Estrada de casa', artist: 'Artista de exemplo', album: 'Caminhos', durationMs: 210000 },
-                { name: 'Primeiro acorde', artist: 'Banda de exemplo', album: 'Começar', durationMs: 180000 },
+                { name: t('Primeiro acorde'), artist: t('Banda de exemplo'), album: t('Começar'), durationMs: 180000 },
+                { name: t('Estrada de casa'), artist: t('Artista de exemplo'), album: t('Caminhos'), durationMs: 210000 },
+                { name: t('Primeiro acorde'), artist: t('Banda de exemplo'), album: t('Começar'), durationMs: 180000 },
             ],
         } });
         res.status(201).json({ status: 'success', data: { playlist: { id: record.id, name: record.name, trackCount: record.tracks.length } } });

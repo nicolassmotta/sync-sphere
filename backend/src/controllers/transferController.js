@@ -178,7 +178,7 @@ export const getTransferEstimate = async (req, res, next) => {
 export const downloadTransferReport = async (req, res, next) => {
     try {
         const { buildTransferReport } = await import('../services/transfer/transferReportService.js');
-        const report = await buildTransferReport({ transferId: req.params.transferId, userId: req.user.id, format: req.query.format });
+        const report = await buildTransferReport({ transferId: req.params.transferId, userId: req.user.id, format: req.query.format, locale: req.locale });
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('Content-Type', report.contentType);
         res.setHeader('Content-Disposition', `attachment; filename="syncsphere-relatorio.${report.extension}"`);

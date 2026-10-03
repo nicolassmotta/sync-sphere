@@ -1,38 +1,26 @@
 <div align="center">
-  <img src="frontend/public/favicon.svg" alt="Logo do SyncSphere" width="80" height="80" />
+  <img src="frontend/public/favicon.svg" alt="SyncSphere logo" width="80" height="80" />
   <h1>SyncSphere</h1>
-  <p><strong>Suas playlists entre plataformas, na sua máquina.</strong></p>
-  <p>Spotify · YouTube Music · Deezer · TIDAL · Apple Music · SoundCloud · Arquivo</p>
-  <p>
-    <a href="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml"><img src="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI: testes, lint, build e verificação da aplicação" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-1DB954" alt="Licença MIT" /></a>
-    <a href="docs/integrations.md"><img src="https://img.shields.io/badge/plataformas-7-FF0033" alt="Sete plataformas" /></a>
-  </p>
-  <p><a href="#comece-em-poucos-passos">Começar</a> · <a href="docs/README.md">Documentação</a> · <a href="CONTRIBUTING.md">Contribuir</a> · <a href="docs/media-kit.md">Divulgar</a></p>
+  <p><strong>Your playlists across platforms, on your computer.</strong></p>
+  <p>Spotify · YouTube Music · Deezer · TIDAL · Apple Music · SoundCloud · File</p>
+  <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a></p>
+  <p><a href="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml"><img src="https://github.com/nicolassmotta/sync-sphere/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI: tests, lint, build and application smoke test" /></a></p>
+  <p><a href="#get-started">Get started</a> · <a href="docs/en/README.md">Documentation</a> · <a href="docs/en/contributing.md">Contribute</a> · <a href="LICENSE">MIT license</a></p>
 </div>
 
-SyncSphere migra referências e metadados de playlists entre serviços de música e arquivos. Escolha origem e destino, acompanhe a transferência em tempo real e revise as músicas que precisarem de uma escolha manual.
+SyncSphere transfers playlist references and metadata between music services and files. Choose a source and destination, follow progress, and review tracks that need a manual match. It does not download audio files.
 
-Você hospeda o aplicativo no próprio computador. A fila, o histórico e as credenciais ficam em armazenamento local cifrado. O painel abre diretamente, sem conta do SyncSphere, banco de dados ou Redis.
+Run it on your own computer. Credentials, history and the queue stay in encrypted local storage. There are no SyncSphere accounts, databases or Redis services to set up. The interface is available in **English and Brazilian Portuguese**. Choose the language in the header; your preference is saved in your browser.
 
-![Página inicial do SyncSphere com apresentação dos provedores e fluxo local](docs/assets/overview.jpg)
+![SyncSphere demonstration with providers and local workflow](docs/assets/overview.jpg)
 
-*Captura do aplicativo em uma instalação de demonstração. O fluxo Arquivo -> Arquivo funciona sem conectar serviços de música.*
+*Screenshot from a demonstration installation using the Portuguese interface. File to File works without music accounts.*
 
-> Esta documentação acompanha a `main`, com a versão **1.1.0 preparada e ainda não publicada**. A versão publicada está em [Releases](https://github.com/nicolassmotta/sync-sphere/releases). Veja as [notas da 1.1.0](docs/releases/v1.1.0.md).
+> These guides follow the source branch. **Version 1.1.0 is in preparation and has not been published.** Check [Releases](https://github.com/nicolassmotta/sync-sphere/releases) for published versions. The detailed [1.1.0 notes](docs/releases/v1.1.0.md) are currently in Portuguese.
 
-## Por que usar
+## Get started
 
-- **Escolha o fluxo:** sete provedores com leitura e escrita, conforme as credenciais e o catálogo disponíveis.
-- **Comece sem contas:** importe uma playlist e converta entre CSV, JSON, M3U/M3U8 e TXT.
-- **Acompanhe cada faixa:** progresso, tempo estimado, pausas automáticas, reconexão e pendências.
-- **Evite buscas repetidas:** correspondências confiáveis ficam em cache cifrado por sete dias.
-- **Revise o resultado:** ajuste título e artista, confira uma alternativa e confirme a inserção no Histórico.
-- **Retome com cuidado:** os destinos comparam quantidades antes de inserir; o armazenamento local usa substituição atômica de arquivos.
-
-## Comece em poucos passos
-
-Tenha Git e Node.js com npm instalados. Recomendamos **Node.js 22 ou 24 LTS**; o requisito técnico atual é Node.js 20+. Consulte as [versões do Node.js](https://nodejs.org/en/about/previous-releases).
+Install Git and Node.js with npm. Use Node.js 22 or 24 LTS. The technical minimum is Node.js 20, which is outside its official support period; see the [Node.js release schedule](https://nodejs.org/en/about/previous-releases).
 
 ```bash
 git clone https://github.com/nicolassmotta/sync-sphere.git
@@ -41,78 +29,36 @@ npm run setup
 npm run open
 ```
 
-O iniciador abre o painel no navegador. Use **Experimentar sem contas** para carregar uma playlist fictícia, conferir as músicas e migrar de Arquivo para Arquivo. O Histórico oferece o arquivo exportado e relatórios CSV/JSON. Veja [Sua primeira migração](docs/primeira-migracao.md).
+The launcher opens the dashboard in your browser. Choose **Try without accounts** to load a fictional playlist with three occurrences, including an intentional repeat. Review it, transfer from File to File, and download the output or CSV/JSON report from History. See [your first transfer](docs/en/first-transfer.md).
 
-Para migrar entre serviços, siga as etapas **Origem > Destino > Conexões > Playlists > Resultado**. O assistente prepara apenas as plataformas escolhidas. Client IDs do Spotify e TIDAL podem ser salvos pelo painel. O [guia de instalação](docs/getting-started.md) mostra o passo a passo completo.
+For music services, follow **Source > Destination > Connections > Playlists > Outcome**. Configure only the platforms you need. The panel can save Spotify and TIDAL Client IDs. The [installation guide](docs/en/getting-started.md) covers configuration, updates and stopping the app.
 
-## Abrir sem instalar Node.js
+[Portable packages](docs/en/distribution.md) include Node.js. Extract the complete folder and open `Iniciar` for your system. They remain preparation artifacts, not a published release. Generating a package does not prove that it runs on that operating system.
 
-O projeto também permite gerar [pacotes portáteis](docs/distribution.md) com o runtime incluído. Extraia a pasta e abra **Iniciar** no seu sistema. A 1.1.0 continua em preparação: gerar pacotes locais não publica uma Release, e cada plataforma precisa de conferência no seu sistema antes de distribuição validada.
+## Platforms and connections
 
-Em **Ajuda e segurança**, você encontra orientação por sintoma, [backup protegido por senha](docs/backups.md) e diagnóstico revisável antes de compartilhar. Nenhum diagnóstico é enviado automaticamente. A interface e a documentação permanecem em português nesta etapa.
-
-## Plataformas e conexão
-
-| Plataforma | Leitura | Escrita | O que configurar |
+| Platform | Reading | Writing | Connection |
 |---|---|---|---|
-| Spotify | Conta conectada; links sujeitos às permissões da API | Conta conectada | App Spotify, Client ID e OAuth com PKCE |
-| YouTube Music | Cookie da conta; link de YouTube Music ou YouTube | Cookie da conta | Cabeçalho Cookie completo, colado no painel |
-| Deezer | Playlists públicas sem login; conta e privadas com cookie | Cookie da conta | `arl` para operações autenticadas |
-| TIDAL | OAuth; leitura pública com configuração de app compatível | OAuth | App TIDAL e autorização da conta |
-| Apple Music | Catálogo público; biblioteca com autorização | Biblioteca autorizada | MusicKit ou token da conta pelo fluxo alternativo |
-| SoundCloud | Playlists públicas sem login; conta com token | Token da conta | `oauth_token` para operações autenticadas |
-| Arquivo | CSV, JSON, M3U/M3U8 e TXT | Os mesmos formatos | Nenhuma credencial |
+| Spotify | Connected account; links depend on API permissions | Connected account | Spotify app, Client ID and OAuth with PKCE |
+| YouTube Music | Account cookie; YouTube Music or YouTube links | Account cookie | Full Cookie header pasted in the panel |
+| Deezer | Public playlists without login; private/account playlists with cookie | Account cookie | `arl` for authenticated operations |
+| TIDAL | OAuth; public reads with compatible app configuration | OAuth | TIDAL app and account authorization |
+| Apple Music | Public catalog; authorized library | Authorized library | MusicKit or the alternative account token flow |
+| SoundCloud | Public playlists without login; account playlists with token | Account token | `oauth_token` for authenticated operations |
+| File | CSV, JSON, M3U/M3U8 and TXT | The same formats | No credentials |
 
-Confira autenticação, privacidade e limites no [guia das integrações](docs/integrations.md).
+See [integrations and privacy](docs/en/integrations.md). Some connections use unofficial website resources and may change without notice. Tests using simulated responses do not validate writes to real accounts. Real writes to the four additional providers remain pending validation.
 
-## O que esperar das migrações
+## Recovery and limits
 
-A correspondência depende do catálogo do destino. O aplicativo compara metadados e usa ISRC quando o provedor o suporta. Algumas músicas podem precisar de revisão manual ou ficar sem correspondência.
+Reliable matches are cached locally for seven days. Retry preserves matches and reuses a known destination playlist. Providers compare occurrence counts before inserting missing tracks, preserving intentional repeats after partial writes. Recovery after remote creation but before saving its ID may still require manual review.
 
-- Spotify e TIDAL usam APIs oficiais nos seus adaptadores. YouTube Music e SoundCloud usam APIs do site. Deezer combina leitura pública com gateway não oficial; Apple Music oferece MusicKit e um fluxo alternativo não oficial.
-- As escritas reais em **Deezer, TIDAL, Apple Music e SoundCloud** ainda precisam de confirmação com credenciais de conta. Os testes automatizados dessas escritas usam respostas simuladas.
-- Faixas recuperadas depois entram no fim das playlists remotas. Arquivos exportados seguem a ordem das faixas resolvidas da origem.
-- A criptografia protege os arquivos locais; acesso ao aplicativo e à máquina precisa ser protegido. Veja [SECURITY.md](SECURITY.md).
+Temporary failures remain paused while a persisted retry is scheduled. Final failures and unmatched tracks can be reviewed in History. Confirmed source truncation is refused before creating the destination; split the source into smaller playlists. [Usage](docs/en/usage.md) lists reading limits and recovery behavior.
 
-Os [limites documentados](docs/usage.md#limites-atuais) ajudam a escolher o tamanho e o destino de cada transferência.
+Essential unreadable data stops startup or readiness instead of becoming empty state. Preserve the original data and encryption key. **Help and security** offers [password-protected backups](docs/en/backups.md) and a diagnostic you can inspect before sharing. Nothing is submitted automatically.
 
-## Documentação
+## Contribute
 
-| Quero… | Guia |
-|---|---|
-| Fazer a primeira migração com orientação | [Fluxo guiado](docs/primeira-migracao.md) |
-| Proteger ou recuperar dados locais | [Backup e restauração](docs/backups.md) |
-| Abrir ou gerar um pacote portátil | [Distribuição local](docs/distribution.md) |
-| Instalar e testar sem conectar uma conta | [Primeiros passos](docs/getting-started.md) |
-| Conectar uma plataforma | [Integrações](docs/integrations.md) |
-| Configurar portas, credenciais e fila | [Configuração](docs/configuration.md) |
-| Migrar, retomar ou revisar uma faixa | [Como usar](docs/usage.md) |
-| Preparar um arquivo de playlist | [Formatos de arquivo](docs/file-formats.md) |
-| Resolver um erro | [Solução de problemas](docs/troubleshooting.md) |
-| Entender o código e a API local | [Arquitetura](docs/architecture.md) · [API](docs/api.md) |
-| Contribuir ou acompanhar as fases | [Contribuição](CONTRIBUTING.md) · [Plano das fases](docs/roadmap.md) |
-| Apresentar o projeto | [Materiais de divulgação](docs/media-kit.md) |
+Start with documentation, keyboard/mobile testing, demonstration transfers, or running a portable package on your operating system. See [contribution instructions](docs/en/contributing.md) and [security reporting](docs/en/security.md). Keep examples fictional and never include cookies, tokens, private URLs or local data in issues.
 
-## Desenvolvimento
-
-```bash
-npm ci --prefix backend
-npm ci --prefix frontend
-npm test
-npm run lint
-npm run build
-```
-
-Para desenvolvimento com atualização automática, use `npm run dev:backend` e `npm run dev:frontend` em terminais separados. Os detalhes de portas e CORS estão no [guia de contribuição](CONTRIBUTING.md).
-
-O CI executa testes do backend, lint e build do frontend e uma verificação da aplicação empacotada. Os testes de integrações externas usam respostas simuladas e diretórios temporários isolados.
-
-## Participar
-
-Encontrou um problema? Abra uma [issue](https://github.com/nicolassmotta/sync-sphere/issues/new/choose) com passos para reproduzir e exemplos sem credenciais. Para propor uma mudança, consulte [CONTRIBUTING.md](CONTRIBUTING.md). Relatos de vulnerabilidades seguem [SECURITY.md](SECURITY.md).
-
-Se o projeto for útil, uma estrela no repositório e o compartilhamento do [material de divulgação](docs/media-kit.md) ajudam outras pessoas a encontrá-lo.
-
-## Licença
-
-[MIT](LICENSE), por Nicolas Cardoso Motta. Os nomes dos serviços identificam as integrações disponíveis; o SyncSphere é um projeto independente.
+The public starter guides are available in English and Portuguese. Detailed architecture, API references, release notes and maintenance documents remain in Portuguese, with their language identified in the documentation index.

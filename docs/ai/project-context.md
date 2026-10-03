@@ -158,5 +158,10 @@ O cliente HTTP em `frontend/src/services/api.js` usa `/api/v1` no app servido pe
 - Escritas de Deezer, TIDAL, Apple Music e SoundCloud são marcadas experimentais até a conferência com contas reais. Não declare essa validação com base em mocks.
 - Suporte em `services/system/`: diagnóstico por lista permitida, backup cifrado por senha e restauração offline com bloqueio/journal de rollback. As rotas `/system` aceitam apenas loopback.
 - `scripts/start-local.mjs` inicia e abre o painel; não sobrescreve `.env` existente. `scripts/package-local.mjs` gera pacotes com Node.js oficial verificado por SHA-256 e somente dependências de produção. `artifacts/` e backups `.ssb` ficam ignorados.
-- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Tradução fica para uma etapa posterior.
+- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Interface PT/EN e guias iniciais em inglês disponíveis; referências técnicas e prompts de terminal permanecem em português.
 - Guias: `docs/primeira-migracao.md`, `docs/backups.md`, `docs/distribution.md` e `docs/usability-testing.md`.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](../localization.md) e [guias em inglês](../en/README.md).

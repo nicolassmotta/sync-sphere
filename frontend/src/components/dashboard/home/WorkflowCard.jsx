@@ -1,3 +1,4 @@
+import { useText } from '../../../i18n/useText';
 import { ListMusic } from 'lucide-react';
 
 const workflowSteps = [
@@ -18,12 +19,13 @@ const workflowSteps = [
     },
 ];
 
-const WorkflowCard = ({ sourceLabel, targetLabel }) => (
-    <div className="elevated-card p-6">
+const WorkflowCard = ({ sourceLabel, targetLabel }) => {
+    const { t } = useText();
+    return <div className="elevated-card p-6">
         <div className="mb-6 flex items-center justify-between">
             <div>
-                <p className="text-xs font-bold uppercase text-white/40">Como funciona</p>
-                <h3 className="mt-1 text-xl font-black text-white">Fluxo local resumido</h3>
+                <p className="text-xs font-bold uppercase text-white/40">{t("Como funciona")}</p>
+                <h3 className="mt-1 text-xl font-black text-white">{t("Fluxo local resumido")}</h3>
             </div>
             <ListMusic className="text-spotify" size={24} />
         </div>
@@ -35,19 +37,19 @@ const WorkflowCard = ({ sourceLabel, targetLabel }) => (
                         {index + 1}
                     </div>
                     <div>
-                        <p className="text-xs font-bold uppercase text-spotify">Passo {step.label}</p>
-                        <h4 className="mt-1 font-black text-white">{step.title}</h4>
-                        <p className="mt-1 text-sm leading-6 text-muted">{step.text}</p>
+                        <p className="text-xs font-bold uppercase text-spotify">{t("Passo ")}{t(step.label)}</p>
+                        <h4 className="mt-1 font-black text-white">{t(step.title)}</h4>
+                        <p className="mt-1 text-sm leading-6 text-muted">{t(step.text)}</p>
                     </div>
                 </div>
             ))}
             <div className="rounded-lg border border-white/10 bg-black/30 p-4">
-                <p className="text-xs font-bold uppercase text-spotify">Direção atual</p>
+                <p className="text-xs font-bold uppercase text-spotify">{t("Direção atual")}</p>
                 <h4 className="mt-1 font-black text-white">{sourceLabel} -&gt; {targetLabel}</h4>
-                <p className="mt-1 text-sm leading-6 text-muted">A transferência cria a saída conforme as capacidades do destino selecionado.</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{t("A transferência cria a saída conforme as capacidades do destino selecionado.")}</p>
             </div>
         </div>
-    </div>
-);
+    </div>;
+};
 
 export default WorkflowCard;

@@ -101,3 +101,8 @@ Confira se `DATA_DIR` aponta para a instalação correta e se `ENCRYPTION_KEY` c
 Em **Histórico > Ver detalhes**, baixe o relatório CSV ou JSON. Ele diferencia faixas adicionadas, correspondências aguardando inserção, músicas não encontradas e pendências. Também preserva total original, omissões e indisponibilidade quando conhecidos. Registros antigos sem estado por faixa informam essa limitação.
 
 Em **Ajuda e segurança**, escolha o sintoma para encontrar a próxima ação, crie um [backup protegido](backups.md) ou revise o diagnóstico. O diagnóstico contém contagens e informações de versão, sem credenciais, nomes de playlists, caminhos ou logs. Nada é enviado automaticamente à comunidade.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).

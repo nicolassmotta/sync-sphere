@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { BookOpen, LayoutDashboard, RefreshCw, History, Plug } from 'lucide-react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { DASHBOARD_TABS } from '../../constants/dashboardTabs';
@@ -9,8 +10,9 @@ const tabIcons = {
     settings: BookOpen,
 };
 
-const SidebarItem = ({ icon: Icon, label, isActive, onClick }) => (
-    <motion.button
+const SidebarItem = ({ icon: Icon, label, isActive, onClick }) => {
+    const { t } = useText();
+    return <motion.button
         onClick={onClick}
         aria-current={isActive ? 'page' : undefined}
         whileHover={{ x: 3 }}
@@ -29,11 +31,12 @@ const SidebarItem = ({ icon: Icon, label, isActive, onClick }) => (
             />
         )}
         <Icon size={20} className={`relative z-10 ${isActive ? 'text-spotify' : ''}`} />
-        <span className="relative z-10">{label}</span>
-    </motion.button>
-);
+        <span className="relative z-10">{t(label)}</span>
+    </motion.button>;
+};
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
+    const { t } = useText();
     return (
         <aside className="relative z-30 hidden w-72 flex-col border-r border-white/10 bg-black/60 md:flex">
             <div className="flex h-20 items-center border-b border-white/10 px-6">
@@ -41,18 +44,18 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     <div className="grid h-10 w-10 place-items-center rounded-lg border border-spotify/25 bg-spotify/15">
                         <RefreshCw size={20} className="text-spotify" />
                     </div>
-                    <p className="text-xl font-extrabold text-white">SyncSphere</p>
+                    <p className="text-xl font-extrabold text-white">{t("SyncSphere")}</p>
                 </div>
             </div>
 
             <nav className="flex-1 space-y-2 px-4 py-6">
-                <p className="mb-4 px-4 text-xs font-bold uppercase text-gray-300">Menu</p>
+                <p className="mb-4 px-4 text-xs font-bold uppercase text-gray-300">{t("Menu")}</p>
                 <LayoutGroup>
                     {DASHBOARD_TABS.map((tab) => (
                         <SidebarItem
                             key={tab.id}
                             icon={tabIcons[tab.id]}
-                            label={tab.label}
+                            label={t(tab.label)}
                             isActive={activeTab === tab.id}
                             onClick={() => setActiveTab(tab.id)}
                         />

@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { forwardRef, useId } from 'react';
 import { cn } from '../../utils/cn';
 
@@ -32,6 +33,7 @@ const TextField = forwardRef(({
     type = 'text',
     ...props
 }, ref) => {
+    const { t } = useText();
     const selectedTone = toneClasses[tone] || toneClasses.spotify;
     const generatedId = useId();
     const inputId = id || generatedId;
@@ -45,7 +47,7 @@ const TextField = forwardRef(({
                 <div className="ml-1 flex items-center justify-between gap-3">
                     {label ? (
                         <label htmlFor={inputId} className="block text-sm font-semibold text-white/70">
-                            {label}
+                            {t(label)}
                             {required && <span className="text-spotify"> *</span>}
                         </label>
                     ) : (
@@ -77,10 +79,10 @@ const TextField = forwardRef(({
             </div>
 
             {hint && !error && (
-                <p id={hintId} className="ml-1 text-xs leading-5 text-muted">{hint}</p>
+                <p id={hintId} className="ml-1 text-xs leading-5 text-muted">{t(hint)}</p>
             )}
             {error && (
-                <p id={errorId} role="alert" className="ml-1 text-xs leading-5 text-red-300">{error}</p>
+                <p id={errorId} role="alert" className="ml-1 text-xs leading-5 text-red-300">{t(error)}</p>
             )}
         </div>
     );

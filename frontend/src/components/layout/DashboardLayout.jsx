@@ -1,17 +1,19 @@
+import { useText } from '../../i18n/useText';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { DASHBOARD_TABS } from '../../constants/dashboardTabs';
 
 const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
+    const { t } = useText();
     return (
         <div className="app-shell flex min-h-screen overflow-hidden text-ink selection:bg-spotify/30">
-            <a href="#dashboard-content" className="skip-link">Pular para o conteúdo</a>
+            <a href="#dashboard-content" className="skip-link">{t("Pular para o conteúdo")}</a>
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
             <div className="relative z-10 flex min-w-0 flex-1 flex-col border-l border-white/10 bg-black/35 backdrop-blur-3xl shadow-2xl">
                 <Header activeTab={activeTab} onOpenHelp={() => setActiveTab('settings')} />
 
-                <nav className="flex gap-2 overflow-x-auto border-b border-white/10 px-4 py-3 md:hidden" aria-label="Navegação do painel">
+                <nav className="flex gap-2 overflow-x-auto border-b border-white/10 px-4 py-3 md:hidden" aria-label={t("Navegação do painel")}>
                     {DASHBOARD_TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -26,7 +28,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
                                         : 'border-white/10 bg-white/[0.045] text-muted hover:text-white'
                                 }`}
                             >
-                                {tab.label}
+                                {t(tab.label)}
                             </button>
                         );
                     })}

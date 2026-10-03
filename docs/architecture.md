@@ -129,3 +129,8 @@ O servidor usa bloqueio exclusivo do diretório de dados e escuta em loopback po
 O empacotamento copia uma lista explícita de código e documentação, instala apenas dependências de produção e confere o runtime Node.js contra a soma SHA-256 oficial. Artefatos locais não são uma publicação de versão. Veja [distribuição](distribution.md), [backup](backups.md) e [conferência com pessoas](usability-testing.md).
 
 Evidências da primeira experiência e dos pacotes: [Validação local](validation-first-experience.md).
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
