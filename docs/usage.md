@@ -106,3 +106,10 @@ Em **Ajuda e segurança**, escolha o sintoma para encontrar a próxima ação, c
 ## Português e inglês
 
 A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
+
+
+## Recuperação na interface
+
+Se o Histórico ou suas faixas não puderem ser carregados, a tela informa o erro e permite tentar novamente. Indisponibilidade não aparece como histórico vazio ou resultado completamente resolvido. No celular, cartões mostram separadamente adicionadas, total, pendentes e não encontradas.
+
+Resultados com músicas não encontradas indicam **Revisar resultado**. Origens recusadas por corte de leitura não oferecem um retry que repetiria o mesmo corte. Divida a playlist conforme a mensagem. As abas possuem endereço próprio; recarregar ou voltar no navegador conserva a aba escolhida. A perda do socket informa tentativa de reconexão sem declarar encerramento da transferência. OAuth pode ser autorizado novamente sem remover previamente a conexão salva.

@@ -23,7 +23,8 @@ Create a branch from current main, reproduce the problem, implement focused beha
 ## Validation
 
 ```bash
-npm test
+npm test --prefix backend
+npm test --prefix frontend
 npm run test:i18n --prefix frontend
 npm run lint
 npm run build
