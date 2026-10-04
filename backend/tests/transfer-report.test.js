@@ -30,3 +30,13 @@ it('falha técnica conserva consultas concluídas e falhas sem rotular registro 
     expect(report.tracks[0]).toMatchObject({ legacy: false, queries: 3, requests: 5 });
     expect(report.metrics).toMatchObject({ queries: 3, requests: 5 });
 });
+
+it('revisão legada não conta como cobertura automática e cópia não inventa acerto de cache', async () => {
+    const [transfer] = await Transfer.insertMany([{ user: 'local', status: 'completed' }]);
+    const tracks = buildTransferTracks([{ name: 'A', artist: 'Artista' }, { name: 'B', artist: 'Artista' }]);
+    Object.assign(tracks[0], { status: 'needs_review', matchSource: 'search' });
+    Object.assign(tracks[1], { status: 'matched', targetId: 'b', inserted: true, matchSource: 'cache', matching: { strategy: 'preserved_choice' } });
+    saveTransferTracks(transfer._id, tracks);
+    const report = JSON.parse((await buildTransferReport({ transferId: transfer._id, userId: 'local' })).body);
+    expect(report.metrics).toMatchObject({ automaticCoverage: 0.5, cacheHits: 0 });
+});

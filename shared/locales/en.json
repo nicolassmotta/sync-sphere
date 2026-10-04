@@ -927,5 +927,21 @@
   "Link de destino": "Destination link",
   "Decisão": "Decision",
   "Decisão antiga sem evidências": "Legacy decision without evidence",
-  "Metadados indisponíveis": "Metadata unavailable"
+  "Metadados indisponíveis": "Metadata unavailable",
+  "A decisão antiga não tem evidências suficientes. Confirme uma alternativa.": "The legacy decision has insufficient evidence. Confirm an alternative.",
+  "Uma ação desta transferência já está em andamento.": "An action for this transfer is already in progress.",
+  "Lote de revisão inválido.": "Invalid review batch.",
+  "Revisão salva. Escolhas confirmadas aguardam inserção na playlist.": "Review saved. Confirmed choices are awaiting playlist insertion.",
+  "Uma cópia com outras escolhas já está em andamento.": "A copy with different choices is already in progress.",
+  "Resolva ou ignore todas as pendências antes de criar uma cópia na ordem da origem.": "Resolve or skip all pending tracks before creating a copy in source order.",
+  "Nenhuma faixa resolvida para criar uma cópia.": "No resolved tracks to create a copy.",
+  "Aguarde a transferência terminar antes de criar uma cópia.": "Wait for the transfer to finish before creating a copy.",
+  "A criação da playlist ficou sem confirmação. Confira o destino antes de tentar novamente.": "Playlist creation could not be confirmed. Check the destination before trying again.",
+  "A faixa escolhida ficou indisponível no destino. Escolha uma alternativa.": "The chosen track became unavailable at the destination. Choose an alternative.",
+  "Recuperando escolhas confirmadas antes do reinício.": "Recovering choices confirmed before the restart.",
+  "O orçamento de requisições ao catálogo foi esgotado.": "The catalog request budget was exhausted.",
+  "O orçamento de busca foi esgotado após uma falha técnica.": "The search budget was exhausted after a technical failure.",
+  "O tempo máximo de busca foi atingido.": "The search time limit was reached.",
+  "A consulta ao catálogo excedeu o tempo máximo.": "The catalog query exceeded its time limit.",
+  "Índices duplicados.": "Duplicate indices."
 }

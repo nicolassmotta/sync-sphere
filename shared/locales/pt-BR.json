@@ -927,5 +927,21 @@
   "Link de destino": "Link de destino",
   "Decisão": "Decisão",
   "Decisão antiga sem evidências": "Decisão antiga sem evidências",
-  "Metadados indisponíveis": "Metadados indisponíveis"
+  "Metadados indisponíveis": "Metadados indisponíveis",
+  "A decisão antiga não tem evidências suficientes. Confirme uma alternativa.": "A decisão antiga não tem evidências suficientes. Confirme uma alternativa.",
+  "Uma ação desta transferência já está em andamento.": "Uma ação desta transferência já está em andamento.",
+  "Lote de revisão inválido.": "Lote de revisão inválido.",
+  "Revisão salva. Escolhas confirmadas aguardam inserção na playlist.": "Revisão salva. Escolhas confirmadas aguardam inserção na playlist.",
+  "Uma cópia com outras escolhas já está em andamento.": "Uma cópia com outras escolhas já está em andamento.",
+  "Resolva ou ignore todas as pendências antes de criar uma cópia na ordem da origem.": "Resolva ou ignore todas as pendências antes de criar uma cópia na ordem da origem.",
+  "Nenhuma faixa resolvida para criar uma cópia.": "Nenhuma faixa resolvida para criar uma cópia.",
+  "Aguarde a transferência terminar antes de criar uma cópia.": "Aguarde a transferência terminar antes de criar uma cópia.",
+  "A criação da playlist ficou sem confirmação. Confira o destino antes de tentar novamente.": "A criação da playlist ficou sem confirmação. Confira o destino antes de tentar novamente.",
+  "A faixa escolhida ficou indisponível no destino. Escolha uma alternativa.": "A faixa escolhida ficou indisponível no destino. Escolha uma alternativa.",
+  "Recuperando escolhas confirmadas antes do reinício.": "Recuperando escolhas confirmadas antes do reinício.",
+  "O orçamento de requisições ao catálogo foi esgotado.": "O orçamento de requisições ao catálogo foi esgotado.",
+  "O orçamento de busca foi esgotado após uma falha técnica.": "O orçamento de busca foi esgotado após uma falha técnica.",
+  "O tempo máximo de busca foi atingido.": "O tempo máximo de busca foi atingido.",
+  "A consulta ao catálogo excedeu o tempo máximo.": "A consulta ao catálogo excedeu o tempo máximo.",
+  "Índices duplicados.": "Índices duplicados."
 }

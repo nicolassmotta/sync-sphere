@@ -38,3 +38,15 @@ it('vozeamento japonês permanece parte da identidade Unicode', () => {
 it('restrição regional explícita bloqueia aceitação mesmo sem is_playable', () => {
     expect(decideCandidates({ name: 'Música', artist: 'Artista' }, [{ id: 'bloqueada', name: 'Música', artist: 'Artista', restrictions: { reason: 'market' } }]).decision).toBe('needs_review');
 });
+
+it.each([
+    ['Música (Live at Lisboa 2020)', 'Música (Live at Porto 2021)'],
+    ['Música (Acoustic Piano)', 'Música (Acoustic Guitar)'],
+    ['Música (Instrumental)', 'Música (Karaoke)'],
+    ['Música (Cover)', 'Música (Remake)'],
+])('detalhes de versão incompatíveis impedem aceitar %s como %s', (name, targetName) => {
+    const result = decideCandidates({ name, artist: 'Artista', durationMs: 180000 },
+        [{ id: 'diferente', name: targetName, artists: ['Artista'], durationMs: 180000 }]);
+    expect(result.decision).toBe('needs_review');
+    expect(result.reasons).toContain('version_conflict');
+});

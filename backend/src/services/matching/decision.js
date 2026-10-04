@@ -24,7 +24,7 @@ export const evaluateCandidate = (track, rawCandidate) => {
     const artistEqual = sourceArtists.length > 0 && sourceArtists.every((artist) => targetArtists.includes(artist)
         || (sourceArtists.length === 1 && knownAliases.some((alias) => targetArtists.includes(alias))));
     const versionsEqual = JSON.stringify(sourceTitle.versions) === JSON.stringify(targetTitle.versions)
-        && (!sourceTitle.detailedVersion || sourceTitle.detailedVersion === targetTitle.detailedVersion);
+        && (sourceTitle.detailedVersion === targetTitle.detailedVersion);
     const durationDeltaMs = track.durationMs > 0 && candidate.durationMs > 0
         ? Math.abs(track.durationMs - candidate.durationMs) : null;
     const sourceIsrc = String(track.isrc || '').toUpperCase();

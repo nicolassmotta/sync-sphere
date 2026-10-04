@@ -69,7 +69,7 @@ Executados nesta sessão:
 
 | Comando | Resultado |
 |---|---|
-| `rtk test npm test --prefix backend` | 38 suítes, 509 testes aprovados |
+| `rtk test npm test --prefix backend` | 38 suítes, 514 testes aprovados |
 | `rtk test npm test --prefix frontend` | 5 arquivos, 24 testes aprovados |
 | `rtk test npm run test:i18n --prefix frontend` | Aprovado, zero falhas |
 | `rtk err npm run lint --prefix frontend` | Sem erros |

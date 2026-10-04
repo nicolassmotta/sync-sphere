@@ -6,8 +6,11 @@ const VERSION_TYPES = [
     ['live', /\b(live|ao vivo|en vivo)\b/],
     ['acoustic', /\b(acoustic|acustico|acustica)\b/],
     ['remix', /\b(remix|bootleg|mashup)\b/],
-    ['cover', /\b(cover|tribute|tributo|remake)\b/],
-    ['instrumental', /\b(instrumental|karaoke)\b/],
+    ['cover', /\bcover\b/],
+    ['tribute', /\b(tribute|tributo)\b/],
+    ['remake', /\bremake\b/],
+    ['instrumental', /\binstrumental\b/],
+    ['karaoke', /\bkaraoke\b/],
     ['speed', /\b(sped up|spedup|slowed|nightcore|reverb|8d)\b/],
     ['edit', /\b(edit|radio version)\b/],
     ['remaster', /\b(remaster|remastered|remasterizado)\b/],
@@ -21,7 +24,8 @@ export const titleIdentity = (value) => {
     const annotations = original.match(/\([^)]*\)|\[[^\]]*\]/g) || [];
     const suffix = original.includes(' - ') ? original.split(' - ').slice(1).join(' - ') : '';
     const trailingVersion = original.match(/\s+(live|ao vivo|en vivo|acoustic|acustico|remix|instrumental|karaoke|radio edit|remastered|clean|explicit)$/i)?.[1] || '';
-    const versionText = normalizeText([...annotations, suffix, trailingVersion].join(' '));
+    const versionChunks = [...annotations, suffix, trailingVersion].filter((part) => VERSION_TYPES.some(([, pattern]) => pattern.test(normalizeText(part))));
+    const versionText = normalizeText(versionChunks.join(' '));
     const versions = VERSION_TYPES.filter(([, pattern]) => pattern.test(versionText)).map(([type]) => type);
     const comparable = normalizeText((trailingVersion ? original.slice(0, -trailingVersion.length) : original).replace(/\([^)]*\)|\[[^\]]*\]/g, (part) => (
         VERSION_TYPES.some(([, pattern]) => pattern.test(normalizeText(part))) ? '' : part
@@ -29,8 +33,9 @@ export const titleIdentity = (value) => {
         VERSION_TYPES.some(([, pattern]) => pattern.test(normalizeText(part))) ? '' : part
     )));
     // Nomes de remix, edições e remasterizações fazem parte da identidade da versão.
+    const details = VERSION_TYPES.reduce((text, [, pattern]) => text.replace(new RegExp(pattern.source, 'g'), ' '), versionText).replace(/\s+/g, ' ').trim();
     const detailedVersion = versions.some((type) => ['remix', 'speed', 'edit', 'remaster'].includes(type))
-        ? normalized : null;
+        ? normalized : details || null;
     return { original, comparable, versions, detailedVersion };
 };
 

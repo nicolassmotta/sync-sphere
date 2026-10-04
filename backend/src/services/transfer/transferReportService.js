@@ -48,7 +48,7 @@ export const buildTransferReport = async ({ transferId, userId, format = 'json',
         legacy: Boolean(track.matching?.legacy) || (!track.formatVersion && !track.matching && !track.review),
     }));
     const total = tracks.length;
-    const automaticallyResolved = tracks.filter((track) => ['search', 'cache'].includes(track.matchSource)).length;
+    const automaticallyResolved = tracks.filter((track) => track.status === 'matched' && ['search', 'cache'].includes(track.matchSource)).length;
     const inserted = tracks.filter((track) => track.inserted).length;
     const report = {
         format: 'syncsphere-transfer-report', version: 2, generatedAt: new Date().toISOString(),
@@ -60,7 +60,7 @@ export const buildTransferReport = async ({ transferId, userId, format = 'json',
         metrics: {
             automaticCoverage: total ? automaticallyResolved / total : null,
             insertedCoverage: total ? inserted / total : null,
-            cacheHits: tracks.filter((track) => ['cache', 'manual_cache'].includes(track.matchSource)).length,
+            cacheHits: tracks.filter((track) => ['cache', 'manual_cache'].includes(track.matchSource) && track.matching?.strategy !== 'preserved_choice').length,
             queries: rows.reduce((sum, track) => sum + (track.queries || 0), 0),
             requests: rows.reduce((sum, track) => sum + (track.requests || 0), 0),
             searchLatencyMs: tracks.reduce((sum, track) => sum + (track.searchLatencyMs || 0), 0),
