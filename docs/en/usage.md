@@ -50,3 +50,10 @@ Download File output in CSV, JSON, M3U or TXT. File to File transfers metadata w
 If essential stored data cannot be read or decrypted, startup fails or readiness becomes unavailable. Preserve the data and original key; check `DATA_DIR`, `ENCRYPTION_KEY` and a compatible backup. Cache/statistics are disposable and may be skipped safely. See [backup recovery](backups.md).
 
 Real account writes for the four additional providers still require validation. Simulated test responses do not establish real-account behavior.
+
+
+## Interface recovery
+
+History and per-track loading failures show an error with a retry action. They are not presented as an empty history or a fully resolved result. Mobile cards distinguish added, total, pending and unmatched tracks. Results with unmatched tracks display **Review outcome**. Confirmed truncated sources do not offer a retry that would repeat the same limit; split the source playlist first.
+
+Dashboard tabs have their own URLs. Reload and browser navigation preserve the tab. A lost progress connection shows a reconnection notice without declaring the transfer finished. OAuth can be authorized again without first removing the saved connection.

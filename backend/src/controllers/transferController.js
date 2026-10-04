@@ -115,7 +115,7 @@ export const retryTransferTracks = async (req, res, next) => {
 
         res.status(202).json({
             status: 'success',
-            message: `${requeued} ${requeued === 1 ? 'faixa voltou' : 'faixas voltaram'} para a fila.`,
+            message: requeued ? `${requeued} ${requeued === 1 ? 'faixa voltou' : 'faixas voltaram'} para a fila.` : transfer.lastMessage,
             data: { transfer, requeued },
         });
     } catch (error) {

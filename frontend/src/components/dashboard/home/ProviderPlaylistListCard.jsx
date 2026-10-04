@@ -46,11 +46,11 @@ const ProviderPlaylistListCard = ({
     <div className="elevated-card p-6 lg:p-7">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <p className="text-sm font-bold uppercase text-white/40">{t("Escolha a origem")}</p>
+                <p className="text-sm font-bold uppercase text-muted">{t("Escolha a origem")}</p>
                 <h2 className="mt-2 text-2xl font-black text-white">{t("Playlists do ")}{t(provider.label)}</h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-muted">{t("Marque uma ou várias playlists. A prévia lê as primeiras faixas antes de criar tarefas na fila.")}</p>
                 {connected && !playlistsLoading && (
-                    <p className="mt-2 text-xs font-bold uppercase text-white/35">{t("Mostrando ")}{playlists.length}{t(" de ")}{playlistsSummary?.total || playlists.length}{t(" playlists")}{playlistsSummary?.hasMore ? t(" · há mais no {{value0}}", { value0: provider.label }) : ''}
+                    <p className="mt-2 text-xs font-bold uppercase text-muted">{t("Mostrando ")}{playlists.length}{t(" de ")}{playlistsSummary?.total || playlists.length}{t(" playlists")}{playlistsSummary?.hasMore ? t(" · há mais no {{value0}}", { value0: provider.label }) : ''}
                     </p>
                 )}
             </div>

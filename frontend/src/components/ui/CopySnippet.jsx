@@ -39,7 +39,7 @@ const CopySnippet = ({
     return (
         <div className={cn('overflow-hidden rounded-lg border border-white/10 bg-black/55', className)}>
             <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.045] px-4 py-3">
-                <p className="min-w-0 truncate text-xs font-bold uppercase text-white/45">{t(label)}</p>
+                <p className="min-w-0 truncate text-xs font-bold uppercase text-muted">{t(label)}</p>
                 <Button
                     onClick={handleCopy}
                     size="sm"
@@ -49,8 +49,8 @@ const CopySnippet = ({
                     {copied ? t("Copiado") : t("Copiar")}
                 </Button>
             </div>
-            <pre className="max-h-72 overflow-x-auto p-4 text-xs leading-6 text-gray-200 sm:text-sm">
-                <code className={`language-${language}`}>{code}</code>
+            <pre role="region" tabIndex={0} aria-label={t("Comando copiável: {{value0}}", { value0: label })} className="max-h-72 overflow-x-auto p-4 text-xs leading-6 text-gray-200 sm:text-sm">
+                <code translate="no" className={`language-${language}`}>{code}</code>
             </pre>
         </div>
     );

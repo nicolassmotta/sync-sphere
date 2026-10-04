@@ -21,6 +21,7 @@ Esta documentação acompanha a versão da `main`. Para instalar uma versão pub
 ## Desenvolver e contribuir
 
 - [Contribuição](../CONTRIBUTING.md): ambiente de desenvolvimento, testes e fluxo de PR.
+- [Auditoria de rotas e usabilidade](qa-audit.md): cenários simulados, correções e limites de validação.
 - [Arquitetura](architecture.md): provedores, fila, armazenamento e componentes.
 - [API local](api.md): rotas e eventos Socket.io.
 - [Segurança](../SECURITY.md): proteção da instalação e relato de vulnerabilidades.

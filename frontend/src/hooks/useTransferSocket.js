@@ -35,6 +35,7 @@ export const useTransferSocket = (transferIds) => {
     const [progress, setProgress] = useState(0);
     const [progressMessage, setProgressMessage] = useState('');
     const [transfers, setTransfers] = useState([]);
+    const [connectionState, setConnectionState] = useState('idle');
 
     const prepareTransferProgress = useCallback((message) => {
         setIsTransferring(true);
@@ -51,6 +52,8 @@ export const useTransferSocket = (transferIds) => {
         if (!activeTransferIds.length) return undefined;
 
         const socket = io(API_ORIGIN, { withCredentials: true });
+        let disposed = false;
+        setConnectionState('connecting');
         const snapshots = new Map(
             activeTransferIds.map((transferId) => [transferId, buildInitialSnapshot(transferId)])
         );
@@ -93,8 +96,16 @@ export const useTransferSocket = (transferIds) => {
         };
 
         socket.on('connect', () => {
+            if (disposed) return;
+            setConnectionState('connected');
             activeTransferIds.forEach((transferId) => socket.emit('subscribe_transfer', transferId));
         });
+
+        const reconnecting = () => {
+            if (!disposed && ![...snapshots.values()].every(isTerminal)) setConnectionState('reconnecting');
+        };
+        socket.on('disconnect', reconnecting);
+        socket.on('connect_error', reconnecting);
 
         socket.on('transfer_update', (data) => {
             const transferId = String(data.transferId || '');
@@ -128,7 +139,7 @@ export const useTransferSocket = (transferIds) => {
             toast.error(text(data.message) || text("Falha na conexão em tempo real."));
         });
 
-        return () => socket.disconnect();
+        return () => { disposed = true; socket.disconnect(); };
     }, [transferIds]);
 
     return {
@@ -136,6 +147,7 @@ export const useTransferSocket = (transferIds) => {
         progress,
         progressMessage: t(progressMessage),
         transfers,
+        connectionState,
         prepareTransferProgress,
         stopTransferProgress,
     };

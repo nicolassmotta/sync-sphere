@@ -165,3 +165,12 @@ A restauração não possui rota HTTP. Use o iniciador Restaurar-backup ou `npm 
 ## Idioma das respostas
 
 `Accept-Language: en` solicita inglês; `pt-BR` solicita português. A ausência de idioma compatível usa português. Respostas incluem `Content-Language` e `Vary: Accept-Language`. Somente mensagens próprias e labels permitidos são localizados. Códigos HTTP, enums, IDs, nomes e metadados continuam iguais. O relatório CSV/JSON segue o idioma solicitado para cabeçalhos, resultados e nota. Eventos Socket.io mantêm o contrato e são localizados no cliente. Veja [idiomas](localization.md).
+
+
+## Erros e simulações
+
+Corpos JSON inválidos retornam 400, conteúdo acima do limite retorna 413 e origem CORS não permitida retorna 403. A resposta não contém pilha ou cópia do corpo/consulta. Erros inesperados retornam mensagem genérica; falhas essenciais de armazenamento retornam 503 com orientação para DATA_DIR, ENCRYPTION_KEY e backup.
+
+Leitura remota, inclusive pré-validação do início, distingue 401 (reconexão), 429 (limite, com Retry-After quando informado), 503 (indisponibilidade) e 404 (playlist ausente). Mensagens construídas pelo aplicativo mantêm sua orientação; detalhes brutos de consultas remotas não são devolvidos nesses caminhos. A inscrição Socket.io exige um identificador textual não vazio de até 100 caracteres.
+
+Veja a [matriz de auditoria](qa-audit.md) para os cenários executados. A fixture de navegador possui rotas privadas de teste que não entram na aplicação de produção.

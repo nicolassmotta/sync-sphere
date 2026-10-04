@@ -43,6 +43,7 @@ jobs:
 
       - name: Validar front-end
         run: |
+          npm test --prefix frontend
           npm run test:i18n --prefix frontend
           npm run lint --prefix frontend
           npm run build --prefix frontend

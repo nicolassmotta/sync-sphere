@@ -42,6 +42,7 @@ const HomeTab = ({
     isTransferring,
     progress,
     progressMessage,
+    connectionState,
     transfers,
     onResumeTransfer,
     startTransferProcess,
@@ -339,7 +340,7 @@ const HomeTab = ({
             </div>}
 
             {wizardStep === 4 && <div className="space-y-5">
-                <ActiveTransferCard isTransferring={isTransferring} progress={progress} progressMessage={progressMessage} transfers={transfers}
+                <ActiveTransferCard connectionState={connectionState} isTransferring={isTransferring} progress={progress} progressMessage={progressMessage} transfers={transfers}
                     onResume={onResumeTransfer} onOpenIntegrations={() => setActiveTab('integrations')} onOpenHistory={() => setActiveTab('history')} />
                 <div className="flex flex-wrap gap-3"><Button onClick={() => { setWizardStep(0); }}>{t("Migrar outra playlist")}</Button><Button onClick={() => setActiveTab('history')}>{t("Ver resultado e baixar relatório")}</Button></div>
             </div>}

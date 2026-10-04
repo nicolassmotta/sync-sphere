@@ -42,16 +42,16 @@ const useNow = (active) => {
     return now;
 };
 
-const ProgressBar = ({ value, className = 'h-3' }) => (
-    <div className={`${className} overflow-hidden rounded-full bg-white/10`}>
-        <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-spotify to-youtube"
-            initial={{ width: 0 }}
-            animate={{ width: `${value}%` }}
-            transition={{ type: 'spring', bounce: 0, duration: 0.9 }}
-        />
-    </div>
-);
+const ProgressBar = ({ value, className = 'h-3' }) => {
+    const { t } = useText();
+    const percent = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
+    return <div role="progressbar" aria-label={t("Progresso da transferência")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className={`${className} overflow-hidden rounded-full bg-white/10`}>
+        <motion.div aria-hidden="true"
+            className="h-full origin-left rounded-full bg-gradient-to-r from-spotify to-youtube"
+            initial={{ scaleX: 0 }} animate={{ scaleX: percent / 100 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.9 }} />
+    </div>;
+};
 
 const describeProgress = (transfer) => {
     const counts = transfer.counts;
@@ -181,7 +181,7 @@ const TransferRow = ({ transfer, now, onResume, onOpenIntegrations }) => {
             <p className="min-w-0 truncate text-sm font-extrabold text-white">
                 {transfer.playlistName || t("Playlist")}
             </p>
-            <StatusBadge status={transfer.status} />
+            <StatusBadge status={transfer.status} label={transfer.status === 'completed' && transfer.counts?.notFound > 0 ? t("Revisar resultado") : undefined} tone={transfer.status === 'completed' && transfer.counts?.notFound > 0 ? 'warning' : undefined} />
         </div>
         <ProgressBar value={transfer.progress || 0} className="h-2" />
         {describeProgress(transfer) && (
@@ -200,6 +200,7 @@ const ActiveTransferCard = ({
     isTransferring,
     progress,
     progressMessage,
+    connectionState,
     transfers = [],
     onResume,
     onOpenIntegrations,
@@ -228,6 +229,7 @@ const ActiveTransferCard = ({
                 <Gauge className="text-spotify" size={24} />
             </div>
 
+            {isTransferring && connectionState === 'reconnecting' && <p role="status" className="mb-4 rounded-lg border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">{t("A conexão de progresso caiu. Tentando reconectar. Mantenha o aplicativo aberto; o estado da transferência continua salvo.")}</p>}
             <ProgressBar value={progress} />
             <p role="status" className="mt-4 text-sm font-semibold leading-6 text-white/70">
                 {isTransferring ? (progressMessage || t("Sincronizando faixas...")) : (transfers.length ? t("Processamento encerrado. Confira o resultado de cada playlist abaixo.") : t("Nenhuma transferência em execução."))}

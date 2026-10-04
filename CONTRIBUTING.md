@@ -45,6 +45,7 @@ Informe claramente no README se a integração é oficial ou não oficial, quais
 
 ```bash
 npm test
+npm test --prefix frontend
 npm run test:i18n --prefix frontend
 npm run lint
 npm run build

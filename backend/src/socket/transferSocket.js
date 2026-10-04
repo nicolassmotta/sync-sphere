@@ -12,6 +12,11 @@ const authenticateSocket = (socket, next) => {
 
 const subscribeToTransfer = async (socket, transferId) => {
     try {
+        if (typeof transferId !== 'string' || !transferId.trim() || transferId.length > 100) {
+            socket.emit('transfer_error', { message: 'Informe uma transferência válida para acompanhar.' });
+            return;
+        }
+        transferId = transferId.trim();
         const transfer = await Transfer.findOne({
             _id: transferId,
             user: socket.userId,

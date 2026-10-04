@@ -1,3 +1,4 @@
+import { resolveTransferProviders } from '../../constants/transferDirections.js';
 import Transfer from '../../models/Transfer.js';
 import AppError from '../../utils/AppError.js';
 import logger from '../../utils/logger.js';
@@ -147,13 +148,17 @@ export const resumeTransfer = async ({ transferId, userId }) => {
 /**
  * Chamado quando uma integração volta a ficar conectada.
  */
-export const resumeTransfersNeedingAuth = async ({ userId }) => {
+export const resumeTransfersNeedingAuth = async ({ userId, providerId }) => {
     const transfers = await Transfer.find({ user: userId, status: 'needs_auth' });
+    let resumed = 0;
     for (const transfer of transfers) {
+        const providers = resolveTransferProviders(transfer);
+        if (providerId && ![providers.sourceProvider, providers.targetProvider].includes(providerId)) continue;
+        resumed += 1;
         await markQueued(transfer, 'Integração reconectada. Retomando a transferência.');
         if (!runTransferNow(transfer._id)) await enqueue(transfer);
     }
-    return transfers.length;
+    return resumed;
 };
 
 /**
