@@ -36,11 +36,11 @@ app.use(helmet({
 // Configuração CORS para aceitar múltiplas origens locais, como Vite 5173/5174.
 app.use(cors(corsOptions));
 
+app.use('/api', languageMiddleware);
 app.use(express.json()); // Permite ler o corpo de requisições JSON.
 app.use(cookieParser()); // Intercepta cookies e coloca automaticamente em req.cookies.
 
 // Proteção geral contra excesso básico de requisições.
-app.use('/api', languageMiddleware);
 app.use('/api', globalLimiter);
 
 // Rotas principais.

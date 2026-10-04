@@ -12,6 +12,12 @@ export const MESSAGE_PARAMETER_TYPES = {
 };
 
 export const PROVIDER_MESSAGE_PARAMETERS = {
+    "{{value0}} precisa de reconexão. Abra Integrações e conecte novamente.": { value0: 'provider' },
+    "O {{value0}} limitou as requisições. Aguarde e tente novamente.": { value0: 'provider' },
+    "A playlist não foi encontrada no {{value0}}. Confira o link e suas permissões.": { value0: 'provider' },
+    "O {{value0}} não permitiu ler as faixas desta playlist. Confira o link e suas permissões.": { value0: 'provider' },
+    "Não foi possível consultar o {{value0}} agora. Tente novamente em instantes.": { value0: 'provider' },
+
     "{{value0}} não usa MusicKit.": {
         "value0": "provider"
     },

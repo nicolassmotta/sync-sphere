@@ -1,39 +1,30 @@
-// Middleware de tratamento para rotas que não existem.
-export const notFound = (req, res, next) => {
-    const err = new Error(`Rota indefinida - ${req.originalUrl}`);
-    err.statusCode = 404;
-    next(err); // Envia para o próximo interceptador.
-};
-
+import AppError from '../utils/AppError.js';
 import logger from '../utils/logger.js';
 
-// Middleware global de erros.
+export const notFound = (req, res, next) => {
+    next(new AppError('Rota não encontrada. Confira o endereço solicitado.', 404));
+};
+
+// Respostas e logs não incluem corpos, consultas, credenciais ou pilhas de erro.
 export const errorHandler = (err, req, res, next) => {
-    let statusCode = err.statusCode || 500;
-    let message = err.message || 'Erro interno no servidor.';
-    
-    // Tratamento de erros do Mongoose/MongoDB que poderiam vazar para o cliente.
-    if (err.name === 'CastError') {
-        message = `Recurso não encontrado. ID inválido: ${err.value}`;
+    if (res.headersSent) return next(err);
+    let statusCode = Number(err.statusCode) || 500;
+    let message = err.message || 'Erro interno no servidor. Tente novamente em instantes.';
+    if (err.type === 'entity.parse.failed') {
         statusCode = 400;
+        message = 'JSON inválido. Confira o formato da requisição e tente novamente.';
+    } else if (err.type === 'entity.too.large') {
+        statusCode = 413;
+        message = 'O conteúdo enviado ultrapassa o tamanho permitido. Reduza o arquivo e tente novamente.';
+    } else if (!err.isOperational) {
+        statusCode = 500;
+        message = 'Erro interno no servidor. Tente novamente em instantes.';
     }
-    if (err.code === 11000) {
-        message = 'Já existe um cadastro com esses dados.';
-        statusCode = 409;
-    }
-
-    const logMessage = `[Erro operacional] ${statusCode} - ${message} (${req.method} ${req.originalUrl})`;
-    if (statusCode >= 500) {
-        logger.error(`${logMessage}\nPilha: ${err.stack}`);
-    } else if (statusCode === 401) {
-        logger.info(logMessage);
-    } else {
-        logger.warn(logMessage);
-    }
-
-    res.status(statusCode).json({
-        status: `${statusCode}`.startsWith('4') ? 'fail' : 'error',
-        message: message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack // Esconde o rastro de erro em produção.
-    });
+    if (!Number.isInteger(statusCode) || statusCode < 400 || statusCode > 599) statusCode = 500;
+    if (err.isOperational && Number.isFinite(err.retryAfterMs)) res.setHeader('Retry-After', String(Math.max(0, Math.ceil(err.retryAfterMs / 1000))));
+    const logMessage = `[Erro HTTP] ${statusCode} (${req.method} ${req.path})`;
+    if (statusCode >= 500) logger.error(logMessage);
+    else if (statusCode === 401) logger.info(logMessage);
+    else logger.warn(logMessage);
+    res.status(statusCode).json({ status: statusCode < 500 ? 'fail' : 'error', message });
 };

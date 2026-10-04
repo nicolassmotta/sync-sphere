@@ -108,16 +108,16 @@ export default class TrackMatcher {
 
             try {
                 const cached = matchCache?.get(track);
-                const cacheHit = Boolean(cached?.targetId && cached.matchScore >= this.minMatchScore);
+                const cacheHit = Boolean(cached?.targetId && Number.isFinite(cached.matchScore) && cached.matchScore >= this.minMatchScore);
                 if (!cacheHit && delayMs > 0) await wait(delayMs);
                 const match = cacheHit ? cached : await this.search(searchClient, track);
                 const matchId = cacheHit ? cached.targetId : getMatchId(match);
 
-                if (!matchId || match.matchScore < this.minMatchScore) {
+                if (!matchId || !Number.isFinite(match?.matchScore) || match.matchScore < this.minMatchScore) {
                     track.status = TRACK_STATUS.NOT_FOUND;
                     track.errorKind = ERROR_KINDS.NOT_FOUND;
                     track.lastError = noConfidentMatchReason;
-                    track.matchScore = match?.matchScore ?? null;
+                    track.matchScore = Number.isFinite(match?.matchScore) ? match.matchScore : null;
                 } else {
                     track.status = TRACK_STATUS.MATCHED;
                     track.targetId = matchId;

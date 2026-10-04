@@ -1,3 +1,4 @@
+import { providerHttpError } from '../../../services/integrations/providerHttpError.js';
 import AppError from '../../../utils/AppError.js';
 import logger from '../../../utils/logger.js';
 import {
@@ -10,9 +11,9 @@ import { resumeTransfersNeedingAuth } from '../../../services/transfer/transferQ
 
 const PLAYLIST_ROLES = ['source', 'destination'];
 
-const resumeWaitingTransfers = async (userId, providerLabel) => {
-    await resumeTransfersNeedingAuth({ userId }).catch((error) => {
-        logger.warn(`[${providerLabel}] Não foi possível retomar transferências após reconectar: ${error.message}`);
+const resumeWaitingTransfers = async (userId, provider) => {
+    await resumeTransfersNeedingAuth({ userId, providerId: provider.id }).catch((error) => {
+        logger.warn(`[${provider.label}] Não foi possível retomar transferências após reconectar: ${error.message}`);
     });
 };
 
@@ -80,7 +81,7 @@ export const providerCallback = async (req, res, next) => {
         }
 
         const result = await provider.oauth.handleCallback({ query: req.query, req });
-        if (result.connected) await resumeWaitingTransfers(result.userId, provider.label);
+        if (result.connected) await resumeWaitingTransfers(result.userId, provider);
 
         return res.redirect(result.redirectUrl);
     } catch (error) {
@@ -96,7 +97,7 @@ export const saveProviderCredentials = async (req, res, next) => {
         }
 
         await provider.saveCredentials({ values: req.body.values, userId: req.user._id });
-        await resumeWaitingTransfers(req.user._id, provider.label);
+        await resumeWaitingTransfers(req.user._id, provider);
 
         res.status(200).json({
             status: 'success',
@@ -137,8 +138,7 @@ export const listProviderPlaylists = async (req, res, next) => {
             data: result,
         });
     } catch (error) {
-        if (error instanceof AppError) return next(error);
-        next(new AppError(error.message || `Não foi possível listar playlists do ${provider?.label}.`, 400));
+        next(providerHttpError(error, provider, res));
     }
 };
 
@@ -163,7 +163,6 @@ export const getProviderPlaylistTracks = async (req, res, next) => {
             data: result,
         });
     } catch (error) {
-        if (error instanceof AppError) return next(error);
-        next(new AppError(error.message || `Não foi possível listar faixas da playlist do ${provider?.label}.`, 400));
+        next(providerHttpError(error, provider, res));
     }
 };
