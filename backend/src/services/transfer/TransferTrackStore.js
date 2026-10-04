@@ -11,9 +11,11 @@ export const TRACK_STATUS = {
     NOT_FOUND: 'not_found',
     RETRY_QUEUED: 'retry_queued',
     FAILED: 'failed',
+    NEEDS_REVIEW: 'needs_review',
+    SKIPPED: 'skipped',
 };
 
-const FINAL_STATUSES = new Set([TRACK_STATUS.MATCHED, TRACK_STATUS.NOT_FOUND, TRACK_STATUS.FAILED]);
+const FINAL_STATUSES = new Set([TRACK_STATUS.MATCHED, TRACK_STATUS.NOT_FOUND, TRACK_STATUS.FAILED, TRACK_STATUS.NEEDS_REVIEW, TRACK_STATUS.SKIPPED]);
 
 const storeName = (transferId) => `transfer-tracks-${String(transferId).replace(/[^\w-]/g, '')}.json`;
 
@@ -32,6 +34,10 @@ export const buildTransferTracks = (sourceTracks = []) => sourceTracks.map((trac
     sourceId: track.spotifyId || track.youtubeVideoId || track.sourceId || track.uri || null,
     name: track.name,
     artist: track.artist,
+    artists: track.artists || null,
+    artistAliases: track.artistAliases || null,
+    explicit: typeof track.explicit === 'boolean' ? track.explicit : null,
+    formatVersion: 2,
     album: track.album || '',
     durationMs: track.durationMs || 0,
     isrc: track.isrc || null,
@@ -54,6 +60,8 @@ export const summarizeTransferTracks = (tracks = []) => {
         matched: 0,
         pendingInserts: 0,
         notFound: 0,
+        needsReview: 0,
+        skipped: 0,
         retryQueued: 0,
         failed: 0,
         pending: 0,
@@ -65,6 +73,8 @@ export const summarizeTransferTracks = (tracks = []) => {
             counts.matched += 1;
             if (!track.inserted && track.targetId) counts.pendingInserts += 1;
         } else if (track.status === TRACK_STATUS.NOT_FOUND) counts.notFound += 1;
+        else if (track.status === TRACK_STATUS.NEEDS_REVIEW) counts.needsReview += 1;
+        else if (track.status === TRACK_STATUS.SKIPPED) counts.skipped += 1;
         else if (track.status === TRACK_STATUS.RETRY_QUEUED) counts.retryQueued += 1;
         else if (track.status === TRACK_STATUS.FAILED) counts.failed += 1;
         else counts.pending += 1;
@@ -87,7 +97,7 @@ export const getTracksToInsert = (tracks = []) => {
  * Formato legado de `transfer.errors`, ainda usado no histórico.
  */
 export const buildTransferErrors = (tracks = [], stage) => tracks
-    .filter((track) => [TRACK_STATUS.NOT_FOUND, TRACK_STATUS.FAILED, TRACK_STATUS.RETRY_QUEUED].includes(track.status))
+    .filter((track) => [TRACK_STATUS.NOT_FOUND, TRACK_STATUS.NEEDS_REVIEW, TRACK_STATUS.FAILED, TRACK_STATUS.RETRY_QUEUED].includes(track.status))
     .map((track) => ({
         trackName: track.name,
         artistName: track.artist,

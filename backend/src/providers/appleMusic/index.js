@@ -63,7 +63,7 @@ const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => 
 
 const toCandidate = (song) => {
     const track = toAppleTrack(song);
-    return { id: track.appleId, name: track.name, artists: track.artists, durationMs: track.durationMs, isrc: track.isrc };
+    return { id: track.appleId, name: track.name, artists: track.artists, album: track.album, durationMs: track.durationMs, isrc: track.isrc };
 };
 
 const requireUserToken = (action) => {
@@ -179,16 +179,21 @@ const appleMusicProvider = {
 
     createSearchClient() {
         return {
-            async searchBestMatch({ track }) {
+            kind: 'appleMusic-search', capabilities: { isrcSearch: true },
+            async searchCandidates({ track, strategy, limit = 10 }) {
                 const storefront = getDefaultStorefront();
-                if (track.isrc) {
-                    const [byIsrc] = await findSongsByIsrc({ storefront, isrc: track.isrc });
-                    if (byIsrc) return { ...toCandidate(byIsrc), matchScore: 100 };
+                if (strategy?.id === 'isrc') return (await findSongsByIsrc({ storefront, isrc: track.isrc })).map(toCandidate);
+                const term = strategy?.query || [track.name, track.artist].filter(Boolean).join(' ');
+                return (await searchSongs({ storefront, term, limit })).map(toCandidate);
+            },
+            async searchBestMatch({ track }) {
+                let candidates = [];
+                if (this.capabilities.isrcSearch && track.isrc) {
+                    candidates = await this.searchCandidates({ track, strategy: { id: 'isrc' } });
+                    const best = pickBestCandidate(track, candidates);
+                    if (best?.matching.decision === 'accepted') return best;
                 }
-
-                const term = [track.name, track.artist?.split(',')[0]].filter(Boolean).join(' ');
-                const songs = await searchSongs({ storefront, term });
-                return pickBestCandidate(track, songs.map(toCandidate));
+                return pickBestCandidate(track, [...candidates, ...await this.searchCandidates({ track })]);
             },
         };
     },
@@ -203,6 +208,11 @@ const appleMusicProvider = {
                 const playlistId = await createLibraryPlaylist({ name: title, description });
                 if (!playlistId) throw new Error('Apple Music não retornou o ID da playlist criada.');
                 return playlistId;
+            },
+
+            async readTrackIds({ playlistId }) {
+                const { songs } = await getLibraryPlaylist({ playlistId, limit: Infinity });
+                return songs.map((song) => toAppleTrack(song).appleId);
             },
 
             async addTracks({ playlistId, ids, expectedIds }) {

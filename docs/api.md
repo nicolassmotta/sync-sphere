@@ -96,7 +96,7 @@ Corpo recomendado de início:
 
 Também aceita `sourcePlaylistId` singular. `direction` continua disponível para compatibilidade; prefira os dois campos explícitos de provedor. A resposta `202` contém `transferId` e `transferIds`.
 
-A consulta de faixas aceita `status` com valores separados por vírgula, por exemplo `not_found,failed`. Valores possíveis: `pending`, `matched`, `not_found`, `retry_queued`, `failed`.
+A consulta de faixas aceita `status` com valores separados por vírgula, por exemplo `not_found,failed`. Valores possíveis: `pending`, `matched`, `needs_review`, `skipped`, `not_found`, `retry_queued`, `failed`.
 
 ## Revisão manual
 
@@ -174,3 +174,33 @@ Corpos JSON inválidos retornam 400, conteúdo acima do limite retorna 413 e ori
 Leitura remota, inclusive pré-validação do início, distingue 401 (reconexão), 429 (limite, com Retry-After quando informado), 503 (indisponibilidade) e 404 (playlist ausente). Mensagens construídas pelo aplicativo mantêm sua orientação; detalhes brutos de consultas remotas não são devolvidos nesses caminhos. A inscrição Socket.io exige um identificador textual não vazio de até 100 caracteres.
 
 Veja a [matriz de auditoria](qa-audit.md) para os cenários executados. A fixture de navegador possui rotas privadas de teste que não entram na aplicação de produção.
+
+## Alternativas, revisão em lote e correção
+
+As rotas de busca/confirmação singular continuam disponíveis. A busca devolve `data.candidate` para compatibilidade e `data.candidates` para até cinco alternativas.
+
+| Rota | Comportamento |
+|---|---|
+| `GET /transfer/:transferId/tracks/:trackIndex/candidates` | Alternativas persistidas para uma pendência. |
+| `POST /transfer/:transferId/review` | Validar e salvar um lote; enfileirar uma única inserção. |
+| `DELETE /transfer/:transferId/tracks/:trackIndex/choice` | Esquecer reaproveitamento futuro no cache. |
+| `GET /transfer/:transferId/tracks/:trackIndex/correction-candidates` | Alternativas de uma ocorrência já inserida, para corrigir uma cópia. |
+| `POST /transfer/:transferId/tracks/:trackIndex/correction-search` | Busca ajustada para correção em cópia; mesmo corpo de busca singular. |
+| `POST /transfer/:transferId/ordered-copy` | Criar outra transferência na ordem original, preservando a playlist anterior. |
+
+Corpo do lote, limitado a 100 índices distintos:
+
+```json
+{
+  "choices": [
+    { "trackIndex": 0, "action": "choose", "candidateId": "uuid-da-alternativa", "revision": 1 },
+    { "trackIndex": 1, "action": "skip" }
+  ]
+}
+```
+
+Cada UUID pertence a uma faixa, tem validade de dez minutos e identifica uma revisão do conjunto. IDs externos enviados pelo cliente não são usados como escolha. Proposta inválida em qualquer item rejeita o lote inteiro antes de persistir. Repetir o lote confirmado não duplica inserções. A resposta `202` contém `data.transfer`.
+
+`ordered-copy` aceita `{ "choices": [] }` para preservar todas as escolhas existentes ou uma lista de correções com `trackIndex`, `candidateId` e `revision`. Correções só afetam faixas já inseridas na transferência original e somente a cópia. Todas as outras ocorrências precisam estar resolvidas ou ignoradas. Uma cópia ativa é reutilizada; outra seleção concorrente retorna `409`.
+
+O relatório JSON usa `version: 2`, conserva os campos básicos por faixa e acrescenta origem/destino, evidências, estratégia, falha segura, datas, métricas e `destinationVerification`. `precision` permanece `null` sem resultado esperado externo. `inserted` significa escrita aceita; `destinationPresence` e `destinationVerification` registram a leitura posterior. Registros sem essas informações permanecem legados, sem evidências reconstruídas.

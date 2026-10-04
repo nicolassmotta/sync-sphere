@@ -7,7 +7,7 @@ import Modal from '../src/components/ui/Modal';
 import api from '../src/services/api';
 import i18n from '../src/i18n';
 
-vi.mock('../src/services/api', () => ({ default: { post: vi.fn() } }));
+vi.mock('../src/services/api', () => ({ default: { post: vi.fn(), get: vi.fn(async () => ({ data: { data: { candidates: [] } } })) } }));
 afterEach(() => api.post.mockReset());
 const original = { index: 0, name: 'Arquivo', artist: 'Não encontrada' };
 const review = (props = {}) => render(<ManualTrackReview transferId="transferencia-ficticia" track={original} providerLabel="Spotify" onBack={vi.fn()} onQueued={vi.fn()} {...props} />);
@@ -76,4 +76,21 @@ it('proposta com URL executável não oferece link acionável', async () => {
     await user.click(screen.getByRole('button', { name: 'Buscar alternativa' }));
     await screen.findByText('Alternativa');
     expect(screen.queryByRole('link', { name: 'Conferir na plataforma' })).toBeNull();
+});
+
+it('compara alternativas por teclado e guarda seleção sem confirmar a transferência', async () => {
+    const alternatives = [
+        { id: 'primeira', revision: 1, name: 'Música original', artist: 'Artista', reasons: [] },
+        { id: 'segunda', revision: 1, name: 'Música (Live)', artist: 'Artista', reasons: ['version_conflict'] },
+    ];
+    api.get.mockResolvedValueOnce({ data: { data: { candidates: alternatives } } });
+    const selected = vi.fn();
+    const user = userEvent.setup();
+    review({ onSelect: selected });
+    const first = await screen.findByRole('radio', { name: 'Música original Artista' });
+    first.focus();
+    await user.keyboard(' ');
+    await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
+    expect(selected).toHaveBeenCalledWith({ trackIndex: 0, action: 'choose', candidateId: 'primeira', revision: 1 });
+    expect(api.post).not.toHaveBeenCalled();
 });

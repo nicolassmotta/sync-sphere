@@ -1,3 +1,4 @@
+import { pickBestCandidate } from './matching/scoreCandidate.js';
 import { getMissingTrackIds } from './transfer/reconcileTrackIds.js';
 import { mapWithConcurrency } from '../utils/concurrency.js';
 import {
@@ -29,7 +30,6 @@ import {
     normalizeSpotifyPlaylistSummary,
     normalizeSpotifyTrackItems,
 } from './spotify/spotifyPlaylistFormatters.js';
-import { scoreSpotifyCandidate } from './spotify/spotifyTrackMatchScoring.js';
 
 export {
     buildSpotifyAuthorizationUrl,
@@ -451,36 +451,31 @@ const buildSpotifySearchQuery = (track) => (
     [track.name, track.artist].filter(Boolean).join(' ').trim()
 );
 
-export const searchBestSpotifyTrackMatch = async ({ track, userId }) => {
+export const searchSpotifyCandidates = async ({ track, userId, strategy, limit = 10 }) => {
     const accessToken = await getSpotifyAccessTokenForUser(userId);
-    const query = buildSpotifySearchQuery(track);
-    if (!query) return null;
-
+    const query = strategy?.id === 'isrc' ? `isrc:${track.isrc}` : strategy?.query || buildSpotifySearchQuery(track);
+    if (!query) return [];
     const url = new URL('https://api.spotify.com/v1/search');
     url.searchParams.set('type', 'track');
-    url.searchParams.set('limit', '10');
+    url.searchParams.set('limit', String(Math.min(limit, 10)));
     url.searchParams.set('market', 'from_token');
     url.searchParams.set('q', query);
-
-    const data = await fetchSpotifyJson(
-        url.toString(),
-        accessToken,
-        'Falha ao buscar faixas no Spotify.'
-    );
-    const candidates = data.tracks?.items || [];
-    if (!candidates.length) return null;
-
-    return candidates
-        .filter((candidate) => candidate.uri)
-        .map((candidate) => ({
-            ...candidate,
-            matchScore: scoreSpotifyCandidate(track, candidate),
-        }))
-        .sort((a, b) => b.matchScore - a.matchScore)[0] || null;
+    const data = await fetchSpotifyJson(url.toString(), accessToken, 'Falha ao buscar faixas no Spotify.');
+    return (data.tracks?.items || []).filter((candidate) => candidate.uri);
 };
 
+export const searchBestSpotifyTrackMatch = async (options) => pickBestCandidate(options.track, await searchSpotifyCandidates(options));
+
 export const createSpotifySearchClient = ({ userId }) => ({
-    kind: 'spotify-search',
+    kind: 'spotify-search', capabilities: { isrcSearch: true, availabilityCheck: true },
+    async validateCachedMatch({ targetId }) {
+        const token = await getSpotifyAccessTokenForUser(userId);
+        const url = new URL(`https://api.spotify.com/v1/tracks/${encodeURIComponent(String(targetId).split(':').at(-1))}`);
+        url.searchParams.set('market', 'from_token');
+        const candidate = await fetchSpotifyJson(url.toString(), token, 'Falha ao conferir disponibilidade no Spotify.');
+        return candidate.is_playable === false || candidate.restrictions?.reason ? false : candidate.is_playable ?? null;
+    },
+    searchCandidates: (options) => searchSpotifyCandidates({ ...options, userId }),
     searchBestMatch: ({ track }) => searchBestSpotifyTrackMatch({ track, userId }),
 });
 
@@ -510,6 +505,10 @@ export const createSpotifyDestinationClient = ({ userId }) => {
         },
 
         setPlaylistImage: null,
+
+        async readTrackIds({ playlistId }) {
+            return getSpotifyPlaylistExistingTrackUris({ accessToken: await getAccessToken(), playlistId });
+        },
 
         async addTracksToPlaylist({ playlistId, trackUris, expectedIds }) {
             const accessToken = await getAccessToken();

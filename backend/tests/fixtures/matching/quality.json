@@ -1,0 +1,817 @@
+[
+  {
+    "id": "exact",
+    "split": "calibration",
+    "expected": "accepted",
+    "reason": "Título, artista e duração coincidem.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "wrong-artist",
+    "split": "calibration",
+    "expected": "needs_review",
+    "reason": "Título sozinho não identifica a gravação.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Pedro Lima"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "shared-first-token",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Primeiro nome do artista não basta.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Costa"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "accent",
+    "split": "calibration",
+    "expected": "accepted",
+    "reason": "Acentos e pontuação são equivalentes.",
+    "critical": false,
+    "source": {
+      "name": "Coração!",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Coracao",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "cyrillic",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Normalização preserva letras cirílicas.",
+    "critical": false,
+    "source": {
+      "name": "Звезда",
+      "artist": "Луна",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Звезда",
+        "artists": [
+          "Луна"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "japanese",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Normalização preserva letras japonesas.",
+    "critical": false,
+    "source": {
+      "name": "夜空",
+      "artist": "星",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "夜空",
+        "artists": [
+          "星"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "distinct-unicode",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Títulos diferentes não viram textos vazios iguais.",
+    "critical": true,
+    "source": {
+      "name": "夜空",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "月光",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "empty-title",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Título vazio não é evidência.",
+    "critical": true,
+    "source": {
+      "name": "",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "empty-artist",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Artista ausente exige revisão.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "unknown-duration",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Título e artista exatos sustentam decisão sem duração.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 0
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 0
+      }
+    ]
+  },
+  {
+    "id": "duration-divergence",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Duração muito diferente indica outra gravação.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 250000
+      }
+    ]
+  },
+  {
+    "id": "duration-small",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Pequena variação de duração é permitida.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 184000
+      }
+    ]
+  },
+  {
+    "id": "version-remix",
+    "split": "calibration",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Remix)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-live",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Live)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-cover",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Cover)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-acoustic",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Acoustic)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-radio-edit",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Radio Edit)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-remastered",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Remastered)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-instrumental",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Instrumental)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-sped-up",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Sped Up)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "version-clean",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "A versão diferente exige escolha explícita.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Clean)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "missing-live",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Versão da origem ausente no destino exige revisão.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol (Ao Vivo)",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "same-live",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "As duas faixas são ao vivo.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol (Ao Vivo)",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (Live)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "different-remix",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Remixes distintos não são equivalentes.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol (DJ A Remix)",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol (DJ B Remix)",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "explicit-clean",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Conteúdo explícito e limpo diferem.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "explicit": true
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000,
+        "explicit": false
+      }
+    ]
+  },
+  {
+    "id": "isrc-equal",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "ISRC igual com metadados consistentes.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "isrc": "BRABC2600001"
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000,
+        "isrc": "brabc2600001"
+      }
+    ]
+  },
+  {
+    "id": "isrc-conflict",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "ISRC diferente exige revisão.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "isrc": "BRABC2600001"
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000,
+        "isrc": "BRABC2600002"
+      }
+    ]
+  },
+  {
+    "id": "isrc-wrong-artist",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "ISRC não supera metadados conflitantes.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "isrc": "BRABC2600001"
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Outro"
+        ],
+        "durationMs": 180000,
+        "isrc": "BRABC2600001"
+      }
+    ]
+  },
+  {
+    "id": "unavailable",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Resultado indisponível não pode ser inserido.",
+    "critical": true,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000,
+        "available": false
+      }
+    ]
+  },
+  {
+    "id": "empty-catalog",
+    "split": "evaluation",
+    "expected": "no_match",
+    "reason": "Ausência de resultados é diferente de ambiguidade.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": []
+  },
+  {
+    "id": "ambiguous",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Empate entre IDs distintos exige revisão.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      },
+      {
+        "id": "c2",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "duplicate-result",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "O mesmo ID repetido não cria empate.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      },
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "featured-artists",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Lista de artistas preserva participações.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "artists": [
+        "Ana Silva",
+        "Bia Lima"
+      ]
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Bia Lima",
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "unknown-alias",
+    "split": "evaluation",
+    "expected": "needs_review",
+    "reason": "Alias não confirmado não é equivalente.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "AS"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "intentional-repeat",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Ocorrências repetidas preservam sua identidade.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "durationMs": 180000,
+      "index": 2
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "Ana Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  },
+  {
+    "id": "known-alias",
+    "split": "evaluation",
+    "expected": "accepted",
+    "reason": "Alias explícito da origem é uma evidência conhecida.",
+    "critical": false,
+    "source": {
+      "name": "Luz do Sol",
+      "artist": "Ana Silva",
+      "artistAliases": [
+        "A. Silva"
+      ],
+      "durationMs": 180000
+    },
+    "candidates": [
+      {
+        "id": "c1",
+        "name": "Luz do Sol",
+        "artists": [
+          "A. Silva"
+        ],
+        "durationMs": 180000
+      }
+    ]
+  }
+]

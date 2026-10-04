@@ -10,6 +10,7 @@ import { createDeezerGateway } from './deezerGateway.js';
 import {
     DEEZER_PLAYLIST_MAX_ITEMS,
     findTrackByIsrc,
+    isDeezerTrackAvailable,
     getPublicPlaylist,
     getPublicPlaylistPreview,
     searchTracks,
@@ -184,17 +185,23 @@ const deezerProvider = {
 
     createSearchClient() {
         return {
+            kind: 'deezer-search', capabilities: { isrcSearch: true, availabilityCheck: true },
+            validateCachedMatch: ({ targetId }) => isDeezerTrackAvailable(targetId),
+            async searchCandidates({ track, strategy, limit = 10 }) {
+                if (strategy?.id === 'isrc') {
+                    const candidate = await findTrackByIsrc(track.isrc);
+                    return candidate ? [candidate] : [];
+                }
+                return searchTracks(strategy?.query || buildQuery(track), { limit });
+            },
             async searchBestMatch({ track }) {
-                if (track.isrc) {
-                    const byIsrc = await findTrackByIsrc(track.isrc);
-                    if (byIsrc) return { ...byIsrc, matchScore: 100 };
+                let candidates = [];
+                if (this.capabilities.isrcSearch && track.isrc) {
+                    candidates = await this.searchCandidates({ track, strategy: { id: 'isrc' } });
+                    const best = pickBestCandidate(track, candidates);
+                    if (best?.matching.decision === 'accepted') return best;
                 }
-
-                let candidates = await searchTracks(buildQuery(track));
-                if (!candidates.length) {
-                    candidates = await searchTracks(`track:"${normalizeText(track.name)}"`);
-                }
-                return pickBestCandidate(track, candidates);
+                return pickBestCandidate(track, [...candidates, ...await this.searchCandidates({ track })]);
             },
         };
     },
@@ -209,6 +216,10 @@ const deezerProvider = {
                 const playlistId = await gateway.createPlaylist({ title, description });
                 if (!playlistId) throw new Error('Deezer não retornou o ID da playlist criada.');
                 return String(playlistId);
+            },
+
+            async readTrackIds({ playlistId }) {
+                return (await gateway.getPlaylistSongs(playlistId)).map((song) => String(song.SNG_ID));
             },
 
             async addTracks({ playlistId, ids, expectedIds }) {

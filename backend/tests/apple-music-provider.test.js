@@ -162,7 +162,7 @@ describe('provedor Apple Music', () => {
         const client = appleMusicProvider.createSearchClient();
 
         global.fetch.mockResolvedValueOnce(response({ data: [song('9', 'Garota de Ipanema', 'Antônio Carlos Jobim')] }));
-        await expect(client.searchBestMatch({ track: { name: 'x', artist: 'y', isrc: 'ISRC9' } }))
+        await expect(client.searchBestMatch({ track: { name: 'Garota de Ipanema', artist: 'Antônio Carlos Jobim', isrc: 'ISRC9' } }))
             .resolves.toMatchObject({ id: '9', matchScore: 100 });
         expect(fetchCall(0).url.searchParams.get('filter[isrc]')).toBe('ISRC9');
 

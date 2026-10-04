@@ -135,7 +135,7 @@ describe('provedor TIDAL', () => {
             data: [trackResource('77', 'Garota de Ipanema', 'a1')],
             included: [{ id: 'a1', type: 'artists', attributes: { name: 'Antônio Carlos Jobim' } }],
         }));
-        await expect(client.searchBestMatch({ track: { name: 'Garota de Ipanema', artist: 'Tom Jobim', isrc: 'ISRC77' } }))
+        await expect(client.searchBestMatch({ track: { name: 'Garota de Ipanema', artist: 'Antônio Carlos Jobim', isrc: 'ISRC77' } }))
             .resolves.toMatchObject({ id: '77', matchScore: 100 });
         expect(fetchUrl(0).searchParams.get('filter[isrc]')).toBe('ISRC77');
 
@@ -149,10 +149,10 @@ describe('provedor TIDAL', () => {
                     { id: 'a2', type: 'artists', attributes: { name: 'Banda' } },
                 ],
             }));
-        const match = await client.searchBestMatch({ track: { name: 'Garota de Ipanema', artist: 'Tom Jobim', isrc: 'NOPE' } });
+        const match = await client.searchBestMatch({ track: { name: 'Garota de Ipanema', artist: 'Antônio Carlos Jobim', isrc: 'NOPE' } });
 
         expect(match.id).toBe('11');
-        expect(fetchUrl(2).pathname).toBe(`/v2/searchResults/${encodeURIComponent('Garota de Ipanema Tom Jobim')}/relationships/tracks`);
+        expect(fetchUrl(2).pathname).toBe(`/v2/searchResults/${encodeURIComponent('Garota de Ipanema Antônio Carlos Jobim')}/relationships/tracks`);
     });
 
     it('cria playlist e adiciona em lotes de 50 preservando repetições', async () => {

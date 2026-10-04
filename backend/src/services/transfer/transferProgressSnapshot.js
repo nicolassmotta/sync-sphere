@@ -13,6 +13,8 @@ export const getTransferCounts = (transfer) => ({
     analyzed: transfer.analyzedCount || 0,
     matched: transfer.matchedCount ?? transfer.processedTracks ?? 0,
     notFound: transfer.notFoundCount || 0,
+    needsReview: transfer.needsReviewCount || 0,
+    skipped: transfer.skippedCount || 0,
     retryQueued: transfer.retryQueuedCount || 0,
     failed: transfer.failedCount || 0,
     pendingInserts: transfer.pendingInsertCount || 0,

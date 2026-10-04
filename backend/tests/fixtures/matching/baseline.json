@@ -1,0 +1,443 @@
+{
+  "revision": "3b0302a",
+  "results": {
+    "common": [
+      {
+        "id": "exact",
+        "accepted": true
+      },
+      {
+        "id": "wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "shared-first-token",
+        "accepted": true
+      },
+      {
+        "id": "accent",
+        "accepted": true
+      },
+      {
+        "id": "cyrillic",
+        "accepted": false
+      },
+      {
+        "id": "japanese",
+        "accepted": false
+      },
+      {
+        "id": "distinct-unicode",
+        "accepted": false
+      },
+      {
+        "id": "empty-title",
+        "accepted": false
+      },
+      {
+        "id": "empty-artist",
+        "accepted": true
+      },
+      {
+        "id": "unknown-duration",
+        "accepted": true
+      },
+      {
+        "id": "duration-divergence",
+        "accepted": true
+      },
+      {
+        "id": "duration-small",
+        "accepted": true
+      },
+      {
+        "id": "version-remix",
+        "accepted": true
+      },
+      {
+        "id": "version-live",
+        "accepted": true
+      },
+      {
+        "id": "version-cover",
+        "accepted": true
+      },
+      {
+        "id": "version-acoustic",
+        "accepted": true
+      },
+      {
+        "id": "version-radio-edit",
+        "accepted": true
+      },
+      {
+        "id": "version-remastered",
+        "accepted": true
+      },
+      {
+        "id": "version-instrumental",
+        "accepted": true
+      },
+      {
+        "id": "version-sped-up",
+        "accepted": true
+      },
+      {
+        "id": "version-clean",
+        "accepted": true
+      },
+      {
+        "id": "missing-live",
+        "accepted": true
+      },
+      {
+        "id": "same-live",
+        "accepted": true
+      },
+      {
+        "id": "different-remix",
+        "accepted": true
+      },
+      {
+        "id": "explicit-clean",
+        "accepted": true
+      },
+      {
+        "id": "isrc-equal",
+        "accepted": true
+      },
+      {
+        "id": "isrc-conflict",
+        "accepted": true
+      },
+      {
+        "id": "isrc-wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "unavailable",
+        "accepted": true
+      },
+      {
+        "id": "empty-catalog",
+        "accepted": false
+      },
+      {
+        "id": "ambiguous",
+        "accepted": true
+      },
+      {
+        "id": "duplicate-result",
+        "accepted": true
+      },
+      {
+        "id": "featured-artists",
+        "accepted": true
+      },
+      {
+        "id": "unknown-alias",
+        "accepted": true
+      },
+      {
+        "id": "intentional-repeat",
+        "accepted": true
+      },
+      {
+        "id": "known-alias",
+        "accepted": true
+      }
+    ],
+    "spotify": [
+      {
+        "id": "exact",
+        "accepted": true
+      },
+      {
+        "id": "wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "shared-first-token",
+        "accepted": true
+      },
+      {
+        "id": "accent",
+        "accepted": true
+      },
+      {
+        "id": "cyrillic",
+        "accepted": true
+      },
+      {
+        "id": "japanese",
+        "accepted": true
+      },
+      {
+        "id": "distinct-unicode",
+        "accepted": true
+      },
+      {
+        "id": "empty-title",
+        "accepted": true
+      },
+      {
+        "id": "empty-artist",
+        "accepted": true
+      },
+      {
+        "id": "unknown-duration",
+        "accepted": true
+      },
+      {
+        "id": "duration-divergence",
+        "accepted": true
+      },
+      {
+        "id": "duration-small",
+        "accepted": true
+      },
+      {
+        "id": "version-remix",
+        "accepted": true
+      },
+      {
+        "id": "version-live",
+        "accepted": true
+      },
+      {
+        "id": "version-cover",
+        "accepted": true
+      },
+      {
+        "id": "version-acoustic",
+        "accepted": true
+      },
+      {
+        "id": "version-radio-edit",
+        "accepted": true
+      },
+      {
+        "id": "version-remastered",
+        "accepted": true
+      },
+      {
+        "id": "version-instrumental",
+        "accepted": true
+      },
+      {
+        "id": "version-sped-up",
+        "accepted": true
+      },
+      {
+        "id": "version-clean",
+        "accepted": true
+      },
+      {
+        "id": "missing-live",
+        "accepted": true
+      },
+      {
+        "id": "same-live",
+        "accepted": true
+      },
+      {
+        "id": "different-remix",
+        "accepted": true
+      },
+      {
+        "id": "explicit-clean",
+        "accepted": true
+      },
+      {
+        "id": "isrc-equal",
+        "accepted": true
+      },
+      {
+        "id": "isrc-conflict",
+        "accepted": true
+      },
+      {
+        "id": "isrc-wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "unavailable",
+        "accepted": true
+      },
+      {
+        "id": "empty-catalog",
+        "accepted": false
+      },
+      {
+        "id": "ambiguous",
+        "accepted": true
+      },
+      {
+        "id": "duplicate-result",
+        "accepted": true
+      },
+      {
+        "id": "featured-artists",
+        "accepted": true
+      },
+      {
+        "id": "unknown-alias",
+        "accepted": true
+      },
+      {
+        "id": "intentional-repeat",
+        "accepted": true
+      },
+      {
+        "id": "known-alias",
+        "accepted": true
+      }
+    ],
+    "youtubeMusic": [
+      {
+        "id": "exact",
+        "accepted": true
+      },
+      {
+        "id": "wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "shared-first-token",
+        "accepted": true
+      },
+      {
+        "id": "accent",
+        "accepted": true
+      },
+      {
+        "id": "cyrillic",
+        "accepted": true
+      },
+      {
+        "id": "japanese",
+        "accepted": true
+      },
+      {
+        "id": "distinct-unicode",
+        "accepted": true
+      },
+      {
+        "id": "empty-title",
+        "accepted": true
+      },
+      {
+        "id": "empty-artist",
+        "accepted": true
+      },
+      {
+        "id": "unknown-duration",
+        "accepted": true
+      },
+      {
+        "id": "duration-divergence",
+        "accepted": true
+      },
+      {
+        "id": "duration-small",
+        "accepted": true
+      },
+      {
+        "id": "version-remix",
+        "accepted": true
+      },
+      {
+        "id": "version-live",
+        "accepted": true
+      },
+      {
+        "id": "version-cover",
+        "accepted": true
+      },
+      {
+        "id": "version-acoustic",
+        "accepted": true
+      },
+      {
+        "id": "version-radio-edit",
+        "accepted": true
+      },
+      {
+        "id": "version-remastered",
+        "accepted": true
+      },
+      {
+        "id": "version-instrumental",
+        "accepted": true
+      },
+      {
+        "id": "version-sped-up",
+        "accepted": true
+      },
+      {
+        "id": "version-clean",
+        "accepted": true
+      },
+      {
+        "id": "missing-live",
+        "accepted": true
+      },
+      {
+        "id": "same-live",
+        "accepted": true
+      },
+      {
+        "id": "different-remix",
+        "accepted": true
+      },
+      {
+        "id": "explicit-clean",
+        "accepted": true
+      },
+      {
+        "id": "isrc-equal",
+        "accepted": true
+      },
+      {
+        "id": "isrc-conflict",
+        "accepted": true
+      },
+      {
+        "id": "isrc-wrong-artist",
+        "accepted": true
+      },
+      {
+        "id": "unavailable",
+        "accepted": true
+      },
+      {
+        "id": "empty-catalog",
+        "accepted": false
+      },
+      {
+        "id": "ambiguous",
+        "accepted": true
+      },
+      {
+        "id": "duplicate-result",
+        "accepted": true
+      },
+      {
+        "id": "featured-artists",
+        "accepted": true
+      },
+      {
+        "id": "unknown-alias",
+        "accepted": true
+      },
+      {
+        "id": "intentional-repeat",
+        "accepted": true
+      },
+      {
+        "id": "known-alias",
+        "accepted": true
+      }
+    ]
+  }
+}

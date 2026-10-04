@@ -36,7 +36,7 @@ const spotifyProvider = {
         write: true,
         listUserPlaylists: true,
         readByLink: true,
-        isrcSearch: false,
+        isrcSearch: true,
         setImage: false,
     },
     playlistUrlExample: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
@@ -82,6 +82,7 @@ const spotifyProvider = {
         const client = createSpotifyDestinationClient({ userId });
         return {
             createPlaylist: (args) => client.createPlaylist(args),
+            readTrackIds: client.readTrackIds ? (options) => client.readTrackIds(options) : null,
             addTracks: ({ playlistId, ids, expectedIds }) => client.addTracksToPlaylist({ playlistId, trackUris: ids, expectedIds }),
             getPlaylistUrl: (playlistId) => client.getPlaylistUrl(playlistId),
             setPlaylistImage: client.setPlaylistImage,

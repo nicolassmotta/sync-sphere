@@ -91,7 +91,7 @@ export const transferTracksSchema = z.object({
     query: z.object({
         status: z
             .string()
-            .regex(/^(pending|matched|not_found|retry_queued|failed)(,(pending|matched|not_found|retry_queued|failed))*$/, 'Filtro de status inválido.')
+            .regex(/^(pending|matched|not_found|needs_review|skipped|retry_queued|failed)(,(pending|matched|not_found|needs_review|skipped|retry_queued|failed))*$/, 'Filtro de status inválido.')
             .optional(),
     }).passthrough(),
 });
@@ -108,4 +108,27 @@ export const providerCredentialsSchema = z.object({
     body: z.object({
         values: z.record(z.string().max(20000, 'Valor longo demais.')),
     }),
+});
+
+export const manualCandidatesSchema = z.object({ params: manualTrackParams });
+export const manualMatchBatchSchema = z.object({
+    params: transferIdParams,
+    body: z.object({
+        choices: z.array(z.object({
+            trackIndex: z.number().int().min(0).max(100000),
+            action: z.enum(['choose', 'skip']),
+            candidateId: z.string().uuid().optional(),
+            revision: z.number().int().positive().optional(),
+        }).refine((choice) => choice.action === 'skip' || Boolean(choice.candidateId && choice.revision), 'Alternativa inválida.'))
+            .min(1).max(100).refine((choices) => new Set(choices.map((choice) => choice.trackIndex)).size === choices.length, 'Índices duplicados.'),
+    }),
+});
+
+export const orderedCopySchema = z.object({
+    params: transferIdParams,
+    body: z.object({ choices: z.array(z.object({
+        trackIndex: z.number().int().min(0).max(100000),
+        candidateId: z.string().uuid(), revision: z.number().int().positive(),
+        action: z.literal('choose').optional(),
+    })).max(100).refine((choices) => new Set(choices.map((choice) => choice.trackIndex)).size === choices.length, 'Índices duplicados.').optional() }),
 });

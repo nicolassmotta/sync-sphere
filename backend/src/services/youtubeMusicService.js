@@ -1,3 +1,5 @@
+import { consumeSearchRequest } from './matching/requestBudget.js';
+import { pickBestCandidate } from './matching/scoreCandidate.js';
 import { getMissingTrackIds } from './transfer/reconcileTrackIds.js';
 import YTMusic from 'ytmusic-api';
 import {
@@ -12,7 +14,6 @@ import {
     saveYoutubeMusicCookie,
     validateYoutubeMusicCookieDestinationConfig,
 } from './youtubeMusic/youtubeMusicCookieAuth.js';
-import { scoreYoutubeMusicCandidate } from './youtubeMusic/youtubeMusicMatchScoring.js';
 
 export {
     clearYoutubeMusicCookie,
@@ -64,6 +65,10 @@ const createPublicSearchClient = async () => {
     if (!publicSearchClientPromise) {
         publicSearchClientPromise = (async () => {
             const ytmusic = new YTMusic();
+            ytmusic.client?.interceptors?.request?.use(async (config) => {
+                const signal = await consumeSearchRequest();
+                return signal ? { ...config, signal } : config;
+            });
             await ytmusic.initialize({
                 GL: process.env.YOUTUBE_MUSIC_GL || 'BR',
                 HL: process.env.YOUTUBE_MUSIC_HL || 'pt-BR',
@@ -97,6 +102,10 @@ const createAuthenticatedClient = async () => {
     if (!authenticatedClientPromise) {
         authenticatedClientPromise = (async () => {
             const ytmusic = new YTMusic();
+            ytmusic.client?.interceptors?.request?.use(async (config) => {
+                const signal = await consumeSearchRequest();
+                return signal ? { ...config, signal } : config;
+            });
             await ytmusic.initialize({
                 cookies: cookieHeader,
                 GL: process.env.YOUTUBE_MUSIC_GL || 'BR',
@@ -124,25 +133,25 @@ const createAuthenticatedClient = async () => {
     return ytmusic;
 };
 
-export const searchBestYoutubeMusicMatch = async ({ track }) => {
+export const searchYoutubeMusicCandidates = async ({ track, strategy, limit = 10 }) => {
     const ytmusic = await createPublicSearchClient();
-    const query = `${track.name} ${track.artist}`;
-    const songs = await ytmusic.searchSongs(query);
-    const videos = songs.length ? [] : await ytmusic.searchVideos(query);
-    const candidates = [...songs, ...videos];
-    if (!candidates.length) return null;
+    const query = strategy?.query || `${track.name} ${track.artist}`;
+    const results = strategy?.id === 'videos' ? await ytmusic.searchVideos(query) : await ytmusic.searchSongs(query);
+    return results.filter((candidate) => candidate.videoId).slice(0, limit);
+};
 
-    return candidates
-        .filter((candidate) => candidate.videoId)
-        .map((candidate) => ({
-            ...candidate,
-            matchScore: scoreYoutubeMusicCandidate(track, candidate),
-        }))
-        .sort((a, b) => b.matchScore - a.matchScore)[0] || null;
+export const searchBestYoutubeMusicMatch = async ({ track }) => {
+    let candidates = await searchYoutubeMusicCandidates({ track });
+    const best = pickBestCandidate(track, candidates);
+    if (best?.matching.decision !== 'accepted') {
+        candidates = [...candidates, ...await searchYoutubeMusicCandidates({ track, strategy: { id: 'videos' } })];
+    }
+    return pickBestCandidate(track, candidates);
 };
 
 export const createYoutubeMusicSearchClient = () => ({
-    kind: 'ytmusic-search',
+    kind: 'ytmusic-search', capabilities: { videos: true, isrcSearch: false },
+    searchCandidates: searchYoutubeMusicCandidates,
     searchBestMatch: ({ track }) => searchBestYoutubeMusicMatch({ track }),
     searchBestVideoMatch: ({ track }) => searchBestYoutubeMusicMatch({ track }),
 });
@@ -163,6 +172,7 @@ const normalizeYoutubeMusicTrackItems = (items = []) => {
             youtubeVideoId: item.videoId,
             name: item.name,
             artist: item.artist?.name || 'Unknown',
+            artists: [item.artist?.name].filter(Boolean),
             album: item.album?.name || '',
             durationMs: item.duration ? item.duration * 1000 : 0,
             uri: `https://music.youtube.com/watch?v=${item.videoId}`,
@@ -243,6 +253,11 @@ export const createYoutubeMusicCookieDestinationClient = () => ({
     },
 
     setPlaylistImage: null,
+
+    async readTrackIds({ playlistId }) {
+        const ytmusic = await createAuthenticatedClient();
+        return (await ytmusic.getPlaylistVideos(playlistId)).map((video) => video.videoId);
+    },
 
     async addVideosToPlaylist({ playlistId, videoIds, expectedIds }) {
         const ytmusic = await createAuthenticatedClient();

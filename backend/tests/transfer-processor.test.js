@@ -1,3 +1,4 @@
+import { decideCandidates } from '../src/services/matching/decision.js';
 import { jest } from '@jest/globals';
 import MatchCache from '../src/services/matching/MatchCache.js';
 import { buildSpotifyServiceMock, buildYoutubeMusicServiceMock } from './helpers/serviceMocks.js';
@@ -78,7 +79,12 @@ const buildProcessor = ({
 } = {}) => {
     const repository = buildRepository(transferRecord);
     const publisher = { emit: jest.fn() };
-    const searchClient = { searchBestMatch };
+    // A API simulada devolve metadados completos, como um catálogo real.
+    const queuedSearch = searchBestMatch;
+    const searchClient = { searchBestMatch: jest.fn(async (options) => {
+        const result = await queuedSearch(options);
+        return result ? { name: options.track.name, artist: options.track.artist, durationMs: options.track.durationMs, ...result } : null;
+    }) };
     const destinationClient = {
         createPlaylist: jest.fn().mockResolvedValue('target-playlist-1'),
         setPlaylistImage: null,
@@ -245,6 +251,7 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
             {
                 index: 0, name: 'Música 1', artist: 'Artista', status: TRACK_STATUS.MATCHED,
                 targetId: 'video-1', attempts: 0, inserted: false,
+                matching: decideCandidates({ name: 'Música 1', artist: 'Artista' }, [{ id: 'video-1', name: 'Música 1', artist: 'Artista' }]),
             },
             {
                 index: 1, name: 'Música 2', artist: 'Artista', status: TRACK_STATUS.RETRY_QUEUED,
@@ -429,7 +436,7 @@ it('retoma escrita parcial preservando repetições, playlist, busca e ocorrênc
     });
     const trackStore = buildTrackStore([
         { index: 0, name: 'A', status: TRACK_STATUS.MATCHED, targetId: 'A', inserted: true, matchSource: 'manual', matchScore: 95 },
-        { index: 1, name: 'B', status: TRACK_STATUS.MATCHED, targetId: 'B', inserted: false, matchSource: 'search', matchScore: 90 },
+        { index: 1, name: 'B', status: TRACK_STATUS.MATCHED, targetId: 'B', inserted: false, matchSource: 'search', matchScore: 90, matching: { algorithmVersion: 'identity-v2', decision: 'accepted' } },
         { index: 2, name: 'A', status: TRACK_STATUS.MATCHED, targetId: 'A', inserted: false, matchSource: 'manual', matchScore: 95 },
     ]);
     const { processor, searchClient, destinationClient, transferRecord } = buildProcessor({ trackStore,
@@ -485,7 +492,7 @@ describe('integração do trabalhador com fila persistida', () => {
         const { startWorker } = await import('../src/workers/transferWorker.js');
         const { readStore } = await import('../src/storage/jsonStore.js');
         const [record] = await Transfer.insertMany([{ user: 'local', sourcePlaylistId: 'origem', status: 'completed' }]);
-        const search = jest.fn().mockResolvedValue({ videoId: 'video', matchScore: 95 });
+        const search = jest.fn(async ({ track }) => ({ name: track.name, artist: track.artist, durationMs: track.durationMs, videoId: 'video', matchScore: 95 }));
         const create = jest.fn().mockResolvedValue('existente');
         mockCreateYoutubeMusicSearchClient.mockReturnValue({ searchBestMatch: search });
         mockCreateYoutubeMusicCookieDestinationClient.mockReturnValue({ createPlaylist: create, addVideosToPlaylist: insert, getPlaylistUrl: () => 'https://example.test/playlist' });
@@ -533,4 +540,25 @@ describe('integração do trabalhador com fila persistida', () => {
         expect(context.readStore('queue.json', [])).toEqual([]);
         expect(context.snapshots.some((snapshot) => snapshot.status === 'paused')).toBe(false);
     });
+});
+
+it.each([{ code: 'ECONNRESET' }, { status: 503 }])('criação sem garantia %j conserva intenção e impede outra playlist automática', async (failure) => {
+    mockGetSpotifyPlaylistSnapshot.mockResolvedValue({
+        id: 'source-playlist-1', name: 'Lista fictícia',
+        tracks: [{ name: 'Música fictícia', artist: 'Artista fictício' }],
+    });
+    const createPlaylist = jest.fn().mockRejectedValueOnce(Object.assign(new Error('Falha de rede após criação'), failure));
+    const context = buildProcessor({ destinationOverrides: { createPlaylist } });
+    await expect(context.processor.process(spotifyJob)).rejects.toThrow('Falha de rede após criação');
+    expect(context.transferRecord.creationIntent.state).toBe('unknown');
+    await expect(context.processor.process(spotifyJob)).rejects.toThrow('A criação da playlist ficou sem confirmação.');
+    expect(createPlaylist).toHaveBeenCalledTimes(1);
+});
+
+it('checkpoint automático antigo sem evidências não autoriza uma inserção nova', async () => {
+    const tracks = [{ index: 0, name: 'Música', artist: 'Artista', status: 'matched', targetId: 'antigo', inserted: false, matchScore: 90, matchSource: 'search' }];
+    const context = buildProcessor({ trackStore: buildTrackStore(tracks) });
+    await context.processor.process(spotifyJob);
+    expect(context.trackStore.store.tracks[0]).toMatchObject({ status: 'needs_review', targetId: null, matching: { legacy: true, reasons: ['legacy_decision'] } });
+    expect(context.destinationClient.createPlaylist).not.toHaveBeenCalled();
 });

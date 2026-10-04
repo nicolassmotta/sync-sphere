@@ -49,7 +49,7 @@ beforeEach(() => {
         jest.spyOn(provider, 'normalizePlaylistId').mockImplementation((value) => value);
         jest.spyOn(provider, 'getPlaylistPreview').mockResolvedValue({ id: input.id, name: input.name, tracks: tracks.slice(0, 1), totalTracks: 3, returnedTracks: 1, hasMore: true });
         jest.spyOn(provider, 'getPlaylistSnapshot').mockResolvedValue({ id: input.id, name: input.name, tracks, totalTracks: 3, truncated: false });
-        const searchClient = { searchBestMatch: jest.fn(async ({ track }) => ({ uri: `spotify:track:id-${track.name}`, id: `id-${track.name}`, videoId: `id-${track.name}`, matchScore: 100 })) };
+        const searchClient = { searchBestMatch: jest.fn(async ({ track }) => ({ name: track.name, artist: track.artist, durationMs: track.durationMs, uri: `spotify:track:id-${track.name}`, id: `id-${track.name}`, videoId: `id-${track.name}`, matchScore: 100 })) };
         searchClients.set(provider.id, searchClient);
         jest.spyOn(provider, 'createSearchClient').mockReturnValue(searchClient);
         jest.spyOn(provider, 'createDestinationClient').mockReturnValue({

@@ -1,3 +1,4 @@
+import { fetchWithSearchBudget as fetch } from '../../services/matching/requestBudget.js';
 /**
  * API pública do Deezer (https://api.deezer.com): leitura de playlists
  * públicas, busca e busca por ISRC, sem login. Limite de 50 requisições a
@@ -99,6 +100,8 @@ export const getPublicPlaylistPreview = async (playlistId, limit) => {
 const toCandidate = (track) => ({
     id: String(track.id),
     name: track.title,
+    available: typeof track.readable === 'boolean' ? track.readable : null,
+    album: track.album?.title || '',
     rawName: [track.title, track.title_version].filter(Boolean).join(' '),
     artists: [track.artist?.name, ...(track.contributors || []).map((artist) => artist.name)].filter(Boolean),
     durationMs: (Number(track.duration) || 0) * 1000,
@@ -117,4 +120,9 @@ export const findTrackByIsrc = async (isrc) => {
 export const searchTracks = async (query, { limit = 10 } = {}) => {
     const data = await deezerGet('/search/track', { q: query, limit });
     return (data.data || []).map(toCandidate);
+};
+
+export const isDeezerTrackAvailable = async (targetId) => {
+    const track = await deezerGet(`/track/${encodeURIComponent(targetId)}`);
+    return typeof track.readable === 'boolean' ? track.readable : null;
 };

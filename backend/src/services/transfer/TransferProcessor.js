@@ -1,3 +1,5 @@
+import { MATCH_ALGORITHM_VERSION } from '../matching/decision.js';
+import { comparePlaylistOccurrences } from './verifyPlaylist.js';
 import { UnrecoverableError } from '../../errors/UnrecoverableError.js';
 import {
     classifyProviderError,
@@ -10,7 +12,7 @@ import { resolveTransferProviders, TRANSFER_DIRECTIONS } from '../../constants/t
 import { getProvider } from '../../providers/registry.js';
 import logger from '../../utils/logger.js';
 import MatchCache from '../matching/MatchCache.js';
-import { getProviderCredentials } from '../../storage/credentialStore.js';
+import { matchCacheScope } from '../matching/cacheScope.js';
 import { getPauseDelayMs } from './TrackMatcher.js';
 import TransferMetrics from './TransferMetrics.js';
 import { buildTransferSnapshot, TRANSFER_PHASES } from './transferProgressSnapshot.js';
@@ -121,6 +123,8 @@ export default class TransferProcessor {
         transferRecord.matchedCount = counts.matched;
         transferRecord.pendingInsertCount = counts.pendingInserts;
         transferRecord.notFoundCount = counts.notFound;
+        transferRecord.needsReviewCount = counts.needsReview;
+        transferRecord.skippedCount = counts.skipped;
         transferRecord.retryQueuedCount = counts.retryQueued;
         transferRecord.failedCount = counts.failed;
         transferRecord.processedTracks = counts.matched;
@@ -249,12 +253,24 @@ export default class TransferProcessor {
 
     async run({ transferId, userId, sourcePlaylistId, transferRecord, config }) {
         const tracks = await this.loadTracks({ transferId, userId, sourcePlaylistId, transferRecord, config });
+        for (const track of tracks) {
+            if (config.targetProvider !== 'file' && track.status === TRACK_STATUS.MATCHED && !track.inserted
+                && !['manual', 'manual_cache'].includes(track.matchSource)
+                && !(track.matching?.algorithmVersion === MATCH_ALGORITHM_VERSION && track.matching?.decision === 'accepted')) {
+                const legacyTargetId = track.targetId;
+                track.status = TRACK_STATUS.NEEDS_REVIEW;
+                track.targetId = null;
+                track.matchScore = null;
+                track.lastError = 'A decisão antiga não tem evidências suficientes. Confirme uma alternativa.';
+                track.matching = { decision: 'needs_review', legacy: true, algorithmVersion: MATCH_ALGORITHM_VERSION,
+                    reasons: ['legacy_decision'], best: null,
+                    candidates: legacyTargetId ? [{ candidate: { targetId: legacyTargetId, name: '', artists: [] } }] : [],
+                };
+            }
+        }
         const live = this.getLive(transferId);
-        const credentials = getProviderCredentials(config.targetProvider) || {};
         const matchCache = config.targetProvider === 'file' ? null : this.createMatchCache({
-            scope: [config.targetProvider, userId,
-                credentials.storefront || process.env.APPLE_MUSIC_STOREFRONT || 'br',
-                credentials.countryCode || process.env.TIDAL_COUNTRY_CODE || 'BR'],
+            scope: matchCacheScope(config.targetProvider, userId),
         });
         const metrics = this.createMetrics({
             provider: config.targetProvider,
@@ -309,7 +325,7 @@ export default class TransferProcessor {
         transferRecord.pauseCount = 0;
         let counts = this.applyCounts(transferRecord, tracks, { metrics, stage: config.stage, withErrors: true });
 
-        if (!counts.matched) {
+        if (!counts.matched && !counts.needsReview && !counts.skipped) {
             if (counts.retryQueued) return this.scheduleRetryRound(transferId, transferRecord, counts);
 
             const failedTrack = tracks.find((track) => track.status === TRACK_STATUS.FAILED);
@@ -326,6 +342,7 @@ export default class TransferProcessor {
         counts = this.applyCounts(transferRecord, tracks, { metrics, stage: config.stage, withErrors: true });
         if (counts.retryQueued) return this.scheduleRetryRound(transferId, transferRecord, counts);
 
+        const reviewNote = counts.needsReview ? ` ${counts.needsReview} faixas aguardam revisão.` : '';
         const pendingNote = counts.failed
             ? ` ${counts.failed} ${counts.failed === 1 ? 'faixa ficou' : 'faixas ficaram'} nas pendências.`
             : '';
@@ -339,7 +356,7 @@ export default class TransferProcessor {
             resumeAt: null,
             pauseReason: null,
             retryRound: 0,
-            lastMessage: `Migração concluída no ${config.targetLabel}: ${counts.matched}/${counts.total} faixas adicionadas.${pendingNote}${sourceNote}`,
+            lastMessage: `Migração concluída no ${config.targetLabel}: ${counts.matched}/${counts.total} faixas adicionadas.${reviewNote}${pendingNote}${sourceNote}`,
         });
 
         logger.info(`[Trabalhador] Transferência ${transferId} concluída. Sucesso: ${counts.matched}/${counts.total}.`);
@@ -358,13 +375,23 @@ export default class TransferProcessor {
             transferRecord.lastMessage = `Criando playlist privada no ${config.targetLabel}...`;
             this.publish(transferId, transferRecord);
 
-            targetPlaylistId = await destinationClient.createPlaylist({
-                title: transferRecord.playlistName,
-                description: targetPlaylistDescription,
-            });
+            if (transferRecord.creationIntent?.state === 'unknown' || transferRecord.creationIntent?.state === 'creating') {
+                throw permanentError('A criação da playlist ficou sem confirmação. Confira o destino antes de tentar novamente.');
+            }
+            transferRecord.creationIntent = { state: 'creating', startedAt: new Date(this.now()).toISOString() };
+            await this.repository.save(transferRecord);
+            try {
+                targetPlaylistId = await destinationClient.createPlaylist({ title: transferRecord.playlistName, description: targetPlaylistDescription });
+            } catch (error) {
+                const status = Number(error.status || error.response?.status);
+                transferRecord.creationIntent.state = status >= 400 && status < 500 ? 'rejected' : 'unknown';
+                await this.repository.save(transferRecord);
+                throw error;
+            }
 
             await this.repository.update(transferRecord, {
                 targetPlaylistId,
+                creationIntent: { ...transferRecord.creationIntent, state: 'created', targetPlaylistId },
                 targetPlaylistUrl: destinationClient.getPlaylistUrl(targetPlaylistId),
                 targetPlaylistDescription,
                 targetPlaylistImageUrl: transferRecord.sourcePlaylistImageUrl || null,
@@ -405,19 +432,50 @@ export default class TransferProcessor {
         this.publish(transferId, transferRecord);
 
         const startedAt = this.now();
-        await config.addTracks(destinationClient, {
-            playlistId,
-            ids: tracksToInsert.map((track) => track.targetId),
-            expectedIds: tracks.filter((track) => track.status === TRACK_STATUS.MATCHED)
-                .sort((a, b) => a.index - b.index).map((track) => track.targetId),
-        });
+        try {
+            await config.addTracks(destinationClient, {
+                playlistId, ids: tracksToInsert.map((track) => track.targetId),
+                expectedIds: tracks.filter((track) => track.status === TRACK_STATUS.MATCHED)
+                    .sort((a, b) => a.index - b.index).map((track) => track.targetId),
+            });
+        } catch (error) {
+            const status = Number(error.status || error.response?.status);
+            if ([400, 404].includes(status) && /not playable|track unavailable|faixa.*indispon[ií]vel/i.test(error.message || '')) {
+                const cache = this.createMatchCache({ scope: matchCacheScope(config.targetProvider, userId) });
+                for (const track of tracksToInsert) {
+                    cache?.forget?.(track);
+                    track.status = TRACK_STATUS.NEEDS_REVIEW;
+                    track.targetId = null;
+                    track.lastError = 'A faixa escolhida ficou indisponível no destino. Escolha uma alternativa.';
+                    track.matching = { ...track.matching, decision: 'needs_review', reasons: ['unavailable'] };
+                }
+                this.trackStore.save(transferId, tracks);
+            }
+            throw error;
+        }
         const chunks = Math.max(1, Math.ceil(tracksToInsert.length / (metrics.chunkSize || 100)));
         metrics.recordInsertChunk((this.now() - startedAt) / chunks);
 
         tracksToInsert.forEach((track) => {
             track.inserted = true;
+            track.insertedAt = new Date(this.now()).toISOString();
         });
         this.trackStore.save(transferId, tracks);
+        if (destinationClient.readTrackIds) {
+            try {
+                const actualIds = await destinationClient.readTrackIds({ playlistId });
+                const expectedIds = tracks.filter((track) => track.status === TRACK_STATUS.MATCHED)
+                    .sort((a, b) => a.index - b.index).map((track) => track.targetId);
+                transferRecord.destinationVerification = comparePlaylistOccurrences(expectedIds, actualIds);
+                tracks.forEach((track) => {
+                    if (track.inserted) track.destinationPresence = transferRecord.destinationVerification.missing.includes(String(track.targetId)) ? 'unverified' : 'verified';
+                });
+                this.trackStore.save(transferId, tracks);
+            } catch (error) {
+                transferRecord.destinationVerification = { state: 'unverified', reason: classifyProviderError(error), orderPreserved: null };
+            }
+        } else transferRecord.destinationVerification = { state: 'unsupported', orderPreserved: null };
+        await this.repository.save(transferRecord);
     }
 
     async scheduleRetryRound(transferId, transferRecord, counts) {

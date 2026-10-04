@@ -1,3 +1,4 @@
+import { fetchWithSearchBudget as fetch } from '../../services/matching/requestBudget.js';
 /**
  * Cliente mínimo da TIDAL API v2 (JSON:API, https://openapi.tidal.com/v2).
  * Paginação por cursor (`links.next`), relações só com `include`.

@@ -4,6 +4,8 @@
 
 O objetivo é migrar playlists entre os provedores suportados, mantendo execução local, fila persistida e credenciais cifradas.
 
+O ciclo de [correspondência robusta](plano-correspondencia-robusta.md) está implementado e validado localmente. Inclui decisão comum, fallback progressivo, revisão em lote, relatório v2, cache de escolhas e conferência do destino. A [evidência e as limitações](validation-matching-quality.md) separam testes sintéticos de operações em contas reais.
+
 | Fase | Escopo | Estado |
 |---|---|---|
 | 1 | Progresso, ETA, pausas, reconexão e pendências | Integrada |
@@ -15,7 +17,7 @@ O objetivo é migrar playlists entre os provedores suportados, mantendo execuç�
 
 ## Fase 4
 
-O cache cifrado reutiliza correspondências confiáveis por sete dias. Faixas não encontradas ou com falha definitiva podem receber uma busca ajustada no Histórico. A pessoa confere a proposta e confirma a inserção na playlist.
+O cache cifrado reutiliza correspondências confiáveis por sete dias. Faixas ambíguas, não encontradas ou com falha definitiva podem receber uma busca ajustada no Histórico. A pessoa compara até cinco alternativas e confirma escolhas em lote.
 
 ## Fase 5
 
@@ -35,7 +37,7 @@ A documentação pública está organizada por instalação, integração, uso, 
 
 A escrita real em Deezer, TIDAL, Apple Music e SoundCloud precisa de credenciais da conta e de uma playlist pequena de teste. Testes automatizados usam respostas simuladas e não substituem essa confirmação.
 
-Retomadas em destinos remotos acrescentam faixas recuperadas ao fim da playlist. A ordem exata após buscas tardias pode diferir da origem. A criação de uma playlist remota também depende do comportamento de cada API; uma interrupção imediatamente após sua criação pode exigir conferência manual antes de tentar novamente.
+Retomadas em destinos remotos acrescentam faixas recuperadas ao fim da playlist. A ordem exata após buscas tardias pode diferir da origem. O aplicativo lê o destino para verificar ocorrências e oferece uma nova playlist ordenada, sem modificar a anterior. A criação de uma playlist remota também depende do comportamento de cada API; uma interrupção imediatamente após sua criação pode exigir conferência manual antes de tentar novamente.
 
 
 ## Primeira experiência

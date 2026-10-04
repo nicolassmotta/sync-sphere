@@ -28,7 +28,7 @@ describe('TrackMatcher', () => {
         const tracks = buildTracks(3);
         const searchClient = {
             searchBestMatch: jest.fn()
-                .mockResolvedValueOnce({ videoId: 'video-1', matchScore: 80 })
+                .mockResolvedValueOnce({ videoId: 'video-1', name: 'Música 1', artist: 'Artista', matchScore: 80 })
                 .mockResolvedValueOnce({ videoId: 'video-2', matchScore: 10 })
                 .mockResolvedValueOnce(null),
         };
@@ -37,7 +37,7 @@ describe('TrackMatcher', () => {
 
         expect(tracks.map((track) => track.status)).toEqual([
             TRACK_STATUS.MATCHED,
-            TRACK_STATUS.NOT_FOUND,
+            TRACK_STATUS.NEEDS_REVIEW,
             TRACK_STATUS.NOT_FOUND,
         ]);
         expect(tracks[0].targetId).toBe('video-1');
@@ -48,7 +48,7 @@ describe('TrackMatcher', () => {
         const onCheckpoint = jest.fn();
         const searchClient = {
             searchBestMatch: jest.fn()
-                .mockResolvedValueOnce({ videoId: 'video-1', matchScore: 90 })
+                .mockResolvedValueOnce({ videoId: 'video-1', name: 'Música 1', artist: 'Artista', matchScore: 90 })
                 .mockRejectedValueOnce(httpError(429, 'Too Many Requests', { 'retry-after': '600' })),
         };
 

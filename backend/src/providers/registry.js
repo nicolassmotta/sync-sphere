@@ -21,8 +21,8 @@ import youtubeMusicProvider from './youtubeMusic/index.js';
  * - listPlaylists({ userId }) quando `listUserPlaylists`
  * - getPlaylistSnapshot({ playlistId, userId }) -> { id, name, description, imageUrl, totalTracks, tracks, truncated, omittedTracks, unavailableTracks }
  * - getPlaylistPreview({ playlistId, userId, limit })
- * - createSearchClient({ userId }) -> { searchBestMatch({ track }) } e getMatchId(match)
- * - createDestinationClient({ userId }) -> { createPlaylist, addTracks({ playlistId, ids, expectedIds }), getPlaylistUrl, setPlaylistImage? }
+ * - createSearchClient({ userId }) -> { searchCandidates({ track, strategy, limit }), searchBestMatch({ track }) } e getMatchId(match)
+ * - createDestinationClient({ userId }) -> { createPlaylist, addTracks({ playlistId, ids, expectedIds }), getPlaylistUrl, readTrackIds?, setPlaylistImage? }
  *   `expectedIds` contém todas as ocorrências resolvidas; use para reconciliar a quantidade já presente no destino antes de inserir.
  * - getSearchDelayMs()
  * - oauth { getAuthorizationUrl, handleCallback } quando auth.type === 'oauth'
@@ -59,7 +59,10 @@ export const describeProvider = (provider) => ({
     id: provider.id,
     label: provider.label,
     auth: provider.auth,
-    capabilities: provider.capabilities,
+    capabilities: { ...provider.capabilities,
+        candidates: provider.id !== 'file', readDestination: true,
+        reorder: false, removeOccurrence: false, replaceOccurrence: false, recreateOrdered: true,
+    },
     validation: {
         write: ['deezer', 'tidal', 'appleMusic', 'soundcloud'].includes(provider.id) ? 'experimental' : 'supported',
         method: provider.id === 'appleMusic' ? 'oficial e alternativa não oficial'

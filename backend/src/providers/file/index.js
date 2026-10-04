@@ -4,6 +4,7 @@ import {
     createExport,
     deleteImport,
     findImport,
+    findExport,
     listImports,
 } from './fileLibrary.js';
 
@@ -111,7 +112,7 @@ const fileProvider = {
 
     createSearchClient() {
         return {
-            searchBestMatch: async ({ track }) => ({ id: encodeTrack(track), matchScore: 100 }),
+            searchBestMatch: async ({ track }) => ({ id: encodeTrack(track), matchScore: 100, matching: { decision: 'accepted', algorithmVersion: 'file-preservation-v1', reasons: ['metadata_preserved'], candidates: [] } }),
         };
     },
 
@@ -120,6 +121,7 @@ const fileProvider = {
     createDestinationClient() {
         return {
             createPlaylist: async ({ title, description }) => createExport({ title, description }).id,
+            readTrackIds: async ({ playlistId }) => (findExport(playlistId)?.tracks || []).map(encodeTrack),
             addTracks: async ({ playlistId, ids, expectedIds }) => {
                 appendExportTracks(playlistId, ids.map(decodeTrack).filter(Boolean), expectedIds?.map(decodeTrack).filter(Boolean));
             },
