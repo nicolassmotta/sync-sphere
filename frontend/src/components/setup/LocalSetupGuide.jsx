@@ -20,7 +20,7 @@ const LocalSetupGuide = ({ compact = false }) => {
             <Card className="p-6 sm:p-7">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-white/45">
+                        <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-muted">
                             <BookOpen size={14} className="text-spotify" />{t("Tutorial local")}</p>
                         <h2 className="text-2xl font-black text-white">{t("Fluxo completo de configuração e migração")}</h2>
                         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{t("Siga a sequência abaixo para rodar o SyncSphere na sua máquina, validar integrações e migrar playlists com dependências locais claras.")}</p>

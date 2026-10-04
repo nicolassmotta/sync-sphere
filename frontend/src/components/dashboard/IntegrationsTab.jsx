@@ -236,6 +236,7 @@ const OAuthActions = ({ provider, onChanged }) => {
         >
             {provider.connected ? t("Desconectar {{value0}}", { value0: provider.label }) : t("Conectar {{value0}}", { value0: provider.label })}
         </Button>
+        {provider.connected && <Button className="mt-3" fullWidth onClick={connect} loading={loading} loadingLabel={t("Abrindo...")} variant="secondary">{t("Autorizar {{value0}} novamente", { value0: provider.label })}</Button>}
         <Modal isOpen={confirmDisconnect} onClose={() => setConfirmDisconnect(false)} size="sm" title={t("Desconectar {{value0}}?", { value0: provider.label })}
             description={t("A autorização local será removida. Suas playlists na plataforma serão preservadas.")}
             footer={<Button variant="danger" onClick={disconnect} loading={loading}>{t("Desconectar")}</Button>} />
@@ -420,7 +421,7 @@ const IntegrationsTab = ({
             </Card>
 
             </details>
-            <div className="mb-5 flex flex-wrap gap-2" aria-label={t("Escolher plataforma para conectar")}>
+            <div role="group" className="mb-5 flex flex-wrap gap-2" aria-label={t("Escolher plataforma para conectar")}>
                 {providers.map((provider) => <Button key={provider.id} size="sm" variant={selectedProvider?.id === provider.id ? 'primary' : 'secondary'}
                     aria-pressed={selectedProvider?.id === provider.id} onClick={() => setSelectedProviderId(provider.id)}>{t(provider.label)}{preferredProviderIds.includes(provider.id) ? t(" (escolhida)") : ''}</Button>)}
             </div>

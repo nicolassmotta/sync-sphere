@@ -41,7 +41,7 @@ const Button = forwardRef(({
             disabled={isDisabled}
             aria-busy={loading || undefined}
             className={cn(
-                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
+                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
                 variants[variant],
                 sizes[size],
                 fullWidth && 'w-full',

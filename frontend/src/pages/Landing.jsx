@@ -47,13 +47,13 @@ const Landing = () => {
                         </span>
                         <span className="min-w-0">
                             <span className="block text-lg font-extrabold text-white">{t("SyncSphere")}</span>
-                            <span className="block truncate text-xs font-semibold text-muted">{t("playlists entre plataformas, localmente")}</span>
+                            <span className="hidden truncate text-xs font-semibold text-muted sm:block">{t("playlists entre plataformas, localmente")}</span>
                         </span>
                     </button>
 
                     <div className="flex items-center gap-2"><LanguageSelector />
-                        <Button onClick={scrollToTutorial} variant="ghost" size="sm" leftIcon={<BookOpen size={15} />}>{t("Tutorial")}</Button>
-                        <Button onClick={goToApp} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}>{t("Abrir painel")}</Button>
+                        <Button className="hidden md:inline-flex" onClick={scrollToTutorial} variant="ghost" size="sm" leftIcon={<BookOpen size={15} />}>{t("Tutorial")}</Button>
+                        <Button aria-label={t("Abrir painel")} onClick={goToApp} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}><span className="hidden sm:inline">{t("Abrir painel")}</span></Button>
                     </div>
                 </div>
             </nav>
@@ -84,7 +84,7 @@ const Landing = () => {
                         >
                             <div className="mb-5 flex items-center justify-between gap-4">
                                 <div>
-                                    <p className="text-xs font-bold uppercase text-white/40">{t("Fluxo guiado")}</p>
+                                    <p className="text-xs font-bold uppercase text-muted">{t("Fluxo guiado")}</p>
                                     <h2 className="mt-1 text-2xl font-black text-white">{t("Da configuração ao histórico")}</h2>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ const Landing = () => {
                     <div className="mx-auto max-w-7xl">
                         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div>
-                                <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-white/45">
+                                <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-muted">
                                     <Terminal size={14} className="text-spotify" />{t("Tutorial no front-end")}</p>
                                 <h2 className="text-3xl font-black text-white md:text-4xl">{t("Comandos copiáveis para rodar localmente")}</h2>
                                 <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{t("Os exemplos usam valores demonstrativos. Preencha segredos e cookies apenas no seu `.env` local.")}</p>
@@ -145,7 +145,7 @@ const Landing = () => {
                 <section className="px-5 py-12 md:px-8 md:py-16">
                     <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.8fr_1.2fr]">
                         <div>
-                            <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-white/45">
+                            <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-muted">
                                 <ListChecks size={14} className="text-spotify" />{t("Validação")}</p>
                             <h2 className="text-3xl font-black text-white">{t("O painel continua o tutorial.")}</h2>
                             <p className="mt-3 text-sm leading-7 text-muted">{t("A aba Início orienta a configuração, a escolha dos provedores e a seleção de playlists. Você pode experimentar a conversão entre arquivos sem conectar contas.")}</p>

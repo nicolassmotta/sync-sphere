@@ -1,3 +1,4 @@
+import { DASHBOARD_TAB_LABELS, getDashboardTabUrl } from '../constants/dashboardTabs';
 import { useText } from '../i18n/useText';
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
@@ -54,7 +55,12 @@ const Dashboard = () => {
     const { t } = useText();
     const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('home');
+    const requestedTab = new URLSearchParams(location.search).get('tab');
+    const activeTab = Object.hasOwn(DASHBOARD_TAB_LABELS, requestedTab) ? requestedTab : 'home';
+    const setActiveTab = useCallback((tab) => {
+        const url = getDashboardTabUrl(tab);
+        if (`${location.pathname}${location.search}` !== url) navigate(url);
+    }, [location.pathname, location.search, navigate]);
     const [wizardStep, setWizardStep] = useState(() => readMigrationSession().step);
     const [demoLoading, setDemoLoading] = useState(false);
     const [demoMode, setDemoMode] = useState(false);
@@ -106,10 +112,16 @@ const Dashboard = () => {
         isTransferring,
         progress,
         progressMessage,
+        connectionState,
         transfers,
         prepareTransferProgress,
         stopTransferProgress,
     } = useTransferSocket(transferIds);
+
+    const needsAuthIds = transfers.filter((transfer) => transfer.status === 'needs_auth').map((transfer) => transfer.transferId).sort().join(',');
+    useEffect(() => {
+        if (needsAuthIds) refreshIntegrations({ force: true });
+    }, [needsAuthIds, refreshIntegrations]);
 
     // Depois de recarregar a página, volta a acompanhar o que ainda não terminou.
     useEffect(() => {
@@ -201,16 +213,15 @@ const Dashboard = () => {
         const connectionStatus = params.get('status');
         const providerLabel = getProviderLabel(providerId);
 
-        if (tab) setActiveTab(tab);
         if (providerId && connectionStatus === 'connected') toast.success(t("{{value0}} conectado com sucesso.", { value0: providerLabel }));
         if (providerId && connectionStatus === 'denied') toast.error(t("Conexão com {{value0}} cancelada.", { value0: providerLabel }));
 
         if (demo && !demoRequestedRef.current) { demoRequestedRef.current = true; startDemo(); }
-        if (tab || providerId || demo) {
+        if (providerId || demo || connectionStatus || (tab && !Object.hasOwn(DASHBOARD_TAB_LABELS, tab))) {
             refreshIntegrations();
-            navigate('/dashboard', { replace: true });
+            navigate(getDashboardTabUrl(activeTab), { replace: true });
         }
-    }, [location.search, navigate, refreshIntegrations, startDemo, t]);
+    }, [activeTab, location.search, navigate, refreshIntegrations, startDemo, t]);
 
     const startTransferProcess = useStartTransfer({
         sourceProvider: source.id,
@@ -251,6 +262,7 @@ const Dashboard = () => {
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        connectionState={connectionState}
                         transfers={transfers}
                         onResumeTransfer={resumeTransfer}
                         startTransferProcess={startTransferProcess}

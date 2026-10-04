@@ -48,7 +48,7 @@ const TextField = forwardRef(({
                     {label ? (
                         <label htmlFor={inputId} className="block text-sm font-semibold text-white/70">
                             {t(label)}
-                            {required && <span className="text-spotify"> *</span>}
+                            {required && <span aria-hidden="true" className="text-spotify"> *</span>}
                         </label>
                     ) : (
                         <span />
