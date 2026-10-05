@@ -42,6 +42,8 @@ Retomadas em destinos remotos acrescentam faixas recuperadas ao fim da playlist.
 
 ## Primeira experiência
 
-Fluxo guiado, demonstração integrada, assistentes de conexão, relatórios, ajuda por sintoma, diagnóstico revisável, backup protegido e geração de pacotes portáteis estão implementados. A interface PT/EN, o README em inglês e os guias iniciais traduzidos vêm na etapa seguinte, ainda em preparação. Referências técnicas completas e prompts de terminal permanecem em português. Veja [idiomas](localization.md).
+Fluxo guiado, demonstração integrada, assistentes de conexão, relatórios, ajuda por sintoma, diagnóstico revisável, backup protegido e geração de pacotes portáteis estão implementados. A interface PT/EN, o README em inglês e os guias iniciais traduzidos também estão implementados. Referências técnicas completas e prompts de terminal permanecem em português. Veja [idiomas](localization.md).
+
+O Histórico oferece filtros de atenção, andamento e conclusão, combinados com busca por playlist. O resultado abre nas faixas que precisam de revisão ou, quando não há pendências, nas adicionadas. A revisão compara metadados e mostra as alternativas escolhidas antes da confirmação em lote. Correções e preferências ficam em uma seção expansível. A validação visual usa dados demonstrativos e provedores simulados.
 
 Além da confirmação real das integrações, ficam pendentes a execução dos pacotes em sistemas/arquiteturas não disponíveis na máquina de desenvolvimento, sessões de usabilidade com participantes reais e eventual assinatura de instaladores. O [roteiro de conferência](usability-testing.md) descreve como obter evidência sem pedir credenciais aos participantes.

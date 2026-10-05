@@ -91,6 +91,6 @@ it('compara alternativas por teclado e guarda seleção sem confirmar a transfer
     first.focus();
     await user.keyboard(' ');
     await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
-    expect(selected).toHaveBeenCalledWith({ trackIndex: 0, action: 'choose', candidateId: 'primeira', revision: 1 });
+    expect(selected).toHaveBeenCalledWith({ trackIndex: 0, action: 'choose', candidateId: 'primeira', revision: 1 }, alternatives[0]);
     expect(api.post).not.toHaveBeenCalled();
 });

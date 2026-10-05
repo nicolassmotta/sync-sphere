@@ -120,7 +120,7 @@ const Modal = ({
                 </div>
 
                 {footer && (
-                    <footer className="mt-6 shrink-0 border-t border-white/10 pt-4 sm:flex sm:justify-end">
+                    <footer className="mt-6 flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 pt-4 sm:justify-end">
                         {footer}
                     </footer>
                 )}

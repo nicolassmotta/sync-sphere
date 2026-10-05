@@ -99,9 +99,124 @@ it('seleciona duas ocorrências e confirma um lote depois de mostrar o resumo', 
     expect(api.post).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Revisar escolhas antes de confirmar' }));
     expect(screen.getByText('As escolhas confirmadas serão adicionadas ao fim da playlist.')).toBeTruthy();
+    expect(screen.getAllByText('Original · Fictício')).toHaveLength(2);
     await user.click(screen.getByRole('button', { name: 'Confirmar escolhas' }));
     expect(api.post).toHaveBeenCalledWith('/transfer/transferencia-ficticia/review', { choices: [
         { trackIndex: 0, action: 'choose', candidateId: 'primeira', revision: 1 },
         { trackIndex: 1, action: 'choose', candidateId: 'segunda', revision: 1 },
     ] });
+});
+
+it('combina filtro de atenção e busca, e permite limpar um resultado vazio', async () => {
+    const transfers = [completed,
+        { ...completed, _id: 'revisao', playlistName: 'Rock para revisar', needsReviewCount: 1 },
+        { ...completed, _id: 'falha', playlistName: 'Jazz com falha', status: 'failed' },
+        { ...completed, _id: 'ativa', playlistName: 'Migração ativa', status: 'processing' }];
+    api.get.mockResolvedValue({ data: { data: { transfers } } });
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Precisam de atenção 2' }));
+    expect(screen.queryByRole('cell', { name: 'Arquivo' })).toBeNull();
+    expect(screen.getByRole('cell', { name: 'Rock para revisar' })).toBeTruthy();
+    expect(screen.queryByRole('cell', { name: 'Migração ativa' })).toBeNull();
+    await user.type(screen.getByRole('textbox', { name: 'Buscar playlist' }), 'rock');
+    expect(screen.queryByRole('cell', { name: 'Jazz com falha' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Concluídas 1' }));
+    expect(screen.getAllByText('Nenhuma migração neste filtro.')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+    expect(screen.getByRole('textbox', { name: 'Buscar playlist' }).value).toBe('');
+    expect(screen.getByRole('cell', { name: 'Arquivo' })).toBeTruthy();
+    expect(screen.getByRole('cell', { name: 'Rock para revisar' })).toBeTruthy();
+});
+
+it('abre uma migração sem pendências na aba das músicas adicionadas', async () => {
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [completed] } : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Música adicionada', artist: 'Artista', status: 'matched', inserted: true }] } } }));
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    expect((await screen.findByRole('tab', { name: 'Adicionadas (1)' })).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel').textContent).toContain('Música adicionada');
+    expect(screen.queryByText('Nenhuma faixa pendente.')).toBeNull();
+});
+
+it('abre diretamente as não encontradas quando elas são a única pendência', async () => {
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [{ ...completed, notFoundCount: 1 }] }
+        : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Música ausente', status: 'not_found' }] } } }));
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    expect((await screen.findByRole('tab', { name: 'Não encontradas (1)' })).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel').textContent).toContain('Música ausente');
+});
+
+it('remove uma escolha do resumo sem enviar a ocorrência removida para a API', async () => {
+    const transfer = { ...completed, targetProvider: 'spotify', needsReviewCount: 2, matchedCount: 0 };
+    const tracks = [0, 1].map((index) => ({ index, name: `Faixa ${index}`, artist: 'Artista', status: 'needs_review' }));
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer' ? { transfers: [transfer] }
+        : url.endsWith('/candidates') ? { candidates: [] } : { counts: { total: 2 }, tracks } } }));
+    api.post.mockResolvedValue({ data: { message: 'Salva', data: { transfer } } });
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    for (let index = 0; index < 2; index += 1) {
+        await user.click((await screen.findAllByRole('button', { name: 'Escolher alternativa' }))[index]);
+        await screen.findByText('Nenhuma alternativa disponível ainda. Busque pelo título e artista acima.');
+        await user.click(screen.getByRole('button', { name: 'Ignorar esta faixa' }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Revisar escolhas antes de confirmar' }));
+    await user.click(screen.getByRole('button', { name: 'Remover escolha da faixa 1' }));
+    expect(api.post).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Confirmar escolhas' }));
+    expect(api.post).toHaveBeenCalledWith('/transfer/transferencia-ficticia/review', { choices: [{ trackIndex: 1, action: 'skip' }] });
+});
+
+it('atualiza um resultado em andamento sem fechar o relatório', async () => {
+    let updated = false;
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [{ ...completed, status: updated ? 'completed' : 'processing', processedTracks: updated ? 3 : 1 }] }
+        : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Faixa confirmada', status: 'matched', inserted: true }] } } }));
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    expect(screen.getByRole('heading', { name: 'Sua migração continua em andamento' })).toBeTruthy();
+    updated = true;
+    await user.click(screen.getByRole('button', { name: 'Atualizar resultado' }));
+    expect(await screen.findByRole('heading', { name: 'Sua migração foi concluída' })).toBeTruthy();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Atualizar resultado' })).toBeNull();
+});
+
+it('impede confirmar uma cópia ordenada enquanto existem faixas pendentes', async () => {
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [{ ...completed, targetProvider: 'spotify', targetPlaylistId: 'playlist-ficticia', needsReviewCount: 1 }] }
+        : { counts: { total: 2 }, tracks: [
+            { index: 0, name: 'Inserida', status: 'matched', inserted: true },
+            { index: 1, name: 'Pendente', status: 'needs_review' },
+        ] } } }));
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await screen.findByRole('tab', { name: 'Pendências (1)' });
+    await user.click(screen.getByText('Correções e preferências'));
+    await user.click(screen.getByRole('button', { name: 'Criar cópia na ordem da origem' }));
+    expect(screen.getByRole('button', { name: 'Confirmar nova playlist' }).disabled).toBe(true);
+    expect(api.post).not.toHaveBeenCalled();
+});
+
+it('mostra a correção escolhida e envia somente seu identificador e revisão para a cópia', async () => {
+    const transfer = { ...completed, targetProvider: 'spotify', targetPlaylistId: 'playlist-ficticia' };
+    const alternative = { id: 'alternativa-copia', revision: 2, name: 'Versão escolhida', artist: 'Artista', album: 'Álbum escolhido' };
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer' ? { transfers: [transfer] }
+        : url.endsWith('/correction-candidates') ? { candidates: [alternative] }
+            : { counts: { total: 1 }, tracks: [{ index: 0, name: 'Faixa original', status: 'matched', inserted: true }] } } }));
+    api.post.mockResolvedValue({ data: { message: 'Cópia criada', data: { transfer } } });
+    const user = userEvent.setup(); render(<HistoryTab />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await screen.findByRole('tab', { name: 'Adicionadas (1)' });
+    await user.click(screen.getByText('Correções e preferências'));
+    await user.click(screen.getByText('Corrigir faixas em uma nova playlist'));
+    await user.click(screen.getByRole('button', { name: 'Escolher correção' }));
+    await user.click(await screen.findByRole('radio', { name: 'Versão escolhida Artista' }));
+    await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
+    expect(screen.getByText('Versão escolhida · Artista')).toBeTruthy();
+    expect(screen.getByText('Álbum escolhido')).toBeTruthy();
+    expect(api.post).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Confirmar nova playlist' }));
+    expect(api.post).toHaveBeenCalledWith('/transfer/transferencia-ficticia/ordered-copy', { choices: [{ trackIndex: 0, candidateId: 'alternativa-copia', revision: 2 }] });
 });

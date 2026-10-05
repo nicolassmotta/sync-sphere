@@ -173,6 +173,8 @@ Coleções essenciais validam o formato básico de objeto ou lista antes de abri
 
 As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.
 
+Filtros de Histórico ficam em `components/dashboard/historyPresentation.js`: atenção inclui falha, reconexão e conclusão com pendências ou origem truncada; andamento inclui fila, processamento, pausa e reconexão. Uma transferência pode aparecer em ambos. `TransferResultSummary` apresenta resultado e conferência do destino. A revisão guarda metadados de apresentação somente na seleção local e envia apenas os identificadores/revisões exigidos pela API. O relatório abre na primeira categoria com faixas; correções e preferências são expansíveis, e exportações de arquivo permanecem visíveis.
+
 ### Correspondência robusta
 
 `services/matching/identity.js` e `decision.js` centralizam Unicode, artistas, versões e evidências na política `identity-v2`. `searchOrchestrator.js` persiste estratégias/candidatos e usa orçamento de seis consultas e 12 requisições por faixa. `requestBudget.js` instrumenta fetch e Axios com limitação por destino e cancelamento. Scores antigos não autorizam aceitação nem cache. Fixtures, métricas sintéticas e limites estão em `docs/validation-matching-quality.md`.
