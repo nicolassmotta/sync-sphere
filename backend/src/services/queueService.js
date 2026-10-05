@@ -26,6 +26,7 @@ let sequence = 0;
 
 let processor = null;
 let onFailed = null;
+let onRetry = null;
 
 const backoffMs = (attempt) => Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), 30000);
 
@@ -103,6 +104,7 @@ const runJob = async (job) => {
             logger.warn(`[Fila] Job ${job.id} falhou (tentativa ${job.attemptsMade}). Reagendando em ${delay}ms.`);
             job.runAfter = new Date(Date.now() + delay).toISOString();
             persist();
+            await onRetry?.(job, error);
             schedule(job);
         } else {
             removeJob(job);
@@ -138,9 +140,10 @@ const drain = async (lane) => {
  * jobs salvos em disco. Sem processador registrado os jobs ficam aguardando,
  * útil quando WORKER_ENABLED=false.
  */
-export const registerTransferProcessor = ({ process, onFailed: failedHandler }) => {
+export const registerTransferProcessor = ({ process, onFailed: failedHandler, onRetry: retryHandler }) => {
     processor = process;
     onFailed = failedHandler;
+    onRetry = retryHandler;
     loadJobs().forEach(schedule);
 };
 
@@ -224,4 +227,5 @@ export const resetQueueForTests = () => {
     jobs = null;
     processor = null;
     onFailed = null;
+    onRetry = null;
 };

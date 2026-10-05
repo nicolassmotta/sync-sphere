@@ -1,3 +1,4 @@
+import { translate } from '../i18n';
 /**
  * Metadados visuais das plataformas. O back-end é a fonte da verdade sobre
  * quais plataformas existem e o que cada uma suporta (`GET /integrations/status`);
@@ -13,12 +14,12 @@ export const PROVIDER_UI = {
         tone: 'spotify',
         buttonVariant: 'primary',
         accentGradient: 'via-spotify',
-        description: 'Origem ou destino. O back-end usa OAuth para listar playlists, buscar faixas e criar playlists privadas quando o Spotify for destino.',
+        description: 'Leia suas playlists ou crie uma nova playlist privada no Spotify. Você autoriza a conexão no navegador da plataforma.',
         setupSteps: [
-            'Crie um app no painel do Spotify e defina SPOTIFY_CLIENT_ID no backend/.env.',
-            'Cadastre SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/spotify/callback no Spotify.',
-            'Reconecte se o app antigo não tiver playlist-modify-private/playlist-modify-public.',
-            'Clique em "Conectar" e autorize sua conta no navegador (OAuth + PKCE, sem Client Secret).',
+            'Abra developer.spotify.com/dashboard, entre na sua conta e crie um aplicativo.',
+            'Nas configurações do aplicativo, cadastre o endereço de retorno mostrado abaixo em Redirect URIs.',
+            'Copie o Client ID e use Salvar e continuar neste painel. Não precisa informar Client Secret.',
+            'Clique em Conectar Spotify e autorize sua conta no navegador. Depois volte à migração.',
         ],
     },
     youtubeMusic: {
@@ -26,13 +27,13 @@ export const PROVIDER_UI = {
         tone: 'youtube',
         buttonVariant: 'youtube',
         accentGradient: 'via-youtube',
-        description: 'Origem ou destino. O back-end lê playlists e cria playlists privadas no YouTube Music usando o cookie da sua sessão no navegador. Aceita links de music.youtube.com e youtube.com; a playlist criada aparece nos dois.',
+        description: 'Leia playlists ou crie uma playlist privada no YouTube Music usando a sessão da sua conta. Aceita links de music.youtube.com e youtube.com; a playlist criada aparece nos dois.',
         setupSteps: [
             'Abra music.youtube.com logado na conta que vai usar.',
             'Nas ferramentas de desenvolvedor, aba Rede, clique em uma requisição para music.youtube.com.',
-            'Copie o cabeçalho Cookie completo e cole abaixo (ou em YTMUSIC_COOKIE no backend/.env).',
+            'Copie o cabeçalho Cookie completo, cole abaixo e use Validar e conectar.',
         ],
-        credentialWarning: 'Integração não oficial via cookie. O cookie fica cifrado em backend/data; não o coloque em logs, commits ou capturas de tela.',
+        credentialWarning: 'Integração não oficial via cookie. O cookie fica protegido neste computador; não o coloque em logs, commits ou capturas de tela.',
         envSnippet: `YTMUSIC_COOKIE=cole_o_cabecalho_cookie_completo_de_music_youtube_com_aqui
 YTMUSIC_AUTH_USER=0`,
     },
@@ -47,7 +48,7 @@ YTMUSIC_AUTH_USER=0`,
             'Para usar como destino: abra deezer.com logado, ferramentas de desenvolvedor, aba Aplicativo (Application) > Cookies > https://www.deezer.com.',
             'Copie o valor do cookie "arl" (texto hexadecimal longo) e cole abaixo.',
         ],
-        credentialWarning: 'O arl dá acesso à sua conta Deezer. Fica cifrado em backend/data; não compartilhe nem coloque em logs ou capturas de tela.',
+        credentialWarning: 'O arl dá acesso à sua conta Deezer. Fica protegido neste computador; não compartilhe nem coloque em logs ou capturas de tela.',
         envSnippet: 'DEEZER_ARL=cole_o_cookie_arl_de_deezer_com_aqui',
     },
     tidal: {
@@ -57,10 +58,10 @@ YTMUSIC_AUTH_USER=0`,
         accentGradient: 'via-cyan-300',
         description: 'Origem ou destino pela API oficial do TIDAL (OAuth + PKCE), com busca exata por ISRC. Playlists criadas ficam como "não listadas": só abre quem tiver o link.',
         setupSteps: [
-            'Crie um app em developer.tidal.com e copie o Client ID para TIDAL_CLIENT_ID no backend/.env.',
-            'Cadastre a Redirect URI http://127.0.0.1:8000/api/v1/integrations/tidal/callback no app.',
-            'Opcional: TIDAL_CLIENT_SECRET permite ler playlists públicas e buscar sem conectar a conta.',
-            'Reinicie o back-end e clique em "Conectar TIDAL".',
+            'Abra developer.tidal.com, entre na sua conta e crie um aplicativo.',
+            'Cadastre no aplicativo o endereço de retorno mostrado abaixo. Copie o Client ID e salve neste painel.',
+            'A leitura e a escrita da sua conta precisam de autorização. A criação de playlists ainda está em validação experimental.',
+            'Clique em Conectar TIDAL, autorize no navegador e volte à migração.',
         ],
         envSnippet: `TIDAL_CLIENT_ID=seu_client_id_tidal
 # TIDAL_CLIENT_SECRET=opcional
@@ -77,7 +78,7 @@ TIDAL_REDIRECT_URI=http://127.0.0.1:8000/api/v1/integrations/tidal/callback`,
             'Oficial: com conta Apple Developer, crie uma chave MusicKit, defina APPLE_TEAM_ID, APPLE_KEY_ID e APPLE_PRIVATE_KEY_PATH no backend/.env e use "Conectar com Apple Music".',
             'Sem conta de desenvolvedor: abra music.apple.com logado, ferramentas de desenvolvedor > Aplicativo > Cookies e copie o valor de "media-user-token".',
         ],
-        credentialWarning: 'O Music User Token dá acesso à sua biblioteca. Fica cifrado em backend/data; não compartilhe.',
+        credentialWarning: 'O Music User Token dá acesso à sua biblioteca. Fica protegido neste computador; não compartilhe.',
         envSnippet: `APPLE_TEAM_ID=seu_team_id
 APPLE_KEY_ID=id_da_chave_musickit
 APPLE_PRIVATE_KEY_PATH=/caminho/AuthKey_XXXXXXXXXX.p8`,
@@ -93,7 +94,7 @@ APPLE_PRIVATE_KEY_PATH=/caminho/AuthKey_XXXXXXXXXX.p8`,
             'Para usar como destino: abra soundcloud.com logado, ferramentas de desenvolvedor > Aplicativo > Cookies e copie o valor de "oauth_token".',
             'A API oficial só libera credenciais para contas Artist Pro; por isso a integração usa a sessão do site (não oficial).',
         ],
-        credentialWarning: 'O oauth_token dá acesso à sua conta SoundCloud. Fica cifrado em backend/data; não compartilhe.',
+        credentialWarning: 'O oauth_token dá acesso à sua conta SoundCloud. Fica protegido neste computador; não compartilhe.',
         envSnippet: 'SOUNDCLOUD_OAUTH_TOKEN=cole_o_cookie_oauth_token_aqui',
     },
     file: {
@@ -127,9 +128,12 @@ const GENERIC_UI = {
     setupSteps: [],
 };
 
-export const getProviderUi = (providerId) => PROVIDER_UI[providerId] || { ...GENERIC_UI, label: providerId };
+export const getProviderUi = (providerId) => {
+    const value = PROVIDER_UI[providerId] || { ...GENERIC_UI, label: providerId };
+    return { ...value, label: translate(value.label), description: translate(value.description), setupSteps: value.setupSteps.map((step) => translate(step)), credentialWarning: translate(value.credentialWarning) };
+};
 
-export const getProviderLabel = (providerId, providers = []) => (
+export const getProviderLabel = (providerId, providers = []) => translate(
     providers.find((provider) => provider.id === providerId)?.label
     || PROVIDER_UI[providerId]?.label
     || providerId

@@ -1,6 +1,7 @@
+import AppError from '../utils/AppError.js';
 import fs from 'fs';
 import crypto from 'node:crypto';
-import { ensureDataDir, dataFile } from '../config/paths.js';
+import { ensureDataDir, dataFile, DATA_DIR } from '../config/paths.js';
 import { encryptText, decryptText } from '../utils/crypto.js';
 
 /**
@@ -8,25 +9,47 @@ import { encryptText, decryptText } from '../utils/crypto.js';
  * vira um arquivo dentro de DATA_DIR. Substitui o MongoDB no modo local: a
  * pessoa clona o projeto, roda, e os dados ficam na própria máquina.
  */
-export const readStore = (name, fallback) => {
-    ensureDataDir();
-    const file = dataFile(name);
-
-    if (!fs.existsSync(file)) {
-        return fallback;
+const DISCARDABLE_STORES = new Set(['match-cache.json', 'provider-stats.json']);
+const unreadableStores = new Set();
+const hasEssentialShape = (name, value) => {
+    const object = value !== null && typeof value === 'object' && !Array.isArray(value);
+    if (/^(credentials|provider-credentials|provider-settings)\.json$/.test(name)) return object;
+    if (/^(transfers|queue|file-imports|file-exports)\.json$/.test(name) || /^transfer-tracks-.*\.json$/.test(name)) {
+        return Array.isArray(value) && value.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item));
     }
+    return true;
+};
+const storageError = () => new AppError(
+    'Não foi possível abrir os dados locais. Confira DATA_DIR, ENCRYPTION_KEY e o backup antes de continuar.', 503
+);
 
+export const readStore = (name, fallback) => {
     try {
-        const raw = fs.readFileSync(file, 'utf8').trim();
-        if (!raw) return fallback;
-        return JSON.parse(decryptText(raw));
-    } catch {
-        // Arquivo corrompido ou chave trocada: começa do zero em vez de derrubar a app.
-        return fallback;
+        ensureDataDir();
+        const raw = fs.readFileSync(dataFile(name), 'utf8');
+        const value = JSON.parse(decryptText(raw.trim()));
+        if (!hasEssentialShape(name, value)) throw storageError();
+        unreadableStores.delete(name);
+        return value;
+    } catch (error) {
+        if (error.code === 'ENOENT') return fallback;
+        if (DISCARDABLE_STORES.has(name)) return fallback;
+        unreadableStores.add(name);
+        throw storageError();
+    }
+};
+
+// Confere também checkpoints e arquivos ainda não carregados pelos consumidores.
+export const validateEssentialStores = () => {
+    ensureDataDir();
+    for (const name of fs.readdirSync(DATA_DIR)) {
+        if (/^(credentials|provider-credentials|provider-settings|transfers|queue|file-imports|file-exports)\.json$/.test(name)
+            || /^transfer-tracks-.*\.json$/.test(name)) readStore(name, null);
     }
 };
 
 export const writeStore = (name, data) => {
+    if (unreadableStores.has(name)) throw storageError();
     ensureDataDir();
     const file = dataFile(name);
     const temporary = `${file}.${crypto.randomUUID()}.tmp`;
@@ -45,5 +68,6 @@ export const writeStore = (name, data) => {
 };
 
 export const removeStore = (name) => {
+    unreadableStores.delete(name);
     fs.rmSync(dataFile(name), { force: true });
 };

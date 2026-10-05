@@ -1,3 +1,4 @@
+import { resolveTransferProviders } from '../../constants/transferDirections.js';
 import Transfer from '../../models/Transfer.js';
 import AppError from '../../utils/AppError.js';
 import logger from '../../utils/logger.js';
@@ -29,7 +30,9 @@ const requeueFailedTracks = (transferId) => {
     if (!tracks) return null;
 
     let requeued = 0;
+    let pendingInserts = 0;
     for (const track of tracks) {
+        if (track.status === TRACK_STATUS.MATCHED && !track.inserted && track.targetId) pendingInserts += 1;
         if (track.status === TRACK_STATUS.FAILED || track.status === TRACK_STATUS.RETRY_QUEUED) {
             track.status = TRACK_STATUS.RETRY_QUEUED;
             track.attempts = 0;
@@ -38,7 +41,7 @@ const requeueFailedTracks = (transferId) => {
     }
 
     if (requeued) saveTransferTracks(transferId, tracks);
-    return { requeued, counts: summarizeTransferTracks(tracks) };
+    return { requeued: requeued + pendingInserts, pendingInserts, counts: summarizeTransferTracks(tracks) };
 };
 
 const markQueued = async (transfer, message, counts) => {
@@ -53,18 +56,20 @@ const markQueued = async (transfer, message, counts) => {
     if (counts) {
         transfer.retryQueuedCount = counts.retryQueued;
         transfer.failedCount = counts.failed;
+        transfer.pendingInsertCount = counts.pendingInserts;
     }
     await transfer.save();
 };
 
 /**
- * Reenfileira as faixas com falha (e a transferência inteira, se ela falhou
- * antes de ler a playlist). Faixas não encontradas continuam como estão:
+ * Reenfileira falhas de busca e inserções pendentes sem apagar correspondências.
+ * Reinicia a transferência inteira se ela falhou
+ * antes de ler a playlist. Faixas não encontradas continuam como estão:
  * buscar de novo não muda o resultado.
  */
-export const retryTransfer = async ({ transferId, userId }) => {
+const retryTransferUnlocked = async ({ transferId, userId }) => {
     const transfer = await getOwnedTransfer({ transferId, userId });
-    if (transfer.status === 'processing') {
+    if (transfer.status === 'processing' || hasTransferJob(transfer._id)) {
         throw new AppError('Esta transferência já está em andamento.', 409);
     }
 
@@ -83,9 +88,21 @@ export const retryTransfer = async ({ transferId, userId }) => {
         throw new AppError('Nenhuma faixa pendente para tentar de novo nesta transferência.', 400);
     }
 
-    await markQueued(transfer, `${result.requeued} faixas voltaram para a fila.`, result.counts);
+    await markQueued(transfer, `${result.requeued} faixas voltaram para a fila. ${result.pendingInserts} aguardam inserção com correspondência preservada.`, result.counts);
     await enqueue(transfer, { mode: 'retry' });
     return { transfer, requeued: result.requeued };
+};
+
+const retryingTransfers = new Set();
+export const retryTransfer = async (options) => {
+    const id = String(options.transferId);
+    if (retryingTransfers.has(id)) throw new AppError('Esta transferência já está sendo reenfileirada.', 409);
+    retryingTransfers.add(id);
+    try {
+        return await retryTransferUnlocked(options);
+    } finally {
+        retryingTransfers.delete(id);
+    }
 };
 
 export const retryAllTransfers = async ({ userId }) => {
@@ -94,13 +111,16 @@ export const retryAllTransfers = async ({ userId }) => {
     let requeuedTransfers = 0;
 
     for (const transfer of transfers) {
-        if (transfer.status === 'processing') continue;
-        const hasPending = (transfer.failedCount || 0) + (transfer.retryQueuedCount || 0) > 0;
+        if (transfer.status === 'processing' || hasTransferJob(transfer._id)) continue;
+        const tracks = loadTransferTracks(transfer._id);
+        const hasPending = transfer.status === 'failed' || tracks?.some((track) =>
+            [TRACK_STATUS.FAILED, TRACK_STATUS.RETRY_QUEUED].includes(track.status)
+            || (track.status === TRACK_STATUS.MATCHED && !track.inserted && track.targetId));
         if (!hasPending) continue;
 
-        const { requeued } = await retryTransfer({ transferId: transfer._id, userId }).catch(() => ({ requeued: 0 }));
-        if (requeued) {
-            requeuedTracks += requeued;
+        const result = await retryTransfer({ transferId: transfer._id, userId }).catch(() => null);
+        if (result) {
+            requeuedTracks += result.requeued;
             requeuedTransfers += 1;
         }
     }
@@ -128,13 +148,17 @@ export const resumeTransfer = async ({ transferId, userId }) => {
 /**
  * Chamado quando uma integração volta a ficar conectada.
  */
-export const resumeTransfersNeedingAuth = async ({ userId }) => {
+export const resumeTransfersNeedingAuth = async ({ userId, providerId }) => {
     const transfers = await Transfer.find({ user: userId, status: 'needs_auth' });
+    let resumed = 0;
     for (const transfer of transfers) {
+        const providers = resolveTransferProviders(transfer);
+        if (providerId && ![providers.sourceProvider, providers.targetProvider].includes(providerId)) continue;
+        resumed += 1;
         await markQueued(transfer, 'Integração reconectada. Retomando a transferência.');
         if (!runTransferNow(transfer._id)) await enqueue(transfer);
     }
-    return transfers.length;
+    return resumed;
 };
 
 /**

@@ -3,6 +3,7 @@ import { setProviderCredentials } from '../src/storage/credentialStore.js';
 
 const getPlaylistVideos = jest.fn();
 const constructRequest = jest.fn();
+const getPlaylist = jest.fn();
 jest.unstable_mockModule('ytmusic-api', () => ({
     default: class {
         config = { INNERTUBE_API_KEY: 'teste' };
@@ -10,6 +11,7 @@ jest.unstable_mockModule('ytmusic-api', () => ({
         cookiejar = { setCookieSync() {} };
         initialize = async () => {};
         getPlaylistVideos = getPlaylistVideos;
+        getPlaylist = getPlaylist;
         constructRequest = constructRequest;
     },
 }));
@@ -41,4 +43,15 @@ it('não escreve quando a leitura das faixas existentes falha', async () => {
     getPlaylistVideos.mockRejectedValueOnce(new Error('Falha ao ler a playlist'));
     await expect(createYoutubeMusicCookieDestinationClient().addVideosToPlaylist({ playlistId: 'lista', videoIds: ['A'] })).rejects.toThrow('Falha ao ler');
     expect(constructRequest).not.toHaveBeenCalled();
+});
+
+
+it('distingue corte local de itens indisponíveis no YouTube Music', async () => {
+    const { getYoutubeMusicPlaylistSnapshot } = await import('../src/services/youtubeMusicService.js');
+    getPlaylist.mockResolvedValue({ name: 'Playlist', videoCount: 3 });
+    getPlaylistVideos.mockResolvedValue([{ videoId: 'A', name: 'A' }, { videoId: 'B', name: 'B' }, {}]);
+    const cut = await getYoutubeMusicPlaylistSnapshot({ playlistId: 'lista', limit: 1 });
+    expect(cut).toMatchObject({ totalTracks: 3, truncated: true, omittedTracks: 1, unavailableTracks: 1 });
+    const complete = await getYoutubeMusicPlaylistSnapshot({ playlistId: 'lista' });
+    expect(complete).toMatchObject({ totalTracks: 3, truncated: false, omittedTracks: 0, unavailableTracks: 1 });
 });

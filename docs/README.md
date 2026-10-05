@@ -1,9 +1,16 @@
 # Documentação do SyncSphere
 
+[Português (Brasil)](README.md) · [English](en/README.md)
+
 Esta documentação acompanha a versão da `main`. Para instalar uma versão publicada, confira [Releases](https://github.com/nicolassmotta/sync-sphere/releases) e suas notas. A versão 1.1.0 está preparada e ainda não publicada.
 
 ## Usar o aplicativo
 
+- [Sua primeira migração](primeira-migracao.md): fluxo guiado, demonstração integrada e resultado.
+- [Backup e restauração](backups.md): cópia cifrada por senha e recuperação com o aplicativo fechado.
+- [Pacotes portáteis](distribution.md): iniciador e geração local de pacotes com Node.js incluído.
+
+- [Idiomas](localization.md): preferência, catálogos e mensagens HTTP.
 - [Primeiros passos](getting-started.md): instalação, execução local e demonstração sem contas.
 - [Integrações](integrations.md): autenticação, capacidades e privacidade dos sete provedores.
 - [Configuração](configuration.md): variáveis, portas, fila e armazenamento.
@@ -14,9 +21,11 @@ Esta documentação acompanha a versão da `main`. Para instalar uma versão pub
 ## Desenvolver e contribuir
 
 - [Contribuição](../CONTRIBUTING.md): ambiente de desenvolvimento, testes e fluxo de PR.
+- [Auditoria de rotas e usabilidade](qa-audit.md): cenários simulados, correções e limites de validação.
 - [Arquitetura](architecture.md): provedores, fila, armazenamento e componentes.
 - [API local](api.md): rotas e eventos Socket.io.
 - [Segurança](../SECURITY.md): proteção da instalação e relato de vulnerabilidades.
+- [Conferência com pessoas](usability-testing.md): roteiro de tarefas e registro de dificuldades.
 - [Plano das fases](roadmap.md): entregas integradas e validações pendentes.
 - [Notas da 1.1.0](releases/v1.1.0.md): mudanças, atualização e limites da versão.
 

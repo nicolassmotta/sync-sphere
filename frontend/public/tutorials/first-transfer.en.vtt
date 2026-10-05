@@ -1,0 +1,21 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:02.600
+On Home, choose Try without accounts.
+The demonstration does not access music accounts.
+
+00:00:02.600 --> 00:00:05.900
+Review My first playlist.
+It contains three occurrences, including an intentional repeat.
+
+00:00:05.900 --> 00:00:08.400
+Choose Review and transfer.
+Read the summary and confirm Transfer 1 playlist.
+
+00:00:08.400 --> 00:00:11.500
+The result confirms three tracks added.
+The repeat is preserved in the output file.
+
+00:00:11.500 --> 00:00:14.700
+Open History and the details.
+Download the playlist or CSV and JSON reports.

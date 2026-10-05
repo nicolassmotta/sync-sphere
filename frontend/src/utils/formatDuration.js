@@ -1,9 +1,11 @@
+import { currentLocale } from '../i18n';
+import { translate as text } from '../i18n/index';
 /**
  * Formata segundos como tempo aproximado: "menos de 1 min", "~4 min", "~1 h 12 min".
  */
 export const formatEta = (seconds) => {
     if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return null;
-    if (seconds < 60) return 'menos de 1 min';
+    if (seconds < 60) return text("menos de 1 min");
 
     const totalMinutes = Math.round(seconds / 60);
     if (totalMinutes < 60) return `~${totalMinutes} min`;
@@ -30,6 +32,6 @@ export const formatCountdown = (targetDate, now = Date.now()) => {
 
 export const formatTime = (date) => (
     date
-        ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(date))
+        ? new Intl.DateTimeFormat(currentLocale(), { hour: '2-digit', minute: '2-digit' }).format(new Date(date))
         : null
 );

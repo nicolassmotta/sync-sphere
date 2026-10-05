@@ -1,3 +1,4 @@
+import { useText } from '../i18n/useText';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -15,6 +16,7 @@ const DEFAULT_STATUS = {
  * capacidades e conexão) e `integrations` (mapa por id).
  */
 export const useIntegrationStatus = () => {
+    const { t } = useText();
     const [status, setStatus] = useState(DEFAULT_STATUS);
     const [loading, setLoading] = useState(false);
     const inFlightPromiseRef = useRef(null);
@@ -45,7 +47,7 @@ export const useIntegrationStatus = () => {
                 lastSuccessAtRef.current = Date.now();
                 return nextStatus.integrations;
             } catch (err) {
-                toast.error(err.response?.data?.message || 'Não foi possível carregar o status das integrações locais.');
+                toast.error(err.response?.data?.message || t("Não foi possível carregar o status das integrações locais."));
                 throw err;
             } finally {
                 setLoading(false);
@@ -58,7 +60,7 @@ export const useIntegrationStatus = () => {
         } catch {
             return statusRef.current.integrations;
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         refreshIntegrations({ force: true });

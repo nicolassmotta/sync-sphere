@@ -4,6 +4,44 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Auditoria de rotas e usabilidade
+
+- Rotas HTTP e Socket.io com testes de sucesso, erros, cotas e recuperação; 43 pares de provedores exercitados com respostas simuladas.
+- Mensagens de erro sem corpos, consultas ou pilhas; erros remotos classificados com orientação e preservação de Retry-After.
+- JSON essencial de formato incompatível recusado sem substituir seus bytes; correspondências com pontuação inválida recusadas.
+- Reconexão retoma apenas transferências relacionadas à plataforma; retry anterior à leitura informa reinício.
+- Histórico distingue indisponibilidade de coleção vazia, oferece recuperação e usa cartões em tela pequena.
+- Navegação preservada na URL, progresso informa reconexão do socket, revisão orienta músicas não encontradas e links executáveis são descartados.
+- Formulário de Client ID aceita Enter, navegação permanece acessível no celular e ajustes de contraste/foco melhoram leitura e teclado.
+
+
+
+### Idiomas em preparação
+
+- Interface PT/EN com preferência local, datas localizadas e mensagens de progresso nos dois idiomas.
+- API com negociação de idioma e relatórios localizados, preservando metadados e estados técnicos.
+- README principal em inglês, apresentação em português preservada e guias iniciais nos dois idiomas.
+- Legendas em inglês para a demonstração gravada em português.
+
+### Primeira experiência e suporte
+
+- Fluxo guiado de migração com escolha de origem/destino, conexões, seleção, confirmação e resultado.
+- Demonstração integrada com dados fictícios, sem precisar localizar um arquivo ou conectar contas.
+- Assistentes de conexão e configuração local de Client IDs de Spotify/TIDAL pelo painel; escritas sem confirmação real identificadas como experimentais.
+- Relatórios CSV/JSON por transferência, orientação por sintoma e diagnóstico revisável sem credenciais, logs ou dados de playlists.
+- Backup cifrado por senha e restauração offline com confirmação, bloqueio exclusivo e diário de rollback.
+- Iniciador local e geração de pacotes portáteis com Node.js incluído, sem publicar a versão em preparação.
+- Melhorias de foco, teclado, legibilidade, navegação, confirmações e fonte servida localmente.
+- Guia visual da primeira migração, documentação de distribuição/backup e roteiro de conferência com pessoas.
+
+### Integridade e recuperação
+
+- Dados essenciais ilegíveis agora interrompem leitura e inicialização, preservando arquivos e chave local. Prontidão retorna 503 ao detectar falha de armazenamento.
+- Retry recupera inserções pendentes sem repetir buscas, perder revisão manual ou criar outra playlist persistida. Histórico e ação geral incluem essas pendências.
+- Falhas temporárias de job publicam pausa com o horário persistido pela fila; falha terminal só ocorre quando definitiva ou após esgotar tentativas.
+- Snapshots cortados por limite são recusados antes de criar o destino, com total e omissões preservados e orientação para dividir a playlist.
+- Cache de correspondências usa índice compartilhado em memória e checkpoints cifrados, preservando validade, limite e isolamento entre destinos.
+
 ### Documentação e apresentação
 
 - README reorganizado com apresentação visual, instalação rápida, demonstração sem contas e navegação dos guias públicos.

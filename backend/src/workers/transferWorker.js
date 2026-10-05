@@ -22,6 +22,17 @@ export const startWorker = (io) => {
 
     registerTransferProcessor({
         process: (job) => transferProcessor.process(job),
+        onRetry: async (job, error) => {
+            const record = await repository.getTransferForProcessing(job.data.transferId);
+            await repository.update(record, {
+                status: 'paused',
+                pauseReason: 'retry_scheduled',
+                resumeAt: job.runAfter,
+                etaSeconds: null,
+                lastMessage: `Falha temporária: ${error.message} Nova tentativa automática programada.`,
+            });
+            transferProcessor.publish(job.data.transferId, record);
+        },
         onFailed: async (job, err) => {
             logger.info(`[Trabalhador com falha] Job ${job?.id} falhou. Erro: ${err.message}`);
 
@@ -29,8 +40,10 @@ export const startWorker = (io) => {
 
             try {
                 const transferRecord = await repository.getTransferForProcessing(job.data.transferId);
-                if (transferRecord.status === 'pending' || transferRecord.status === 'processing') {
+                if (transferRecord.status !== 'completed') {
+                    await repository.update(transferRecord, { phase: 'done', resumeAt: null, pauseReason: null, etaSeconds: null });
                     await repository.markFailed(transferRecord, err.message);
+                    transferProcessor.publish(job.data.transferId, transferRecord);
                 }
             } catch (syncError) {
                 logger.warn(`[Trabalhador com falha] Não foi possível sincronizar falha do job ${job?.id}: ${syncError.message}`);

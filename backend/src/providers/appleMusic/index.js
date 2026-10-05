@@ -43,7 +43,7 @@ const parsePlaylistRef = (playlistId) => {
 const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => {
     const ref = parsePlaylistRef(playlistId);
     const isLibrary = ref.id.startsWith('p.');
-    const { playlist, songs } = isLibrary
+    const { playlist, songs, truncated = false } = isLibrary
         ? await getLibraryPlaylist({ playlistId: ref.id, limit })
         : await getCatalogPlaylist({ storefront: ref.storefront, playlistId: ref.id, limit });
     const attributes = playlist?.attributes || {};
@@ -54,8 +54,10 @@ const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => 
         name: attributes.name || 'Playlist Apple Music',
         description: attributes.description?.standard || attributes.description?.short || '',
         imageUrl: attributes.artwork?.url?.replace('{w}', '600').replace('{h}', '600') || null,
-        totalTracks: attributes.trackCount ?? tracks.length,
+        totalTracks: attributes.trackCount ?? (truncated ? null : tracks.length),
         tracks,
+        truncated,
+        omittedTracks: truncated && Number.isFinite(attributes.trackCount) ? Math.max(0, attributes.trackCount - songs.length) : (truncated ? null : 0),
     };
 };
 

@@ -113,3 +113,17 @@ Configure a origem exata exibida pelo Vite. Reinicie o backend após alterar COR
 `JWT_SECRET` é opcional e pode fornecer a assinatura do estado OAuth. Se não estiver definida, o projeto gera `data/oauth-state.secret`. Isso não cria contas ou login no SyncSphere.
 
 Confira [Segurança](../SECURITY.md) antes de expor o servidor fora de uma máquina ou rede confiável.
+
+
+## Iniciador e conexões pelo painel
+
+- `npm run open` prepara o `.env` somente se estiver ausente e abre o navegador. `--no-browser` permite validação sem uma janela de navegador.
+- `HOST` define o endereço de escuta. O padrão é `127.0.0.1`, adequado à instalação de uma pessoa na própria máquina.
+- `DOTENV_CONFIG_PATH` seleciona um arquivo de ambiente diferente, útil para testes isolados. Não altera `DATA_DIR` automaticamente.
+- Client IDs salvos pelo assistente ficam cifrados em `provider-settings.json` e têm prioridade sobre `SPOTIFY_CLIENT_ID` e `TIDAL_CLIENT_ID` do `.env`.
+- `server.lock` registra o proprietário do diretório em uso. Uma segunda instância e a restauração simultânea são recusadas. Um bloqueio abandonado é recuperado somente se seu processo não estiver mais ativo.
+- `restore-journal.json` é um diário cifrado temporário de restauração. Não o remova durante uma recuperação.
+
+Veja [distribuição local](distribution.md) e [backup e restauração](backups.md).
+
+O painel não alterna automaticamente para outra porta em falhas de rede. Para desenvolver contra outra instalação, configure `VITE_API_URL` explicitamente. Pacotes portáteis são compilados com `/api/v1`, sem incorporar a URL de desenvolvimento da máquina que os gerou.

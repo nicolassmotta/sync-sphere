@@ -13,7 +13,7 @@ const resolveEncryptionKey = () => {
     const envKey = String(process.env.ENCRYPTION_KEY || '').trim();
     if (envKey) {
         const buffer = Buffer.from(envKey, 'hex');
-        if (buffer.length !== 32) {
+        if (!/^[a-f0-9]{64}$/i.test(envKey)) {
             throw new Error('ENCRYPTION_KEY deve ter exatamente 32 bytes / 64 caracteres hexadecimais.');
         }
         return buffer;
@@ -25,13 +25,14 @@ const resolveEncryptionKey = () => {
     if (fs.existsSync(keyPath)) {
         const stored = fs.readFileSync(keyPath, 'utf8').trim();
         const buffer = Buffer.from(stored, 'hex');
-        if (buffer.length === 32) {
+        if (/^[a-f0-9]{64}$/i.test(stored)) {
             return buffer;
         }
+        throw new Error('Chave local inválida. Confira DATA_DIR, ENCRYPTION_KEY e o backup. A chave existente foi preservada.');
     }
 
     const generated = crypto.randomBytes(32);
-    fs.writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600 });
+    fs.writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600, flag: 'wx' });
     return generated;
 };
 

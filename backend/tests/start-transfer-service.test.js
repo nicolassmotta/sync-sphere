@@ -1,3 +1,4 @@
+import { SpotifyPlaylistAccessError } from '../src/services/spotify/spotifyErrors.js';
 import { jest } from '@jest/globals';
 import { buildSpotifyServiceMock, buildYoutubeMusicServiceMock } from './helpers/serviceMocks.js';
 
@@ -80,7 +81,7 @@ describe('pré-validação Spotify em queuePlaylistTransfers', () => {
 
     it('não cria transferência nem tarefa quando o Spotify bloqueia as faixas', async () => {
         mockGetSpotifyPlaylistTracksPreview.mockRejectedValueOnce(
-            new Error('O Spotify não permitiu ler as faixas de "Lofi Girl". A API oficial só libera faixas de playlists criadas por você ou colaborativas.')
+            new SpotifyPlaylistAccessError('O Spotify não permitiu ler as faixas de "Lofi Girl". A API oficial só libera faixas de playlists criadas por você ou colaborativas.')
         );
 
         await expect(queuePlaylistTransfers({

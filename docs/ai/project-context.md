@@ -48,6 +48,7 @@ Mapa de arquivos:
 - `src/modules/integrations/`: `providerIntegrationController.js` (rotas genéricas `/integrations/:provider/...`) e utilitários de OAuth.
 - `src/models/`: acesso aos dados locais. `User.js` é o único usuário local (guarda tokens do Spotify); `Transfer.js` é o histórico. Ambos mantêm a API estilo Mongoose (`findById`, `find`, `insertMany`, `.save()`) sobre o storage local.
 - `src/storage/jsonStore.js`: leitura/escrita de arquivos JSON cifrados em `DATA_DIR`.
+- Leitura essencial só aceita fallback para arquivo ausente. Falhas bloqueiam gravação pelo leitor, interrompem o boot e retornam 503 em `/api/ready`. Chave local inválida nunca é substituída. Cache e estatísticas são tolerantes e não bloqueiam transferências.
 - Escritas no storage usam temporário exclusivo com permissão `0600`, `fsync` e `rename` no mesmo diretório para evitar truncar o estado anterior durante uma falha de processo.
 - `src/storage/credentialStore.js`: credenciais coladas no painel (ex.: cookie do YouTube Music) em `data/provider-credentials.json`.
 - `src/schemas/`: schemas Zod.
@@ -58,7 +59,7 @@ Mapa de arquivos:
 - `src/services/transfer/TransferProcessor.js`: orquestra a migração para qualquer par origem/destino a partir do registro de provedores.
 - `src/services/transfer/startTransferService.js`: caso de uso HTTP para criar transferências e enfileirar tarefas.
 - `src/services/transfer/TrackMatcher.js`: executa correspondência faixa a faixa.
-- `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache.
+- `src/services/matching/MatchCache.js`: correspondências confiáveis compartilhadas entre transferências, em `data/match-cache.json` cifrado. Validade de sete dias, limite de 5.000 entradas, isolamento por destino e contexto de catálogo. Não guarda falhas nem resultados abaixo da confiança mínima. Acertos pulam busca e atraso, sem alterar a média de latência externa. Destino Arquivo não usa cache. Índice compartilhado entre raias; persistência a cada cem mudanças, após um segundo ou no fim da busca. Interrupção pode perder até 99 entradas novas, sem afetar histórico/checkpoints.
 - `src/services/transfer/manualMatchService.js`: revisão manual de `not_found` e `failed` em transferências terminadas. Busca por título/artista ajustados, sem ISRC da origem; guarda proposta com UUID e validade de dez minutos. Confirmação aceita apenas o UUID persistido, marca a faixa como `matched`/`manual` e reenfileira para inserção. Bloqueia revisão concorrente ou com job existente. Rotas `POST /transfer/:transferId/tracks/:trackIndex/search` e `/confirm`, com validação Zod.
 - `src/services/transfer/reconcileTrackIds.js`: reconciliação por quantidade de ocorrências. `addTracks` recebe `ids` pendentes e `expectedIds` com todas as faixas resolvidas, incluindo já inseridas. Adaptadores devem consultar o destino antes de escrever, preservando repetições e pulando ocorrências já presentes. Arquivo reconstrói a lista esperada; destinos remotos acrescentam o que falta.
 - `src/services/transfer/ProgressPublisher.js`: publica eventos Socket.io por transferência.
@@ -71,6 +72,8 @@ Mapa de arquivos:
 - `src/errors/providerErrors.js`: `classifyProviderError` (`rate_limited`, `auth`, `transient`, `not_found`, `permanent`), `TransferPausedError` e `TransferNeedsAuthError`.
 - `src/services/transfer/TransferTrackStore.js`: estado por faixa em `data/transfer-tracks-<id>.json` (`pending`, `matched`, `not_found`, `retry_queued`, `failed`).
 - `src/services/transfer/TransferMetrics.js`: média móvel do tempo de busca/inserção, ETA e estatísticas por plataforma em `data/provider-stats.json`.
+- Retry inclui `matched` sem `inserted` e preserva IDs/revisão/playlist. `pendingInsertCount` alimenta Histórico e retry geral. A fila persiste backoff e o trabalhador publica `paused` com `resumeAt` do job; `failed` fica reservado à falha final.
+- Snapshots cortados (`truncated`) são recusados antes de busca/criação; `sourceTotalTracks`, `sourceOmittedTracks` e `sourceUnavailableTracks` preservam total, corte e indisponibilidade separadamente. Limites dos provedores permanecem os mesmos.
 - `src/services/transfer/transferQueueActions.js`: retry de pendências, retomada manual, retomada após reconectar e recuperação no boot.
 
 ### Front-end
@@ -115,7 +118,7 @@ Back-end `.env.example`:
 - `ENCRYPTION_KEY` opcional (64 caracteres hex; se ausente, gerada em `data/encryption.key`)
 - `DATA_DIR` opcional (padrão `backend/data`)
 
-A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1` quando o React é servido pelo back-end e tenta `http://localhost:8000/api/v1` quando roda no Vite. Mantém `http://localhost:4001/api/v1` apenas como fallback técnico para ambientes locais antigos.
+O cliente HTTP em `frontend/src/services/api.js` usa `/api/v1` no app servido pelo back-end e `http://localhost:8000/api/v1` no Vite. `VITE_API_URL` configura outra origem explicitamente. Falhas de rede não fazem o painel procurar outras instalações em portas diferentes; erro 401 de plataforma mantém a tela atual para reconexão.
 
 ## Padrões de Trabalho
 
@@ -145,3 +148,27 @@ A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1`
 - Progresso de transferência deve ser emitido em tempo real por Socket.io.
 - `withCredentials` deve ser mantido no Axios para o fluxo de OAuth do Spotify.
 - Integrações externas precisam prever rate limit, falhas parciais e logs de músicas não encontradas.
+
+
+## Primeira experiência e suporte
+
+- Início usa cinco etapas: Origem, Destino, Conexões, Playlists e Resultado. O par e a etapa são preservados na sessão do navegador; não persista credenciais no front.
+- Demonstração integrada usa `/system/demo` e o fluxo real Arquivo para Arquivo. Dados são fictícios e a repetição intencional aparece no resultado.
+- `provider-settings.json` é essencial e cifrado. Client IDs salvos pelo painel têm prioridade sobre o `.env`; a conta deve ser desconectada antes de alterar o identificador.
+- Escritas de Deezer, TIDAL, Apple Music e SoundCloud são marcadas experimentais até a conferência com contas reais. Não declare essa validação com base em mocks.
+- Suporte em `services/system/`: diagnóstico por lista permitida, backup cifrado por senha e restauração offline com bloqueio/journal de rollback. As rotas `/system` aceitam apenas loopback.
+- `scripts/start-local.mjs` inicia e abre o painel; não sobrescreve `.env` existente. `scripts/package-local.mjs` gera pacotes com Node.js oficial verificado por SHA-256 e somente dependências de produção. `artifacts/` e backups `.ssb` ficam ignorados.
+- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Interface PT/EN e guias iniciais em inglês disponíveis; referências técnicas e prompts de terminal permanecem em português.
+- Guias: `docs/primeira-migracao.md`, `docs/backups.md`, `docs/distribution.md` e `docs/usability-testing.md`.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](../localization.md) e [guias em inglês](../en/README.md).
+
+
+## Auditoria de falhas e navegação
+
+Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
+
+As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.

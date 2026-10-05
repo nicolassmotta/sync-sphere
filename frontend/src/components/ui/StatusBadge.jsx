@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { AlertTriangle, CheckCircle2, Clock, KeyRound, PauseCircle, XCircle } from 'lucide-react';
 import Badge from './Badge';
 
@@ -57,6 +58,7 @@ const StatusBadge = ({
     status,
     tone,
 }) => {
+    const { t } = useText();
     const preset = statusPresets[status] || statusPresets.pending;
 
     return (
@@ -66,7 +68,7 @@ const StatusBadge = ({
             size={size}
             tone={tone ?? preset.tone}
         >
-            {label ?? preset.label}
+            {t(label ?? preset.label)}
         </Badge>
     );
 };

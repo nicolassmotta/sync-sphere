@@ -15,6 +15,7 @@ export const getTransferCounts = (transfer) => ({
     notFound: transfer.notFoundCount || 0,
     retryQueued: transfer.retryQueuedCount || 0,
     failed: transfer.failedCount || 0,
+    pendingInserts: transfer.pendingInsertCount || 0,
 });
 
 export const getTransferProgress = (transfer) => {

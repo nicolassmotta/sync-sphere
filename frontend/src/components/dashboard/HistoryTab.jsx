@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { safeExternalUrl } from '../../utils/safeExternalUrl';
+import { currentLocale } from '../../i18n';
+import { useText } from '../../i18n/useText';
+import { translate as text } from '../../i18n/index';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     AlertTriangle,
     ArrowRightLeft,
@@ -10,6 +14,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { downloadFile, getDownloadError } from '../../utils/downloadFile';
 import api, { resolveApiUrl } from '../../services/api';
 import { FILE_EXPORT_FORMATS, getProviderLabel, getTransferProviders } from '../../constants/providers';
 import { cn } from '../../utils/cn';
@@ -24,8 +29,8 @@ import TextField from '../ui/TextField';
 import ManualTrackReview from './ManualTrackReview';
 
 const formatDate = (date) => {
-    if (!date) return '-';
-    return new Intl.DateTimeFormat('pt-BR', {
+    if (!date || !Number.isFinite(new Date(date).getTime())) return text("Data indisponível");
+    return new Intl.DateTimeFormat(currentLocale(), {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
@@ -38,28 +43,33 @@ const getDirectionLabel = (item) => {
     return `${getProviderLabel(sourceProvider)} -> ${getProviderLabel(targetProvider)}`;
 };
 
-const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0);
+const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0) + (item.pendingInsertCount || 0);
+
+const getInsertedCount = (item) => Math.max(0, (item.matchedCount ?? item.processedTracks ?? 0) - (item.pendingInsertCount || 0));
 
 const getStatusLabel = (item) => {
-    if (item.status === 'completed' && getPendingCount(item)) return 'Concluída com pendências';
-    if (item.status === 'completed') return 'Concluída';
-    if (item.status === 'failed') return 'Precisa de atenção';
+    if (item.status === 'completed' && getPendingCount(item)) return text("Concluída com pendências");
+    if (item.status === 'completed' && item.notFoundCount > 0) return text("Concluída com músicas não encontradas");
+    if (item.status === 'completed') return text("Concluída");
+    if (item.status === 'failed') return text("Precisa de atenção");
     if (item.status === 'paused') return 'Pausada';
-    if (item.status === 'needs_auth') return 'Aguardando reconexão';
-    if (item.status === 'pending') return 'Na fila';
-    return 'Em andamento';
+    if (item.status === 'needs_auth') return text("Aguardando reconexão");
+    if (item.status === 'pending') return text("Na fila");
+    return text("Em andamento");
 };
 
-const TransferStatusBadge = ({ item }) => (
-    item.status === 'completed' && getPendingCount(item)
-        ? <StatusBadge status="completed" label="Com pendências" tone="warning" />
-        : <StatusBadge status={item.status} />
-);
+const TransferStatusBadge = ({ item }) => {
+    const { t } = useText();
+    return item.status === 'completed' && (getPendingCount(item) || item.notFoundCount > 0)
+        ? <StatusBadge status="completed" label={t("Revisar resultado")} tone="warning" />
+        : <StatusBadge status={item.status} />;
+};
 
-const canRetry = (item) => item.status !== 'processing' && (getPendingCount(item) > 0 || item.status === 'failed');
+const canRetry = (item) => !item.sourceTruncated && ['failed', 'completed'].includes(item.status) && (getPendingCount(item) > 0
+    || (item.status === 'failed' && item.matchedCount == null && item.analyzedCount == null));
 
 const DETAIL_TABS = [
-    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued'] },
+    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued', 'matched'] },
     { id: 'not_found', label: 'Não encontradas', statuses: ['not_found'] },
 ];
 
@@ -69,39 +79,52 @@ const legacyTracks = (item) => (item.errors || []).map((error, index) => ({
     name: error.trackName,
     artist: error.artistName,
     lastError: error.reason,
-    status: error.status || (error.reason?.includes('Nenhum resultado') ? 'not_found' : 'failed'),
+    status: error.status || (error.reason?.includes(text("Nenhum resultado")) ? 'not_found' : 'failed'),
 }));
 
 const TransferDetails = ({ item, onQueued }) => {
+    const { t } = useText();
     const [tracks, setTracks] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
     const [reviewing, setReviewing] = useState(null);
     const [hasTrackStore, setHasTrackStore] = useState(false);
+    const [downloading, setDownloading] = useState(null);
+    const [trackError, setTrackError] = useState('');
+    const [trackAttempt, setTrackAttempt] = useState(0);
+    const downloadReport = async (format) => {
+        setDownloading(format);
+        try {
+            const response = await api.get(`/transfer/${item._id}/report`, { params: { format }, responseType: 'blob' });
+            downloadFile(response.data, `syncsphere-relatorio.${format}`);
+        } catch (error) { toast.error(await getDownloadError(error, t("Não foi possível baixar o relatório."))); }
+        finally { setDownloading(null); }
+    };
 
     useEffect(() => {
         let cancelled = false;
         setTracks(null);
         setReviewing(null);
         setHasTrackStore(false);
+        setTrackError('');
 
-        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found' } })
+        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found,matched' } })
             .then((response) => {
                 if (cancelled) return;
                 const loaded = response.data.data.tracks || [];
                 setHasTrackStore(Boolean(response.data.data.counts?.total));
                 setTracks(loaded.length || response.data.data.counts?.total ? loaded : legacyTracks(item));
             })
-            .catch(() => {
-                if (!cancelled) setTracks(legacyTracks(item));
+            .catch((error) => {
+                if (!cancelled) setTrackError(error.response?.data?.message || t("Não foi possível carregar as faixas deste relatório."));
             });
 
         return () => {
             cancelled = true;
         };
-    }, [item]);
+    }, [item, trackAttempt, t]);
 
     const tab = DETAIL_TABS.find((candidate) => candidate.id === activeTab);
-    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status));
+    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted));
     const canReview = hasTrackStore && ['completed', 'failed'].includes(item.status)
         && getTransferProviders(item).targetProvider !== 'file';
 
@@ -114,42 +137,58 @@ const TransferDetails = ({ item, onQueued }) => {
     return (
         <div className="space-y-4 text-sm leading-relaxed text-gray-300">
             <div className="rounded-lg border border-white/10 bg-black/60 p-4">
-                <div className="mb-2 text-spotify">Situação: {getStatusLabel(item)}</div>
-                <div className="mb-2">Resumo: {item.lastMessage || 'Nenhuma observação registrada.'}</div>
+                <div className="mb-2 text-spotify">{t("Situação: ")}{getStatusLabel(item)}</div>
+                <div className="mb-2">{t("Resumo: ")}{t(item.lastMessage) || t("Nenhuma observação registrada.")}</div>
                 {item.status === 'paused' && item.resumeAt && (
-                    <div className="mb-2 text-yellow-300">Retomada automática às {formatTime(item.resumeAt)}.</div>
+                    <div className="mb-2 text-yellow-300">{t("Retomada automática às ")}{formatTime(item.resumeAt)}.</div>
                 )}
                 {item.targetPlaylistUrl && getTransferProviders(item).targetProvider !== 'file' && (
-                    <div className="mb-2 text-spotify">Playlist criada: {item.targetPlaylistUrl}</div>
+                    <div className="mb-2 text-spotify">{t("Playlist criada: ")}{item.targetPlaylistUrl}</div>
                 )}
                 {item.targetPlaylistId && getTransferProviders(item).targetProvider === 'file' && (
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="text-spotify">Baixar arquivo:</span>
+                        <span className="text-spotify">{t("Baixar arquivo:")}</span>
                         {FILE_EXPORT_FORMATS.map(({ format, label }) => (
                             <a
                                 key={format}
                                 href={resolveApiUrl(`/api/v1/integrations/file/exports/${item.targetPlaylistId}/download?format=${format}`)}
                                 className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-extrabold text-white hover:bg-white/15"
                             >
-                                {label}
+                                {t(label)}
                             </a>
                         ))}
                     </div>
                 )}
                 {item.targetPlaylistDescription && (
-                    <div>Descrição: {item.targetPlaylistDescription}</div>
+                    <div>{t("Descrição: ")}{item.targetPlaylistDescription}</div>
                 )}
             </div>
 
-            <div className="flex gap-2" role="tablist">
+            <div className="flex flex-wrap gap-2">
+                <Button size="sm" loading={downloading === 'csv'} disabled={Boolean(downloading)} onClick={() => downloadReport('csv')}>{t("Baixar relatório CSV")}</Button>
+                <Button size="sm" loading={downloading === 'json'} disabled={Boolean(downloading)} onClick={() => downloadReport('json')}>{t("Baixar relatório JSON")}</Button>
+            </div>
+            <div className="flex gap-2" role="tablist" aria-label={t("Situação das músicas")}>
                 {DETAIL_TABS.map((candidate) => {
-                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status)).length;
+                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted)).length;
                     return (
                         <button
                             key={candidate.id}
                             type="button"
                             role="tab"
+                            id={`track-tab-${candidate.id}`}
+                            aria-controls="track-details-panel"
                             aria-selected={activeTab === candidate.id}
+                            tabIndex={activeTab === candidate.id ? 0 : -1}
+                            onKeyDown={(event) => {
+                                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                                event.preventDefault();
+                                const current = DETAIL_TABS.findIndex((entry) => entry.id === candidate.id);
+                                const next = event.key === 'Home' ? 0 : event.key === 'End' ? DETAIL_TABS.length - 1
+                                    : (current + (event.key === 'ArrowRight' ? 1 : -1) + DETAIL_TABS.length) % DETAIL_TABS.length;
+                                setActiveTab(DETAIL_TABS[next].id);
+                                document.getElementById(`track-tab-${DETAIL_TABS[next].id}`)?.focus();
+                            }}
                             onClick={() => setActiveTab(candidate.id)}
                             className={cn(
                                 'rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors',
@@ -158,17 +197,21 @@ const TransferDetails = ({ item, onQueued }) => {
                                     : 'border-white/10 bg-white/[0.04] text-white/60 hover:text-white'
                             )}
                         >
-                            {candidate.label} ({count})
+                            {t(candidate.label)} ({count})
                         </button>
                     );
                 })}
             </div>
 
-            <div className="h-64 overflow-y-auto rounded-lg border border-white/10 bg-black/60 p-3">
-                {tracks === null && <LoadingState label="Carregando faixas..." />}
+            <div id="track-details-panel" role="tabpanel" aria-labelledby={`track-tab-${activeTab}`} className="h-64 overflow-y-auto rounded-lg border border-white/10 bg-black/60 p-3">
+                {trackError && <div role="alert" className="rounded-lg border border-red-400/30 bg-red-400/10 p-4">
+                    <p>{t(trackError)}</p>
+                    <Button className="mt-3" size="sm" variant="secondary" onClick={() => setTrackAttempt((attempt) => attempt + 1)}>{t("Tentar carregar as faixas novamente")}</Button>
+                </div>}
+                {tracks === null && !trackError && <LoadingState label={t("Carregando faixas...")} />}
                 {tracks !== null && visibleTracks.length === 0 && (
-                    <p className="p-2 text-gray-500">
-                        {activeTab === 'pending' ? 'Nenhuma faixa pendente.' : 'Todas as faixas foram encontradas.'}
+                    <p className="p-2 text-gray-400">
+                        {activeTab === 'pending' ? t("Nenhuma faixa pendente.") : t("Todas as faixas foram encontradas.")}
                     </p>
                 )}
                 {visibleTracks.map((track) => (
@@ -178,45 +221,50 @@ const TransferDetails = ({ item, onQueued }) => {
                             : <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />}
                         <div className="min-w-0 flex-1">
                             <p className="truncate font-bold text-white">{track.name} - {track.artist}</p>
-                            <p className="text-xs text-muted">{track.lastError}</p>
+                            <p className="text-xs text-muted">{track.status === 'matched' ? t("Correspondência preservada. Aguardando inserção no destino.") : t(track.lastError)}</p>
                         </div>
                         {canReview && ['not_found', 'failed'].includes(track.status) && !track.inserted && (
-                            <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>
-                                Escolher alternativa
-                            </Button>
+                            <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>{t("Escolher alternativa")}</Button>
                         )}
                     </div>
                 ))}
             </div>
             {activeTab === 'pending' && visibleTracks.length > 0 && (
-                <p className="text-xs text-muted">
-                    Faixas repetidas com sucesso entram no fim da playlist já criada.
-                </p>
+                <p className="text-xs text-muted">{t("Faixas repetidas com sucesso entram no fim da playlist já criada.")}</p>
             )}
         </div>
     );
 };
 
 const HistoryTab = ({ onTransfersQueued }) => {
+    const { t } = useText();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLog, setSelectedLog] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [retrying, setRetrying] = useState(null);
+    const [historyError, setHistoryError] = useState('');
+    const requestRef = useRef(null);
 
     const fetchHistory = useCallback(async () => {
+        requestRef.current?.abort();
+        const controller = new AbortController();
+        requestRef.current = controller;
+        setLoading(true);
+        setHistoryError('');
         try {
-            const response = await api.get('/transfer');
-            setHistory(response.data.data.transfers);
+            const response = await api.get('/transfer', { signal: controller.signal });
+            if (!controller.signal.aborted) setHistory(response.data.data.transfers);
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Não foi possível carregar o histórico.');
+            if (!controller.signal.aborted) setHistoryError(err.response?.data?.message || t("Não foi possível carregar o histórico."));
         } finally {
-            setLoading(false);
+            if (!controller.signal.aborted) setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         fetchHistory();
+        return () => requestRef.current?.abort();
     }, [fetchHistory]);
 
     const retryTransfer = useCallback(async (item) => {
@@ -228,11 +276,11 @@ const HistoryTab = ({ onTransfersQueued }) => {
             setSelectedLog(null);
             await fetchHistory();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Não foi possível tentar de novo.');
+            toast.error(err.response?.data?.message || t("Não foi possível tentar de novo."));
         } finally {
             setRetrying(null);
         }
-    }, [fetchHistory, onTransfersQueued]);
+    }, [fetchHistory, onTransfersQueued, t]);
 
     const retryAll = useCallback(async () => {
         setRetrying('all');
@@ -243,11 +291,11 @@ const HistoryTab = ({ onTransfersQueued }) => {
             if (response.data.data.requeuedTransfers) onTransfersQueued?.(pendingIds);
             await fetchHistory();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Não foi possível tentar de novo.');
+            toast.error(err.response?.data?.message || t("Não foi possível tentar de novo."));
         } finally {
             setRetrying(null);
         }
-    }, [fetchHistory, history, onTransfersQueued]);
+    }, [fetchHistory, history, onTransfersQueued, t]);
 
     const handleReviewQueued = (response) => {
         toast.success(response.message);
@@ -259,64 +307,87 @@ const HistoryTab = ({ onTransfersQueued }) => {
     const filteredHistory = history.filter(item =>
         item.playlistName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    const totalPending = history.reduce((sum, item) => sum + getPendingCount(item), 0);
-    const playlistsWithPending = history.filter((item) => getPendingCount(item) > 0).length;
+    const retryableHistory = history.filter(canRetry);
+    const totalPending = retryableHistory.reduce((sum, item) => sum + getPendingCount(item), 0);
+    const playlistsWithPending = retryableHistory.filter((item) => getPendingCount(item) > 0).length;
 
     return (
         <FadeInPage className="w-full max-w-6xl mx-auto">
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
-                        <History className="text-spotify" /> Histórico de migrações
-                    </h2>
-                    <p className="text-muted">Veja o que já foi migrado e quais músicas precisam de atenção.</p>
+                    <h1 className="mb-2 flex items-center gap-3 text-4xl font-black text-white">
+                        <History className="text-spotify" aria-hidden="true" />{t(" Histórico de migrações")}</h1>
+                    <p className="text-muted">{t("Veja o que já foi migrado e quais músicas precisam de atenção.")}</p>
                 </div>
 
                 <div className="w-full md:w-72">
                     <TextField
-                        aria-label="Buscar playlist"
+                        aria-label={t("Buscar playlist")}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        leadingIcon={<Search size={18} className="text-gray-500" />}
-                        placeholder="Buscar playlist..."
+                        leadingIcon={<Search size={18} className="text-gray-400" />}
+                        placeholder={t("Buscar playlist...")}
                     />
                 </div>
             </div>
 
-            {totalPending > 0 && (
+            {retryableHistory.length > 0 && !historyError && (
                 <div className="mb-6 flex flex-col gap-4 rounded-lg border border-sky-400/20 bg-sky-400/10 p-5 md:flex-row md:items-center md:justify-between">
                     <div>
                         <p className="flex items-center gap-2 text-base font-extrabold text-white">
                             <RotateCw size={18} className="text-sky-300" />
-                            {totalPending} {totalPending === 1 ? 'faixa pendente' : 'faixas pendentes'} em {playlistsWithPending} {playlistsWithPending === 1 ? 'playlist' : 'playlists'}
+                            {totalPending > 0 ? <>{totalPending} {totalPending === 1 ? t("faixa pendente") : t("faixas pendentes")}{t(" em ")}{playlistsWithPending} {playlistsWithPending === 1 ? 'playlist' : 'playlists'}</> : (retryableHistory.length === 1 ? t("1 playlist pode ser tentada novamente.") : t("{{value0}} playlists podem ser tentadas novamente.", { value0: retryableHistory.length }))}
                         </p>
-                        <p className="mt-1 text-sm text-white/65">
-                            São faixas que falharam por bloqueio, token expirado ou erro temporário. Nada foi perdido: dá para tentar de novo.
-                        </p>
+                        <p className="mt-1 text-sm text-white/65">{t("Inclui falhas de busca e faixas encontradas que ainda aguardam inserção. Tentar de novo preserva as correspondências já resolvidas.")}</p>
                     </div>
                     <Button
                         variant="secondary"
                         leftIcon={<RotateCw size={15} />}
                         onClick={retryAll}
                         loading={retrying === 'all'}
-                        loadingLabel="Reenfileirando..."
-                    >
-                        Tentar todas
-                    </Button>
+                        loadingLabel={t("Reenfileirando...")}
+                    >{t("Tentar todas")}</Button>
                 </div>
             )}
 
-            <div className="elevated-card overflow-hidden">
+            {historyError && <div role="alert" className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 p-5">
+                <p className="font-semibold text-white">{t(historyError)}</p>
+                <p className="mt-2 text-sm text-muted">{t("Confira se o aplicativo continua aberto e tente carregar novamente. Seus registros não foram apagados.")}</p>
+                <Button className="mt-4" variant="secondary" onClick={fetchHistory}>{t("Tentar novamente")}</Button>
+            </div>}
+
+            {!historyError && <div className="mb-6 space-y-4 md:hidden">
+                {loading ? <LoadingState label={t("Carregando histórico...")} /> : filteredHistory.map((item) => (
+                    <article key={item._id} className="elevated-card min-w-0 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <h2 className="min-w-0 flex-1 break-words text-lg font-bold text-white">{item.playlistName}</h2>
+                            <TransferStatusBadge item={item} />
+                        </div>
+                        <p className="mt-2 text-sm text-muted">{getDirectionLabel(item)}</p>
+                        <dl className="my-4 grid grid-cols-2 gap-4 text-sm">
+                            <div><dt className="text-muted">{t("Adicionadas")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-green-300">{getInsertedCount(item)}</dd></div>
+                            <div><dt className="text-muted">{t("Total")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-white">{item.totalTracks}</dd></div>
+                            <div><dt className="text-muted">{t("Pendentes")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-sky-300">{getPendingCount(item)}</dd></div>
+                            <div><dt className="text-muted">{t("Não encontradas")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-amber-200">{item.notFoundCount || 0}</dd></div>
+                        </dl>
+                        <p className="mb-4 text-xs text-muted">{formatDate(item.createdAt)}</p>
+                        <Button fullWidth variant="secondary" onClick={() => setSelectedLog(item)} aria-label={t("Ver detalhes de {{value0}}", { value0: item.playlistName })}>{t("Ver detalhes")}</Button>
+                    </article>
+                ))}
+                {!loading && filteredHistory.length === 0 && <EmptyState title={t("Nenhuma migração listada.")} description={searchTerm ? t("Tente outro termo de busca.") : t("As próximas transferências aparecerão aqui.")} />}
+            </div>}
+
+            {!historyError && <div className="elevated-card hidden overflow-hidden md:block">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-white/10 bg-white/5">
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Playlist</th>
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Direção</th>
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Status</th>
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Músicas <span className="text-[10px] lowercase text-gray-500">(migradas / total / pendentes)</span></th>
-                                <th className="p-5 text-xs font-bold uppercase text-white/45">Data</th>
-                                <th className="p-5 text-right text-xs font-bold uppercase text-white/45">Ação</th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Playlist")}</th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Direção")}</th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Status")}</th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Músicas ")}<span className="text-[10px] lowercase text-gray-400">{t("(migradas / total / pendentes)")}</span></th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Data")}</th>
+                                <th className="p-5 text-right text-xs font-bold uppercase text-gray-300">{t("Ação")}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -324,8 +395,8 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                 <tr>
                                     <td colSpan="6" className="p-6">
                                         <LoadingState
-                                            label="Carregando histórico..."
-                                            description="Buscando suas migrações recentes."
+                                            label={t("Carregando histórico...")}
+                                            description={t("Buscando suas migrações recentes.")}
                                         />
                                     </td>
                                 </tr>
@@ -336,7 +407,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                         <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-colors group-hover:border-spotify/50">
                                             <ListVideo size={18} className="text-gray-300" />
                                         </div>
-                                        {item.playlistName}
+                                        <span className="min-w-0 max-w-xs break-words">{item.playlistName}</span>
                                     </td>
                                     <td className="p-5">
                                         <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-extrabold text-white/65">
@@ -346,11 +417,11 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                     </td>
                                     <td className="p-5"><TransferStatusBadge item={item} /></td>
                                     <td className="p-5 font-medium text-gray-300">
-                                        <span className="text-green-400">{item.matchedCount ?? item.processedTracks ?? 0}</span>
-                                        <span className="px-1 text-gray-600">/</span>
+                                        <span className="tabular-nums text-green-300">{getInsertedCount(item)}</span>
+                                        <span className="px-1 text-gray-400">/</span>
                                         {item.totalTracks}
-                                        <span className="px-1 text-gray-600">/</span>
-                                        <span className={getPendingCount(item) ? 'text-sky-300' : 'text-gray-500'}>{getPendingCount(item)}</span>
+                                        <span className="px-1 text-gray-400">/</span>
+                                        <span className={getPendingCount(item) ? 'text-sky-300' : 'text-gray-400'}>{getPendingCount(item)}</span>
                                     </td>
                                     <td className="p-5 font-medium text-gray-400 text-sm">{formatDate(item.createdAt)}</td>
                                     <td className="p-5 text-right">
@@ -359,9 +430,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                             variant="secondary"
                                             size="sm"
                                             rightIcon={<ExternalLink size={14} />}
-                                        >
-                                            Ver detalhes
-                                        </Button>
+                                        >{t("Ver detalhes")}</Button>
                                     </td>
                                 </tr>
                             ))}
@@ -370,8 +439,8 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                     <td colSpan="6" className="p-6">
                                         <EmptyState
                                             icon={<ListVideo size={20} />}
-                                            title="Nenhuma migração listada."
-                                            description={searchTerm ? 'Tente outro termo de busca.' : 'As próximas transferências aparecerão aqui.'}
+                                            title={t("Nenhuma migração listada.")}
+                                            description={searchTerm ? t("Tente outro termo de busca.") : t("As próximas transferências aparecerão aqui.")}
                                         />
                                     </td>
                                 </tr>
@@ -379,13 +448,13 @@ const HistoryTab = ({ onTransfersQueued }) => {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div>}
 
             <Modal
                 isOpen={Boolean(selectedLog)}
                 onClose={() => setSelectedLog(null)}
-                title={selectedLog ? `Relatório: ${selectedLog.playlistName}` : ''}
-                description={selectedLog ? `${selectedLog.matchedCount ?? selectedLog.processedTracks ?? 0}/${selectedLog.totalTracks} faixas migradas - ${formatDate(selectedLog.updatedAt)}` : ''}
+                title={selectedLog ? t("Relatório: {{value0}}", { value0: selectedLog.playlistName }) : ''}
+                description={selectedLog ? t("{{value0}}/{{value1}} faixas migradas - {{value2}}", { value0: getInsertedCount(selectedLog), value1: selectedLog.totalTracks, value2: formatDate(selectedLog.updatedAt) }) : ''}
                 footer={selectedLog && (
                     <>
                         {canRetry(selectedLog) && (
@@ -394,24 +463,18 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                 leftIcon={<RotateCw size={15} />}
                                 onClick={() => retryTransfer(selectedLog)}
                                 loading={retrying === selectedLog._id}
-                                loadingLabel="Reenfileirando..."
-                            >
-                                Tentar de novo
-                            </Button>
+                                loadingLabel={t("Reenfileirando...")}
+                            >{t("Tentar de novo")}</Button>
                         )}
-                        {selectedLog.targetPlaylistUrl && (
+                        {safeExternalUrl(resolveApiUrl(selectedLog.targetPlaylistUrl)) && (
                             <a
-                                href={resolveApiUrl(selectedLog.targetPlaylistUrl)}
+                                href={safeExternalUrl(resolveApiUrl(selectedLog.targetPlaylistUrl))}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-spotify px-4 py-3 text-sm font-extrabold text-black transition-all hover:bg-spotify/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground"
-                            >
-                                Abrir playlist
-                            </a>
+                            >{t("Abrir playlist")}</a>
                         )}
-                        <Button onClick={() => setSelectedLog(null)} variant="inverse">
-                            Fechar
-                        </Button>
+                        <Button onClick={() => setSelectedLog(null)} variant="inverse">{t("Fechar")}</Button>
                     </>
                 )}
             >

@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -19,30 +20,36 @@ const Modal = ({
     size = 'md',
     title,
 }) => {
+    const { t } = useText();
     const titleId = useId();
     const descriptionId = useId();
     const closeButtonRef = useRef(null);
     const dialogRef = useRef(null);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
     useEffect(() => {
         if (!isOpen) return undefined;
 
         const previousActiveElement = document.activeElement;
         const previousOverflow = document.body.style.overflow;
+        const root = document.getElementById('root');
+        const previousInert = root?.inert;
+        if (root) root.inert = true;
         document.body.style.overflow = 'hidden';
         closeButtonRef.current?.focus();
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                onClose?.();
+                onCloseRef.current?.();
                 return;
             }
 
             if (event.key !== 'Tab' || !dialogRef.current) return;
 
-            const focusableElements = dialogRef.current.querySelectorAll(
+            const focusableElements = [...dialogRef.current.querySelectorAll(
                 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            );
+            )].filter((element) => element.getClientRects().length > 0);
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -65,9 +72,10 @@ const Modal = ({
         return () => {
             document.body.style.overflow = previousOverflow;
             document.removeEventListener('keydown', handleKeyDown);
-            previousActiveElement?.focus?.();
+            if (root) root.inert = previousInert;
+            if (previousActiveElement?.isConnected) previousActiveElement.focus?.();
         };
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -93,7 +101,7 @@ const Modal = ({
                 <button
                     ref={closeButtonRef}
                     type="button"
-                    aria-label="Fechar"
+                    aria-label={t("Fechar")}
                     onClick={onClose}
                     className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-muted transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify"
                 >
@@ -102,8 +110,8 @@ const Modal = ({
 
                 {(title || description) && (
                     <div className="mb-6 shrink-0 pr-10">
-                        {title && <h2 id={titleId} className="text-2xl font-bold text-white">{title}</h2>}
-                        {description && <p id={descriptionId} className="mt-2 text-sm leading-6 text-muted">{description}</p>}
+                        {title && <h2 id={titleId} className="text-2xl font-bold text-white">{t(title)}</h2>}
+                        {description && <p id={descriptionId} className="mt-2 text-sm leading-6 text-muted">{t(description)}</p>}
                     </div>
                 )}
 

@@ -1,5 +1,7 @@
 # Segurança
 
+[English security guide](docs/en/security.md)
+
 O SyncSphere guarda credenciais de plataformas em arquivos cifrados. Os arquivos em `backend/data/`, o `.env` e a chave de criptografia pertencem à instalação local e devem ser protegidos junto com seus backups.
 
 O aplicativo não possui autenticação própria. Execute-o em uma máquina e rede confiáveis. Exposição na internet exige proteção de acesso externa e configuração adequada de origem, CORS e transporte.

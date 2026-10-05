@@ -1,3 +1,4 @@
+import { providerHttpError } from '../integrations/providerHttpError.js';
 import Transfer from '../../models/Transfer.js';
 import { appEnv, isTest } from '../../config/env.js';
 import { resolveTransferProviders } from '../../constants/transferDirections.js';
@@ -54,11 +55,7 @@ const ensurePlaylistsReadable = async ({ source, userId, playlistIds }) => {
                 await source.getPlaylistPreview({ playlistId, userId, limit: 1 });
                 return { playlistId, readable: true };
             } catch (error) {
-                return {
-                    playlistId,
-                    readable: false,
-                    message: error.message || `Não foi possível validar as faixas da playlist no ${source.label}.`,
-                };
+                return { playlistId, readable: false, error: providerHttpError(error, source) };
             }
         },
         PLAYLIST_VALIDATION_CONCURRENCY
@@ -68,12 +65,12 @@ const ensurePlaylistsReadable = async ({ source, userId, playlistIds }) => {
     if (!blockedPlaylists.length) return;
 
     if (blockedPlaylists.length === 1) {
-        throw new AppError(blockedPlaylists[0].message, 400);
+        throw blockedPlaylists[0].error;
     }
 
     const details = blockedPlaylists
         .slice(0, 3)
-        .map((playlist) => playlist.message)
+        .map((playlist) => playlist.error.message)
         .join(' ');
 
     throw new AppError(`Algumas playlists não puderam ser lidas no ${source.label} antes da fila. ${details}`, 400);

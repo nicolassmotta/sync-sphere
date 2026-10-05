@@ -32,3 +32,18 @@ describe('endpoints de saúde da API', () => {
         );
     });
 });
+
+it('prontidão recusa dados essenciais corrompidos sem retirar a saúde HTTP', async () => {
+    const { default: fs } = await import('node:fs');
+    const { dataFile } = await import('../src/config/paths.js');
+    const { removeStore } = await import('../src/storage/jsonStore.js');
+    fs.writeFileSync(dataFile('transfers.json'), 'corrompido');
+    try {
+        const response = await request(app).get('/api/ready');
+        expect(response.status).toBe(503);
+        expect(response.body.dependencies.storage).toBe('unreadable');
+        expect(response.body.message).toMatch(/ENCRYPTION_KEY.*backup/);
+        expect((await request(app).get('/api/health')).status).toBe(200);
+        expect(fs.readFileSync(dataFile('transfers.json'), 'utf8')).toBe('corrompido');
+    } finally { removeStore('transfers.json'); }
+});

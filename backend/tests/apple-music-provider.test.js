@@ -211,4 +211,15 @@ describe('provedor Apple Music', () => {
             .catch((caught) => caught);
         expect(classifyProviderError(error)).toBe(ERROR_KINDS.AUTH);
     });
+    it('sinaliza corte por paginação mesmo sem total informado', async () => {
+        useSigningKey();
+        global.fetch
+            .mockResolvedValueOnce(response({ data: [{ id: 'pl.abc', attributes: { name: 'Grande' } }] }))
+            .mockResolvedValueOnce(response({ data: Array.from({ length: 2000 }, (_, i) => song(String(i), 'A', 'X')), next: '/v1/catalog/br/playlists/pl.abc/tracks?offset=2000' }));
+        const playlist = await appleMusicProvider.getPlaylistSnapshot({ playlistId: 'pl.abc' });
+        expect(playlist).toMatchObject({ truncated: true, omittedTracks: null, totalTracks: null });
+        expect(playlist.tracks).toHaveLength(2000);
+        expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
 });

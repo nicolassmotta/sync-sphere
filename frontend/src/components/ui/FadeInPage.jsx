@@ -1,14 +1,3 @@
-import { motion } from 'framer-motion';
-
-const fadeInPageVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-};
-
-const FadeInPage = ({ children, className }) => (
-    <motion.div variants={fadeInPageVariants} initial="hidden" animate="visible" className={className}>
-        {children}
-    </motion.div>
-);
-
+// A navegação mostra o conteúdo imediatamente, sem ocultar texto durante uma animação.
+const FadeInPage = ({ children, className }) => <div className={className}>{children}</div>;
 export default FadeInPage;

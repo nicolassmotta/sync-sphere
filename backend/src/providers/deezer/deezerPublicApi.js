@@ -77,8 +77,10 @@ export const getPublicPlaylist = async (playlistId, { limit = DEEZER_PLAYLIST_MA
         description: playlist.description || '',
         ownerName: playlist.creator?.name || '',
         imageUrl: playlist.picture_xl || playlist.picture_big || null,
-        totalTracks: playlist.nb_tracks ?? tracks.length,
+        totalTracks: playlist.nb_tracks ?? (next || tracks.length > limit ? null : tracks.length),
         tracks: tracks.slice(0, limit),
+        truncated: Boolean(next) || tracks.length > limit,
+        omittedTracks: playlist.nb_tracks == null ? null : Math.max(0, playlist.nb_tracks - Math.min(tracks.length, limit)),
     };
 };
 

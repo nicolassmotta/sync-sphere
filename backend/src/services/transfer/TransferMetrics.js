@@ -34,7 +34,8 @@ export const getProviderStats = (provider) => {
 export const saveProviderStats = (provider, stats) => {
     const all = readStore(PROVIDER_STATS_STORE, {});
     all[provider] = { ...(all[provider] || {}), ...stats, updatedAt: new Date().toISOString() };
-    writeStore(PROVIDER_STATS_STORE, all);
+    // Estatísticas são descartáveis e não podem impedir a migração.
+    try { writeStore(PROVIDER_STATS_STORE, all); } catch { /* Mantém estimativa em memória. */ }
 };
 
 /**

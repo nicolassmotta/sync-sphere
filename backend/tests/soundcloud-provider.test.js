@@ -135,4 +135,12 @@ describe('provedor SoundCloud', () => {
         expect(JSON.parse(global.fetch.mock.calls[2][1].body)).toEqual({ playlist: { tracks: [1, 2, 3, 2] } });
         expect(destination.getPlaylistUrl('900')).toBe('https://soundcloud.com/nicolas/sets/migrada');
     });
+    it('sinaliza o corte local de 500 itens antes da hidratação', async () => {
+        mockScrape();
+        global.fetch.mockResolvedValueOnce(json({ kind: 'playlist', id: 123, title: 'Grande', track_count: 501, tracks: Array.from({ length: 501 }, (_, i) => scTrack(i + 1, 'A', 'X')) }));
+        const playlist = await soundcloudProvider.getPlaylistSnapshot({ playlistId: '123' });
+        expect(playlist).toMatchObject({ totalTracks: 501, truncated: true, omittedTracks: 1, unavailableTracks: 0 });
+        expect(playlist.tracks).toHaveLength(500);
+    });
+
 });

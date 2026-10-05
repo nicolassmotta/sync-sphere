@@ -22,3 +22,19 @@ it('preserva o arquivo anterior se a substituição falhar e limpa seu temporár
     expect(readStore(name, null)).toEqual({ value: 'preservado' });
     expect(fs.readdirSync(path.dirname(dataFile(name))).filter((file) => file.startsWith(`${name}.`))).toEqual([]);
 });
+
+it('arquivo ausente usa fallback, mas corrupção preserva bytes e bloqueia leitura', () => {
+    expect(readStore(name, [])).toEqual([]);
+    fs.writeFileSync(dataFile(name), 'dados corrompidos');
+    const original = fs.readFileSync(dataFile(name));
+    expect(() => readStore(name, [])).toThrow(/DATA_DIR.*ENCRYPTION_KEY.*backup/);
+    expect(fs.readFileSync(dataFile(name))).toEqual(original);
+});
+
+it('bloqueia gravação silenciosa depois de falha de leitura', () => {
+    fs.writeFileSync(dataFile(name), 'corrompido');
+    const original = fs.readFileSync(dataFile(name));
+    expect(() => readStore(name, [])).toThrow();
+    expect(() => writeStore(name, [])).toThrow(/backup/);
+    expect(fs.readFileSync(dataFile(name))).toEqual(original);
+});
