@@ -1,14 +1,16 @@
+import { useText } from '../../../i18n/useText';
 import { ArrowDownUp, CheckCircle2, CircleDashed, Terminal } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import Button from '../../ui/Button';
 import ProviderIcon from '../../ui/ProviderIcon';
 
-const ProviderChip = ({ provider, active, onClick, showExperimental }) => (
-    <button
+const ProviderChip = ({ provider, active, onClick, showExperimental }) => {
+    const { t } = useText();
+    return <button
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        aria-label={`${provider.label}${showExperimental && provider.validation?.write === 'experimental' ? ' (experimental)' : ''}`}
+        aria-label={`${t(provider.label)}${showExperimental && provider.validation?.write === 'experimental' ? ' (experimental)' : ''}`}
         className={cn(
             'flex min-w-0 items-center gap-3 rounded-lg border p-3 text-left transition-all',
             active
@@ -20,22 +22,23 @@ const ProviderChip = ({ provider, active, onClick, showExperimental }) => (
             <ProviderIcon providerId={provider.id} />
         </span>
         <span className="min-w-0">
-            <span className="block truncate text-sm font-black text-white">{provider.label}</span>
+            <span className="block truncate text-sm font-black text-white">{t(provider.label)}</span>
             <span className={cn(
                 'mt-0.5 inline-flex items-center gap-1 text-xs font-bold',
                 provider.connected ? 'text-spotify' : provider.canRead ? 'text-sky-300' : 'text-amber-300'
             )}>
                 {provider.connected ? <CheckCircle2 size={12} /> : <CircleDashed size={12} />}
-                {provider.connected ? 'conectado' : provider.canRead ? 'leitura pública' : 'precisa conectar'}
-                {showExperimental && provider.validation?.write === 'experimental' && <span className="block text-amber-200">experimental</span>}
+                {provider.connected ? t("conectado") : provider.canRead ? t("leitura pública") : t("precisa conectar")}
+                {showExperimental && provider.validation?.write === 'experimental' && <span className="block text-amber-200">{t("experimental")}</span>}
             </span>
         </span>
-    </button>
-);
+    </button>;
+};
 
-export const ProviderRow = ({ title, providers, selectedId, onSelect, showExperimental = false }) => (
-    <fieldset>
-        <legend className="mb-3 text-lg font-bold text-white">{title}</legend>
+export const ProviderRow = ({ title, providers, selectedId, onSelect, showExperimental = false }) => {
+    const { t } = useText();
+    return <fieldset>
+        <legend className="mb-3 text-lg font-bold text-white">{t(title)}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
             {providers.map((provider) => (
                 <ProviderChip
@@ -47,14 +50,15 @@ export const ProviderRow = ({ title, providers, selectedId, onSelect, showExperi
                 />
             ))}
         </div>
-    </fieldset>
-);
+    </fieldset>;
+};
 
 /**
  * Escolha da plataforma de origem e de destino. Escolher de um lado a
  * plataforma que está no outro inverte o par.
  */
 const ProviderPairCard = ({ providers, sourceProvider, targetProvider, onChange }) => {
+    const { t } = useText();
     const sources = providers.filter((provider) => provider.capabilities?.read !== false);
     const targets = providers.filter((provider) => provider.capabilities?.write !== false);
 
@@ -76,8 +80,8 @@ const ProviderPairCard = ({ providers, sourceProvider, targetProvider, onChange 
         <div className="elevated-card p-6 lg:p-7">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="text-sm font-bold uppercase text-white/40">Direção da transferência</p>
-                    <h2 className="mt-2 text-2xl font-black text-white">Escolha origem e destino</h2>
+                    <p className="text-sm font-bold uppercase text-white/40">{t("Direção da transferência")}</p>
+                    <h2 className="mt-2 text-2xl font-black text-white">{t("Escolha origem e destino")}</h2>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button
@@ -85,16 +89,14 @@ const ProviderPairCard = ({ providers, sourceProvider, targetProvider, onChange 
                         variant="secondary"
                         leftIcon={<ArrowDownUp size={15} />}
                         onClick={() => onChange({ sourceProvider: targetProvider, targetProvider: sourceProvider })}
-                    >
-                        Inverter
-                    </Button>
+                    >{t("Inverter")}</Button>
                     <Terminal className="hidden text-spotify sm:block" size={24} />
                 </div>
             </div>
 
             <div className="space-y-5">
-                <ProviderRow title="Origem" providers={sources} selectedId={sourceProvider} onSelect={selectSource} />
-                <ProviderRow title="Destino" showExperimental providers={targets} selectedId={targetProvider} onSelect={selectTarget} />
+                <ProviderRow title={t("Origem")} providers={sources} selectedId={sourceProvider} onSelect={selectSource} />
+                <ProviderRow title={t("Destino")} showExperimental providers={targets} selectedId={targetProvider} onSelect={selectTarget} />
             </div>
         </div>
     );

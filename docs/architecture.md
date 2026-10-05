@@ -129,3 +129,15 @@ O servidor usa bloqueio exclusivo do diretório de dados e escuta em loopback po
 O empacotamento copia uma lista explícita de código e documentação, instala apenas dependências de produção e confere o runtime Node.js contra a soma SHA-256 oficial. Artefatos locais não são uma publicação de versão. Veja [distribuição](distribution.md), [backup](backups.md) e [conferência com pessoas](usability-testing.md).
 
 Evidências da primeira experiência e dos pacotes: [Validação local](validation-first-experience.md).
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
+
+
+## Auditoria de falhas e navegação
+
+Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
+
+As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.

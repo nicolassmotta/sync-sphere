@@ -101,3 +101,15 @@ Confira se `DATA_DIR` aponta para a instalação correta e se `ENCRYPTION_KEY` c
 Em **Histórico > Ver detalhes**, baixe o relatório CSV ou JSON. Ele diferencia faixas adicionadas, correspondências aguardando inserção, músicas não encontradas e pendências. Também preserva total original, omissões e indisponibilidade quando conhecidos. Registros antigos sem estado por faixa informam essa limitação.
 
 Em **Ajuda e segurança**, escolha o sintoma para encontrar a próxima ação, crie um [backup protegido](backups.md) ou revise o diagnóstico. O diagnóstico contém contagens e informações de versão, sem credenciais, nomes de playlists, caminhos ou logs. Nada é enviado automaticamente à comunidade.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
+
+
+## Recuperação na interface
+
+Se o Histórico ou suas faixas não puderem ser carregados, a tela informa o erro e permite tentar novamente. Indisponibilidade não aparece como histórico vazio ou resultado completamente resolvido. No celular, cartões mostram separadamente adicionadas, total, pendentes e não encontradas.
+
+Resultados com músicas não encontradas indicam **Revisar resultado**. Origens recusadas por corte de leitura não oferecem um retry que repetiria o mesmo corte. Divida a playlist conforme a mensagem. As abas possuem endereço próprio; recarregar ou voltar no navegador conserva a aba escolhida. A perda do socket informa tentativa de reconexão sem declarar encerramento da transferência. OAuth pode ser autorizado novamente sem remover previamente a conexão salva.

@@ -1,3 +1,4 @@
+import { translate as text } from '../../i18n/index';
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import Spinner from './Spinner';
@@ -23,7 +24,7 @@ const Button = forwardRef(({
     disabled,
     fullWidth = false,
     loading = false,
-    loadingLabel = 'Carregando...',
+    loadingLabel = text("Carregando..."),
     leftIcon,
     rightIcon,
     size = 'md',
@@ -40,7 +41,7 @@ const Button = forwardRef(({
             disabled={isDisabled}
             aria-busy={loading || undefined}
             className={cn(
-                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
+                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
                 variants[variant],
                 sizes[size],
                 fullWidth && 'w-full',

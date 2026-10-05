@@ -1,3 +1,4 @@
+import { useText } from '../../i18n/useText';
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -38,6 +39,7 @@ const Alert = ({
     title,
     tone = 'neutral',
 }) => {
+    const { t } = useText();
     const selectedTone = tones[tone] || tones.neutral;
     const alertRole = role ?? (tone === 'danger' ? 'alert' : 'status');
 
@@ -54,7 +56,7 @@ const Alert = ({
                 {icon ?? selectedTone.icon}
             </span>
             <div className="min-w-0 flex-1">
-                {title && <p className="font-extrabold text-white">{title}</p>}
+                {title && <p className="font-extrabold text-white">{t(title)}</p>}
                 {children && <div className={cn('text-muted', title && 'mt-1')}>{children}</div>}
                 {action && <div className="mt-3">{action}</div>}
             </div>

@@ -1,3 +1,4 @@
+import { useText } from '../i18n/useText';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -7,6 +8,7 @@ import api from '../services/api';
  * (`capabilities.listUserPlaylists`).
  */
 export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma', enabled = false } = {}) => {
+    const { t } = useText();
     const [playlists, setPlaylists] = useState([]);
     const [summary, setSummary] = useState({ total: 0, hasMore: false });
     const [loading, setLoading] = useState(false);
@@ -55,7 +57,7 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
                 return nextPlaylists;
             } catch (err) {
                 if (requestId !== requestIdRef.current) return [];
-                const message = err.response?.data?.message || `Não foi possível carregar playlists do ${providerLabel}.`;
+                const message = err.response?.data?.message || t("Não foi possível carregar playlists do {{value0}}.", { value0: providerLabel });
                 setError(message);
                 updatePlaylists([]);
                 setSummary({ total: 0, hasMore: false });
@@ -74,7 +76,7 @@ export const useProviderPlaylists = ({ providerId, providerLabel = 'plataforma',
         })();
 
         return inFlightPromiseRef.current;
-    }, [enabled, providerId, providerLabel]);
+    }, [enabled, providerId, providerLabel, t]);
 
     useEffect(() => {
         lastSuccessAtRef.current = 0;

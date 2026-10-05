@@ -4,6 +4,25 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Auditoria de rotas e usabilidade
+
+- Rotas HTTP e Socket.io com testes de sucesso, erros, cotas e recuperação; 43 pares de provedores exercitados com respostas simuladas.
+- Mensagens de erro sem corpos, consultas ou pilhas; erros remotos classificados com orientação e preservação de Retry-After.
+- JSON essencial de formato incompatível recusado sem substituir seus bytes; correspondências com pontuação inválida recusadas.
+- Reconexão retoma apenas transferências relacionadas à plataforma; retry anterior à leitura informa reinício.
+- Histórico distingue indisponibilidade de coleção vazia, oferece recuperação e usa cartões em tela pequena.
+- Navegação preservada na URL, progresso informa reconexão do socket, revisão orienta músicas não encontradas e links executáveis são descartados.
+- Formulário de Client ID aceita Enter, navegação permanece acessível no celular e ajustes de contraste/foco melhoram leitura e teclado.
+
+
+
+### Idiomas em preparação
+
+- Interface PT/EN com preferência local, datas localizadas e mensagens de progresso nos dois idiomas.
+- API com negociação de idioma e relatórios localizados, preservando metadados e estados técnicos.
+- README principal em inglês, apresentação em português preservada e guias iniciais nos dois idiomas.
+- Legendas em inglês para a demonstração gravada em português.
+
 ### Primeira experiência e suporte
 
 - Fluxo guiado de migração com escolha de origem/destino, conexões, seleção, confirmação e resultado.

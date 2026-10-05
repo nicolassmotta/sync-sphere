@@ -158,5 +158,17 @@ O cliente HTTP em `frontend/src/services/api.js` usa `/api/v1` no app servido pe
 - Escritas de Deezer, TIDAL, Apple Music e SoundCloud são marcadas experimentais até a conferência com contas reais. Não declare essa validação com base em mocks.
 - Suporte em `services/system/`: diagnóstico por lista permitida, backup cifrado por senha e restauração offline com bloqueio/journal de rollback. As rotas `/system` aceitam apenas loopback.
 - `scripts/start-local.mjs` inicia e abre o painel; não sobrescreve `.env` existente. `scripts/package-local.mjs` gera pacotes com Node.js oficial verificado por SHA-256 e somente dependências de produção. `artifacts/` e backups `.ssb` ficam ignorados.
-- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Tradução fica para uma etapa posterior.
+- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Interface PT/EN e guias iniciais em inglês disponíveis; referências técnicas e prompts de terminal permanecem em português.
 - Guias: `docs/primeira-migracao.md`, `docs/backups.md`, `docs/distribution.md` e `docs/usability-testing.md`.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](../localization.md) e [guias em inglês](../en/README.md).
+
+
+## Auditoria de falhas e navegação
+
+Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
+
+As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.

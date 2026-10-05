@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import transferRoutes from './routes/transferRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+import { languageMiddleware } from './i18n/localization.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
 import { validateEssentialStores } from './storage/jsonStore.js';
 
@@ -35,6 +36,7 @@ app.use(helmet({
 // Configuração CORS para aceitar múltiplas origens locais, como Vite 5173/5174.
 app.use(cors(corsOptions));
 
+app.use('/api', languageMiddleware);
 app.use(express.json()); // Permite ler o corpo de requisições JSON.
 app.use(cookieParser()); // Intercepta cookies e coloca automaticamente em req.cookies.
 

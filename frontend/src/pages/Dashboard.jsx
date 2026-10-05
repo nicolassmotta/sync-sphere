@@ -1,3 +1,5 @@
+import { DASHBOARD_TAB_LABELS, getDashboardTabUrl } from '../constants/dashboardTabs';
+import { useText } from '../i18n/useText';
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -31,13 +33,12 @@ const FALLBACK_PROVIDERS = Object.entries(PROVIDER_UI).map(([id, ui]) => ({
     capabilities: { read: true, write: true, listUserPlaylists: id === 'spotify' },
 }));
 
-const DashboardTabFallback = () => (
-    <div className="mx-auto grid min-h-[320px] w-full max-w-5xl place-items-center">
-        <div className="rounded-lg border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-bold text-white/65">
-            Carregando painel...
-        </div>
-    </div>
-);
+const DashboardTabFallback = () => {
+    const { t } = useText();
+    return <div className="mx-auto grid min-h-[320px] w-full max-w-5xl place-items-center">
+        <div className="rounded-lg border border-white/10 bg-white/[0.045] px-5 py-4 text-sm font-bold text-white/65">{t("Carregando painel...")}</div>
+    </div>;
+};
 
 const readMigrationSession = () => {
     try {
@@ -51,9 +52,15 @@ const readMigrationSession = () => {
 };
 
 const Dashboard = () => {
+    const { t } = useText();
     const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('home');
+    const requestedTab = new URLSearchParams(location.search).get('tab');
+    const activeTab = Object.hasOwn(DASHBOARD_TAB_LABELS, requestedTab) ? requestedTab : 'home';
+    const setActiveTab = useCallback((tab) => {
+        const url = getDashboardTabUrl(tab);
+        if (`${location.pathname}${location.search}` !== url) navigate(url);
+    }, [location.pathname, location.search, navigate]);
     const [wizardStep, setWizardStep] = useState(() => readMigrationSession().step);
     const [demoLoading, setDemoLoading] = useState(false);
     const [demoMode, setDemoMode] = useState(false);
@@ -105,10 +112,16 @@ const Dashboard = () => {
         isTransferring,
         progress,
         progressMessage,
+        connectionState,
         transfers,
         prepareTransferProgress,
         stopTransferProgress,
     } = useTransferSocket(transferIds);
+
+    const needsAuthIds = transfers.filter((transfer) => transfer.status === 'needs_auth').map((transfer) => transfer.transferId).sort().join(',');
+    useEffect(() => {
+        if (needsAuthIds) refreshIntegrations({ force: true });
+    }, [needsAuthIds, refreshIntegrations]);
 
     // Depois de recarregar a página, volta a acompanhar o que ainda não terminou.
     useEffect(() => {
@@ -147,11 +160,11 @@ const Dashboard = () => {
     const resumeTransfer = useCallback(async (transferId) => {
         try {
             const response = await api.post(`/transfer/${transferId}/resume`);
-            toast.success(response.data.message || 'Transferência retomada.');
+            toast.success(response.data.message || t("Transferência retomada."));
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Não foi possível retomar a transferência.');
+            toast.error(err.response?.data?.message || t("Não foi possível retomar a transferência."));
         }
-    }, []);
+    }, [t]);
 
 
     // Nova migração entra na lista sem esconder as que ainda estão pausadas ou na fila.
@@ -166,8 +179,8 @@ const Dashboard = () => {
 
     const handleBeforeTransferStart = useCallback(() => {
         setShowModal(false);
-        prepareTransferProgress('Preparando sua migração...');
-    }, [prepareTransferProgress]);
+        prepareTransferProgress(t("Preparando sua migração..."));
+    }, [prepareTransferProgress, t]);
 
     // Trocar a origem descarta a seleção: IDs de playlist não valem entre plataformas.
     const handleProvidersChange = useCallback((nextPair) => {
@@ -188,9 +201,9 @@ const Dashboard = () => {
             setSourcePlaylistIds([response.data.data.playlist.id]);
             setDemoMode(true);
             setWizardStep(3);
-        } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível carregar a demonstração. Confira se o aplicativo está iniciado.'); }
+        } catch (error) { toast.error(error.response?.data?.message || t("Não foi possível carregar a demonstração. Confira se o aplicativo está iniciado.")); }
         finally { setDemoLoading(false); }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -200,16 +213,15 @@ const Dashboard = () => {
         const connectionStatus = params.get('status');
         const providerLabel = getProviderLabel(providerId);
 
-        if (tab) setActiveTab(tab);
-        if (providerId && connectionStatus === 'connected') toast.success(`${providerLabel} conectado com sucesso.`);
-        if (providerId && connectionStatus === 'denied') toast.error(`Conexão com ${providerLabel} cancelada.`);
+        if (providerId && connectionStatus === 'connected') toast.success(t("{{value0}} conectado com sucesso.", { value0: providerLabel }));
+        if (providerId && connectionStatus === 'denied') toast.error(t("Conexão com {{value0}} cancelada.", { value0: providerLabel }));
 
         if (demo && !demoRequestedRef.current) { demoRequestedRef.current = true; startDemo(); }
-        if (tab || providerId || demo) {
+        if (providerId || demo || connectionStatus || (tab && !Object.hasOwn(DASHBOARD_TAB_LABELS, tab))) {
             refreshIntegrations();
-            navigate('/dashboard', { replace: true });
+            navigate(getDashboardTabUrl(activeTab), { replace: true });
         }
-    }, [location.search, navigate, refreshIntegrations, startDemo]);
+    }, [activeTab, location.search, navigate, refreshIntegrations, startDemo, t]);
 
     const startTransferProcess = useStartTransfer({
         sourceProvider: source.id,
@@ -250,6 +262,7 @@ const Dashboard = () => {
                         isTransferring={isTransferring}
                         progress={progress}
                         progressMessage={progressMessage}
+                        connectionState={connectionState}
                         transfers={transfers}
                         onResumeTransfer={resumeTransfer}
                         startTransferProcess={startTransferProcess}

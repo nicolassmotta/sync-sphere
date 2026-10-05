@@ -42,8 +42,13 @@ export const createOAuthState = ({ req, intent }) => {
 export const verifyOAuthState = ({ state, intent }) => {
     if (!state) return null;
 
-    const decoded = jwt.verify(state, resolveStateSecret());
-    return decoded.intent === intent ? decoded : null;
+    const secret = resolveStateSecret();
+    try {
+        const decoded = jwt.verify(state, secret);
+        return decoded.intent === intent ? decoded : null;
+    } catch {
+        return null;
+    }
 };
 
 export const getFrontendOriginFromState = ({ state, intent }) => {
