@@ -73,7 +73,7 @@ describe('provedor Deezer', () => {
             isrc: 'USPR36400012',
         })));
         await expect(client.searchBestMatch({
-            track: { name: 'Garota de Ipanema', artist: 'Tom Jobim', isrc: 'USPR36400012' },
+            track: { name: 'Garota de Ipanema', artist: 'Antônio Carlos Jobim', isrc: 'USPR36400012' },
         })).resolves.toMatchObject({ id: '77', matchScore: 100 });
 
         global.fetch

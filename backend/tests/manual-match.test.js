@@ -97,6 +97,7 @@ it('recusa proposta expirada ou de outra busca', async () => {
     await expect(confirmManualMatch({ ...options, candidateId: old.id })).rejects.toMatchObject({ statusCode: 409 });
     const tracks = loadTransferTracks(options.transferId);
     tracks[1].manualCandidate.expiresAt = 0;
+    tracks[1].manualCandidates[0].expiresAt = 0;
     saveTransferTracks(options.transferId, tracks);
     await expect(confirmManualMatch({ ...options, candidateId: tracks[1].manualCandidate.id })).rejects.toMatchObject({ statusCode: 409 });
     expect(addTransferJob).not.toHaveBeenCalled();
@@ -151,4 +152,105 @@ it('retorna bloqueio da plataforma como erro operacional e permite outra busca d
         .send({ name: 'Título', artist: 'Artista' });
     expect(response.status).toBe(429);
     expect(loadTransferTracks(transfer._id)[1].manualCandidate).toBeUndefined();
+});
+
+const { confirmManualMatchBatch, listManualCandidates } = await import('../src/services/transfer/manualMatchService.js');
+const { recoverUnfinishedTransfers } = await import('../src/services/transfer/transferQueueActions.js');
+
+const setupBatch = async () => {
+    const context = await setup();
+    const tracks = loadTransferTracks(context.transfer._id);
+    tracks.push({ ...tracks[1], index: 2, name: 'Segunda pendência', status: 'needs_review' });
+    saveTransferTracks(context.transfer._id, tracks);
+    const first = await searchManualMatch({ ...context.options, name: 'Primeira', artist: 'Artista' });
+    const second = await searchManualMatch({ ...context.options, trackIndex: 2, name: 'Segunda', artist: 'Artista' });
+    return { ...context, choices: [
+        { trackIndex: 1, action: 'choose', candidateId: first.id, revision: first.revision },
+        { trackIndex: 2, action: 'choose', candidateId: second.id, revision: second.revision },
+    ] };
+};
+
+it('valida todo o lote antes de salvar e rejeita alternativa de outra faixa', async () => {
+    const { transfer, options, choices } = await setupBatch();
+    await expect(confirmManualMatchBatch({ ...options, choices: [choices[0], { ...choices[1], candidateId: choices[0].candidateId }] }))
+        .rejects.toMatchObject({ statusCode: 409 });
+    expect(loadTransferTracks(transfer._id).map((track) => track.status)).toEqual(['matched', 'not_found', 'needs_review']);
+    expect(addTransferJob).not.toHaveBeenCalled();
+});
+
+it('lote e confirmação repetida criam somente um job', async () => {
+    const { options, choices } = await setupBatch();
+    await confirmManualMatchBatch({ ...options, choices });
+    hasTransferJob.mockReturnValue(true);
+    await confirmManualMatchBatch({ ...options, choices });
+    expect(addTransferJob).toHaveBeenCalledTimes(1);
+    expect(loadTransferTracks(options.transferId).slice(1).every((track) => track.status === 'matched' && !track.inserted)).toBe(true);
+});
+
+it('ignorar não insere faixa nem inventa confiança manual', async () => {
+    const { options } = await setup();
+    await confirmManualMatchBatch({ ...options, choices: [{ trackIndex: 1, action: 'skip' }] });
+    expect(loadTransferTracks(options.transferId)[1]).toMatchObject({ status: 'skipped', targetId: null, matchScore: null });
+    expect(addTransferJob).not.toHaveBeenCalled();
+});
+
+it('falha entre salvar escolhas e enfileirar conserva inserções recuperáveis', async () => {
+    const { options, choices, transfer } = await setupBatch();
+    addTransferJob.mockRejectedValueOnce(new Error('Fila indisponível'));
+    await expect(confirmManualMatchBatch({ ...options, choices })).rejects.toThrow('Fila indisponível');
+    transfer.status = 'completed';
+    await transfer.save();
+    await recoverUnfinishedTransfers();
+    expect(addTransferJob).toHaveBeenCalledWith(transfer._id, 'local', 'source', 'spotify_to_youtube', expect.objectContaining({ lane: 'youtubeMusic' }));
+    expect(loadTransferTracks(transfer._id)[1]).toMatchObject({ status: 'matched', inserted: false });
+});
+
+it('propostas automáticas ficam limitadas e sobrevivem à releitura', async () => {
+    const { options } = await setup();
+    const tracks = loadTransferTracks(options.transferId);
+    tracks[1].status = 'needs_review';
+    tracks[1].matching = { candidates: Array.from({ length: 8 }, (_, index) => ({ candidate: { targetId: `id-${index}`, name: 'Alternativa', artists: ['Artista'] } })) };
+    saveTransferTracks(options.transferId, tracks);
+    const candidates = await listManualCandidates(options);
+    expect(candidates).toHaveLength(5);
+    expect(await listManualCandidates(options)).toEqual(candidates);
+});
+
+const { recreateOrderedPlaylist } = await import('../src/services/transfer/recreateOrderedPlaylist.js');
+it('cópia ordenada conserva ocorrências resolvidas e mantém a playlist anterior', async () => {
+    const { transfer, options } = await setup();
+    const tracks = loadTransferTracks(transfer._id);
+    Object.assign(tracks[1], { status: 'matched', targetId: 'manual', inserted: true, matchSource: 'manual' });
+    tracks.push({ ...tracks[0], index: 2 });
+    saveTransferTracks(transfer._id, tracks);
+    const copy = await recreateOrderedPlaylist(options);
+    expect(copy._id).not.toBe(transfer._id);
+    expect(copy.targetPlaylistId).toBeNull();
+    expect(copy.sourceTransferId).toBe(transfer._id);
+    expect(transfer.targetPlaylistId).toBe('existing');
+    expect(loadTransferTracks(copy._id).map((track) => [track.targetId, track.inserted])).toEqual([
+        ['original', false], ['manual', false], ['original', false],
+    ]);
+    hasTransferJob.mockImplementation((id) => id === copy._id);
+    expect((await recreateOrderedPlaylist(options))._id).toBe(copy._id);
+    expect(addTransferJob).toHaveBeenCalledTimes(1);
+});
+
+it('corrige uma ocorrência já inserida somente na cópia confirmada', async () => {
+    const { transfer, options } = await setup();
+    const tracks = loadTransferTracks(transfer._id);
+    Object.assign(tracks[1], { status: 'skipped' });
+    saveTransferTracks(transfer._id, tracks);
+    const proposal = await searchManualMatch({ ...options, trackIndex: 0, allowInserted: true, name: 'Nova gravação', artist: 'Outro artista' });
+    const copy = await recreateOrderedPlaylist({ ...options, choices: [{ trackIndex: 0, candidateId: proposal.id, revision: proposal.revision }] });
+    expect(loadTransferTracks(copy._id)[0]).toMatchObject({ targetId: 'manual', inserted: false, matchScore: null });
+    expect(loadTransferTracks(transfer._id)[0]).toMatchObject({ targetId: 'original', inserted: true });
+    expect(transfer.targetPlaylistId).toBe('existing');
+});
+
+it('ignorar não transforma um UUID enviado junto em escolha reaproveitável', async () => {
+    const { options } = await setup();
+    const candidate = await searchManualMatch({ ...options, name: 'Título', artist: 'Artista' });
+    await confirmManualMatchBatch({ ...options, choices: [{ trackIndex: 1, action: 'skip', candidateId: candidate.id }] });
+    expect(loadTransferTracks(options.transferId)[1]).toMatchObject({ status: 'skipped', targetId: null, chosenCandidate: null });
 });

@@ -41,22 +41,22 @@ Essa ação não refaz automaticamente as faixas marcadas como não encontradas.
 
 Uma interrupção imediatamente após criar uma playlist remota, antes de persistir seu ID, pode exigir conferência manual para evitar criar outra playlist numa nova tentativa.
 
-## Revisar uma música
+## Revisar músicas
 
-1. Espere a transferência terminar.
-2. Abra **Histórico > Ver detalhes**.
-3. Em **Não encontradas**, use **Escolher alternativa**. A opção também pode aparecer para falhas definitivas.
-4. Ajuste o título e o artista e clique em **Buscar alternativa**.
-5. Confira o título, o artista e, quando disponível, o link da plataforma.
-6. Use **Usar esta música** para confirmar.
+1. Espere a transferência terminar e abra **Histórico > Ver detalhes**.
+2. Em **Pendências** ou **Não encontradas**, use **Escolher alternativa**.
+3. Compare até cinco opções por título, artista, álbum, duração e diferenças de versão. Confira o link da plataforma quando disponível.
+4. Ajuste título/artista e use **Buscar alternativa** se as opções não servirem.
+5. Use **Usar esta música** para guardar uma seleção na tela ou **Ignorar esta faixa** para não inserir aquela ocorrência.
+6. Selecione outras faixas, abra **Revisar escolhas antes de confirmar** e use **Confirmar escolhas**.
 
-O servidor guarda a proposta por dez minutos. Só essa proposta pode ser confirmada; a ação reenfileira a inserção. As faixas já inseridas são preservadas. Transferências em execução ou com job existente não aceitam revisão simultânea.
+As alternativas têm validade de dez minutos. Se expirarem, refaça a busca; uma escolha antiga ou de outra faixa não pode ser confirmada. As decisões confirmadas persistem após reinício. Transferências em execução ou com job existente não aceitam outra revisão. Resultados duvidosos nunca entram automaticamente.
 
-Registros antigos que não têm estado por faixa continuam visíveis, mas não oferecem revisão manual.
+O relatório CSV/JSON distingue inserções, revisão, falhas técnicas, ignoradas e ausência de resultados. A pontuação é uma escala interna de evidência, sem probabilidade de acerto. Registros antigos sem detalhes continuam visíveis, com limitações explícitas.
 
-![Revisão manual em tela pequena, com proposta demonstrativa](assets/manual-review.png)
+**Esquecer escolha futura** remove uma decisão reaproveitada do cache sem alterar a playlist atual. Para corrigir uma ocorrência já inserida, abra **Corrigir faixas em uma nova playlist**, escolha a alternativa e confirme a criação da cópia. Resolva ou ignore todas as pendências primeiro. A cópia preserva a ordem das ocorrências resolvidas e mantém a playlist anterior intacta.
 
-*Demonstração com resposta externa simulada e dados fictícios.*
+A conferência do destino distingue escrita aceita de presença/ordem verificadas. Quando a ordem divergir, use **Criar cópia na ordem da origem**. Uma criação com resposta desconhecida exige conferir a plataforma antes de tentar outra criação.
 
 ## Arquivos exportados
 

@@ -102,6 +102,7 @@ const toCandidate = (track) => {
         rawName: track.title,
         externalUrl: normalized.uri,
         artists: normalized.artists,
+        album: normalized.album,
         durationMs: normalized.durationMs,
         isrc: normalized.isrc,
     };
@@ -211,16 +212,20 @@ const soundcloudProvider = {
 
     createSearchClient() {
         return {
+            kind: 'soundcloud-search', capabilities: { isrcSearch: false },
+            async searchCandidates({ track, strategy, limit = 10 }) {
+                const query = strategy?.query || [track.artist, track.name].filter(Boolean).join(' ');
+                const page = await soundcloudRequest('/search/tracks', { params: { q: query, limit } });
+                return (page?.collection || []).filter((candidate) => candidate.policy !== 'SNIP').map(toCandidate);
+            },
             async searchBestMatch({ track }) {
-                const query = [track.artist?.split(',')[0], track.name].filter(Boolean).join(' ');
-                const page = await soundcloudRequest('/search/tracks', { params: { q: query, limit: 10 } });
-                const candidates = (page?.collection || [])
-                    // Trechos de 30 s (prévia de faixa paga) não servem como faixa completa.
-                    .filter((candidate) => candidate.policy !== 'SNIP')
-                    .map(toCandidate);
-                // Sem nome parecido o máximo é 40 (artista + duração), abaixo do mínimo:
-                // uploads de fã com o nome do artista não passam.
-                return pickBestCandidate(track, candidates, { requireArtist: true });
+                let candidates = [];
+                if (this.capabilities.isrcSearch && track.isrc) {
+                    candidates = await this.searchCandidates({ track, strategy: { id: 'isrc' } });
+                    const best = pickBestCandidate(track, candidates);
+                    if (best?.matching.decision === 'accepted') return best;
+                }
+                return pickBestCandidate(track, [...candidates, ...await this.searchCandidates({ track })]);
             },
         };
     },
@@ -244,6 +249,11 @@ const soundcloudProvider = {
             },
 
             // A API substitui a lista inteira: junta as atuais com as novas.
+            async readTrackIds({ playlistId }) {
+                const current = await soundcloudRequest(`/playlists/${playlistId}`, { oauthToken });
+                return (current?.tracks || []).map((track) => String(track.id));
+            },
+
             async addTracks({ playlistId, ids, expectedIds }) {
                 const current = await soundcloudRequest(`/playlists/${playlistId}`, { oauthToken });
                 const currentIds = (current?.tracks || []).map((track) => String(track.id));

@@ -67,15 +67,17 @@ O estado da transferência usa `pending`, `processing`, `paused`, `needs_auth`, 
 
 O retry de inserção preserva `matched`, ID, pontuação e revisão manual. `pendingInsertCount` informa ocorrências resolvidas ainda não confirmadas no destino. Jobs existentes e ações simultâneas impedem outro retry.
 
-Cada faixa usa `pending`, `matched`, `not_found`, `retry_queued` ou `failed`, além de `inserted`. Os checkpoints permitem pular buscas já resolvidas ao retomar.
+Cada faixa usa `pending`, `matched`, `needs_review`, `skipped`, `not_found`, `retry_queued` ou `failed`, além de `inserted`. Os checkpoints permitem pular buscas já resolvidas ao retomar.
 
 Erros de limite de requisições pausam o fluxo. Erros de credencial pedem reconexão. Falhas temporárias recebem até três tentativas de job. A fila persiste o backoff e o trabalhador publica `paused` com `pauseReason=retry_scheduled` e o mesmo `resumeAt` do job. `failed` é publicado somente para falha definitiva ou esgotamento. O socket continua inscrito durante a pausa. Falhas definitivas e resultados ausentes ficam disponíveis no Histórico.
 
 ## Correspondência e revisão
 
-O cache usa uma chave derivada do destino, contexto do catálogo e metadados da gravação. Ele guarda apenas correspondências aceitas, com validade de sete dias e limite de 5.000 entradas. Acertos pulam busca e atraso, sem alterar a média de latência externa usada nas métricas. Um índice em memória é compartilhado por todas as raias do processo. A persistência cifrada e atômica ocorre a cada cem mudanças, após um segundo ou ao encerrar a etapa de busca. Uma interrupção pode perder até 99 atualizações desde o último checkpoint; a perda afeta somente esse cache descartável. Não há coordenação entre múltiplos processos escritores, que continuam fora do modelo suportado.
+A política `identity-v2` compara título, artistas, versão, duração, ISRC e disponibilidade. Score isolado não autoriza inserção. Checkpoints automáticos antigos sem evidências voltam para revisão antes de uma nova inserção; inserções já concluídas e escolhas manuais explícitas são preservadas. O orquestrador amplia resultados fracos ou ambíguos, com checkpoint e orçamento compartilhado por destino. Consulte a [validação de qualidade](validation-matching-quality.md) para critérios e limites.
 
-Na revisão manual, o servidor busca usando título e artista ajustados, sem forçar o ISRC da origem. A proposta é persistida com UUID e validade de dez minutos. Confirmar marca a faixa como `matched` com origem `manual` e reenfileira a inserção. O serviço rejeita propostas expiradas e revisão concorrente com processamento.
+O cache usa uma chave derivada do destino, contexto do catálogo e metadados da gravação. Ele separa correspondências automáticas aceitas de escolhas manuais explícitas, sem pontuação artificial de confiança, com validade de sete dias e limite de 5.000 entradas. Acertos pulam busca e atraso, sem alterar a média de latência externa usada nas métricas. Um índice em memória é compartilhado por todas as raias do processo. A persistência cifrada e atômica ocorre a cada cem mudanças, após um segundo ou ao encerrar a etapa de busca. Uma interrupção pode perder até 99 atualizações desde o último checkpoint; a perda afeta somente esse cache descartável. Não há coordenação entre múltiplos processos escritores, que continuam fora do modelo suportado.
+
+Na revisão manual, o servidor busca usando título e artista ajustados, sem forçar o ISRC da origem. Até cinco propostas são persistidas com UUID, revisão do conjunto e validade de dez minutos. O lote valida todas as escolhas antes de persistir e agenda uma única inserção. Escolhas que ficaram sem job são recuperadas no boot. Confirmar marca a faixa como `matched` com origem `manual`; ignorar usa `skipped`. O serviço rejeita propostas expiradas e revisão concorrente com processamento.
 
 ## Inserção e retomada
 
@@ -141,3 +143,7 @@ A interface possui seletor PT/EN, com preferência salva no navegador e fallback
 Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
 
 As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.
+
+## Conferência e correção
+
+`readTrackIds` lê a playlist depois da escrita. A comparação preserva ocorrências, lacunas, extras e ordem; falha de leitura fica não verificada. Reordenação e substituição da playlist original não estão habilitadas. Uma ação explícita cria uma cópia ordenada e pode corrigir ocorrências selecionadas, preservando a anterior. A intenção de criação é salva antes da chamada remota; resposta desconhecida bloqueia outra criação automática.

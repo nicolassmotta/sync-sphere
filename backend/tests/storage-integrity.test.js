@@ -51,7 +51,7 @@ it('cache cifrado é reutilizado em outro processo após checkpoint', () => {
     const dir = temporary();
     const cacheImport = `const { default: MatchCache } = await import(${JSON.stringify(pathToFileURL(path.join(root, 'services/matching/MatchCache.js')).href)}); const cache = new MatchCache({ scope: 'teste' });`;
     const track = `{ name: 'Música fictícia', artist: 'Artista fictício' }`;
-    expect(run(dir, 'a'.repeat(64), `${cacheImport} cache.set(${track}, { targetId: 'id-fictício', matchScore: 95 }); cache.flush();`).status).toBe(0);
+    expect(run(dir, 'a'.repeat(64), `${cacheImport} cache.set(${track}, { targetId: 'id-fictício', matchScore: 95, matching: { decision: 'accepted', algorithmVersion: 'identity-v2', candidates: [{ candidate: { id: 'id-fictício', name: 'Música fictícia', artist: 'Artista fictício' } }] } }); cache.flush();`).status).toBe(0);
     const result = run(dir, 'a'.repeat(64), `${cacheImport} console.log(JSON.stringify(cache.get(${track})));`);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('"targetId":"id-fictício"');

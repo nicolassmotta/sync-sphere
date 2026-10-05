@@ -45,10 +45,12 @@ const getDirectionLabel = (item) => {
 
 const getPendingCount = (item) => (item.failedCount || 0) + (item.retryQueuedCount || 0) + (item.pendingInsertCount || 0);
 
+const getDisplayPendingCount = (item) => getPendingCount(item) + (item.needsReviewCount || 0);
+
 const getInsertedCount = (item) => Math.max(0, (item.matchedCount ?? item.processedTracks ?? 0) - (item.pendingInsertCount || 0));
 
 const getStatusLabel = (item) => {
-    if (item.status === 'completed' && getPendingCount(item)) return text("Concluída com pendências");
+    if (item.status === 'completed' && (getPendingCount(item) || item.needsReviewCount)) return text("Concluída com pendências");
     if (item.status === 'completed' && item.notFoundCount > 0) return text("Concluída com músicas não encontradas");
     if (item.status === 'completed') return text("Concluída");
     if (item.status === 'failed') return text("Precisa de atenção");
@@ -60,7 +62,7 @@ const getStatusLabel = (item) => {
 
 const TransferStatusBadge = ({ item }) => {
     const { t } = useText();
-    return item.status === 'completed' && (getPendingCount(item) || item.notFoundCount > 0)
+    return item.status === 'completed' && (getPendingCount(item) || item.notFoundCount > 0 || item.needsReviewCount > 0)
         ? <StatusBadge status="completed" label={t("Revisar resultado")} tone="warning" />
         : <StatusBadge status={item.status} />;
 };
@@ -69,8 +71,10 @@ const canRetry = (item) => !item.sourceTruncated && ['failed', 'completed'].incl
     || (item.status === 'failed' && item.matchedCount == null && item.analyzedCount == null));
 
 const DETAIL_TABS = [
-    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued', 'matched'] },
+    { id: 'pending', label: 'Pendências', statuses: ['failed', 'retry_queued', 'matched', 'needs_review'] },
     { id: 'not_found', label: 'Não encontradas', statuses: ['not_found'] },
+    { id: 'inserted', label: 'Adicionadas', statuses: ['matched'] },
+    { id: 'skipped', label: 'Ignoradas', statuses: ['skipped'] },
 ];
 
 // Transferências antigas não têm estado por faixa: usa o `errors` legado.
@@ -87,10 +91,38 @@ const TransferDetails = ({ item, onQueued }) => {
     const [tracks, setTracks] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
     const [reviewing, setReviewing] = useState(null);
+    const [corrections, setCorrections] = useState({});
+    const [selections, setSelections] = useState({});
+    const [copySummary, setCopySummary] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const [showBatchSummary, setShowBatchSummary] = useState(false);
     const [hasTrackStore, setHasTrackStore] = useState(false);
     const [downloading, setDownloading] = useState(null);
     const [trackError, setTrackError] = useState('');
     const [trackAttempt, setTrackAttempt] = useState(0);
+    const createCopy = async () => {
+        setConfirming(true);
+        try {
+            const response = await api.post(`/transfer/${item._id}/ordered-copy`, { choices: Object.values(corrections) });
+            onQueued(response.data);
+        } catch (error) { setTrackError(error.response?.data?.message || t('Não foi possível criar a cópia.')); }
+        finally { setConfirming(false); }
+    };
+    const forgetChoice = async (track) => {
+        try {
+            await api.delete(`/transfer/${item._id}/tracks/${track.index}/choice`);
+            toast.success(t('Escolha esquecida para futuras transferências.'));
+        } catch (error) { setTrackError(error.response?.data?.message || t('Não foi possível esquecer a escolha.')); }
+    };
+    const confirmBatch = async () => {
+        setConfirming(true);
+        setTrackError('');
+        try {
+            const response = await api.post(`/transfer/${item._id}/review`, { choices: Object.values(selections) });
+            onQueued(response.data);
+        } catch (error) { setTrackError(error.response?.data?.message || t('Não foi possível confirmar a escolha.')); }
+        finally { setConfirming(false); }
+    };
     const downloadReport = async (format) => {
         setDownloading(format);
         try {
@@ -107,7 +139,7 @@ const TransferDetails = ({ item, onQueued }) => {
         setHasTrackStore(false);
         setTrackError('');
 
-        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found,matched' } })
+        api.get(`/transfer/${item._id}/tracks`, { params: { status: 'failed,retry_queued,not_found,needs_review,matched,skipped' } })
             .then((response) => {
                 if (cancelled) return;
                 const loaded = response.data.data.tracks || [];
@@ -124,14 +156,20 @@ const TransferDetails = ({ item, onQueued }) => {
     }, [item, trackAttempt, t]);
 
     const tab = DETAIL_TABS.find((candidate) => candidate.id === activeTab);
-    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted));
+    const visibleTracks = (tracks || []).filter((track) => tab.statuses.includes(track.status) && (tab.id === 'inserted' ? track.inserted : !(track.status === 'matched' && track.inserted)));
     const canReview = hasTrackStore && ['completed', 'failed'].includes(item.status)
         && getTransferProviders(item).targetProvider !== 'file';
 
     if (reviewing) return (
         <ManualTrackReview transferId={item._id} track={reviewing}
             providerLabel={getProviderLabel(getTransferProviders(item).targetProvider)}
-            onBack={() => setReviewing(null)} onQueued={onQueued} />
+            onBack={() => setReviewing(null)} onQueued={onQueued}
+            selection={(reviewing.inserted ? corrections : selections)[reviewing.index]} correction={reviewing.inserted}
+            onSelect={(choice) => {
+                if (reviewing.inserted) { setCorrections((previous) => ({ ...previous, [choice.trackIndex]: choice })); setCopySummary(true); }
+                else setSelections((previous) => ({ ...previous, [choice.trackIndex]: choice }));
+                setShowBatchSummary(false);
+            }} />
     );
 
     return (
@@ -165,12 +203,54 @@ const TransferDetails = ({ item, onQueued }) => {
             </div>
 
             <div className="flex flex-wrap gap-2">
+                <span>{t('Adicionadas')}: {getInsertedCount(item)}</span>
+                <span>{t('Aguardando revisão')}: {item.needsReviewCount || 0}</span>
+                <span>{t('Não encontradas')}: {item.notFoundCount || 0}</span>
+                <span>{t('Falhas técnicas')}: {item.failedCount || 0}</span>
+                <span>{t('Ignoradas')}: {item.skippedCount || 0}</span>
+            </div>
+            {Object.keys(selections).length > 0 ? (
+                <div className="space-y-3 rounded-lg border border-spotify/30 p-4">
+                    <p>{t('Escolhas selecionadas')}: {Object.keys(selections).length}</p>
+                    {showBatchSummary ? <><ul>{Object.values(selections).map((choice) => <li key={choice.trackIndex}>{(tracks || []).find((track) => track.index === choice.trackIndex)?.name}: {t(choice.action === 'skip' ? 'Ignorada' : 'Alternativa selecionada')}</li>)}</ul>
+                        <p>{t('As escolhas confirmadas serão adicionadas ao fim da playlist.')}</p>
+                        <Button onClick={confirmBatch} loading={confirming} loadingLabel={t('Confirmando...')}>{t('Confirmar escolhas')}</Button></>
+                        : <Button onClick={() => setShowBatchSummary(true)}>{t('Revisar escolhas antes de confirmar')}</Button>}
+                </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
                 <Button size="sm" loading={downloading === 'csv'} disabled={Boolean(downloading)} onClick={() => downloadReport('csv')}>{t("Baixar relatório CSV")}</Button>
                 <Button size="sm" loading={downloading === 'json'} disabled={Boolean(downloading)} onClick={() => downloadReport('json')}>{t("Baixar relatório JSON")}</Button>
             </div>
-            <div className="flex gap-2" role="tablist" aria-label={t("Situação das músicas")}>
+            {(tracks || []).some((track) => track.inserted && ['manual', 'manual_cache'].includes(track.matchSource)) ? (
+                <div className="space-y-2"><p>{t('Escolhas manuais reaproveitáveis')}</p>
+                    {(tracks || []).filter((track) => track.inserted && ['manual', 'manual_cache'].includes(track.matchSource)).map((track) => (
+                        <div key={track.index} className="flex flex-wrap items-center gap-3"><span>{track.name}</span>
+                            <Button variant="secondary" size="sm" onClick={() => forgetChoice(track)}>{t('Esquecer escolha futura')}</Button></div>
+                    ))}
+                </div>
+            ) : null}
+            {canReview && (tracks || []).some((track) => track.inserted) ? (
+                <details><summary>{t('Corrigir faixas em uma nova playlist')}</summary>
+                    <p className="my-2">{t('A correção afeta somente a cópia. A playlist atual será preservada.')}</p>
+                    {(tracks || []).filter((track) => track.inserted).map((track) => (
+                        <div key={track.index} className="my-2 flex flex-wrap items-center gap-3"><span>{track.index + 1}. {track.name}</span>
+                            <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>{t('Escolher correção')}</Button></div>
+                    ))}
+                </details>
+            ) : null}
+            {item.destinationVerification ? <p>{t('Conferência do destino')}: {t(item.destinationVerification.state === 'verified' ? 'Presença e ordem verificadas' : 'Presença ou ordem ainda não confirmadas')}</p> : null}
+            {['completed', 'failed'].includes(item.status) && item.targetPlaylistId ? (
+                <div className="space-y-2">
+                    {copySummary ? <><p>{t('Criar uma nova playlist com as faixas resolvidas na ordem da origem? A playlist atual será preservada. Resolva ou ignore todas as pendências primeiro.')}</p>
+                        <ul>{Object.values(corrections).map((choice) => <li key={choice.trackIndex}>{choice.trackIndex + 1}. {(tracks || []).find((track) => track.index === choice.trackIndex)?.name}: {t('Alternativa selecionada')}</li>)}</ul>
+                        <Button onClick={createCopy} loading={confirming}>{t('Confirmar nova playlist')}</Button></>
+                        : <Button variant="secondary" onClick={() => setCopySummary(true)}>{t('Criar cópia na ordem da origem')}</Button>}
+                </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("Situação das músicas")}>
                 {DETAIL_TABS.map((candidate) => {
-                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status) && !(track.status === 'matched' && track.inserted)).length;
+                    const count = (tracks || []).filter((track) => candidate.statuses.includes(track.status) && (candidate.id === 'inserted' ? track.inserted : !(track.status === 'matched' && track.inserted))).length;
                     return (
                         <button
                             key={candidate.id}
@@ -211,7 +291,7 @@ const TransferDetails = ({ item, onQueued }) => {
                 {tracks === null && !trackError && <LoadingState label={t("Carregando faixas...")} />}
                 {tracks !== null && visibleTracks.length === 0 && (
                     <p className="p-2 text-gray-400">
-                        {activeTab === 'pending' ? t("Nenhuma faixa pendente.") : t("Todas as faixas foram encontradas.")}
+                        {activeTab === 'pending' ? t("Nenhuma faixa pendente.") : activeTab === 'not_found' ? t("Todas as faixas foram encontradas.") : t('Nenhuma faixa nesta situação.')}
                     </p>
                 )}
                 {visibleTracks.map((track) => (
@@ -221,9 +301,11 @@ const TransferDetails = ({ item, onQueued }) => {
                             : <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />}
                         <div className="min-w-0 flex-1">
                             <p className="truncate font-bold text-white">{track.name} - {track.artist}</p>
-                            <p className="text-xs text-muted">{track.status === 'matched' ? t("Correspondência preservada. Aguardando inserção no destino.") : t(track.lastError)}</p>
+                            {selections[track.index] ? <p className="text-xs text-spotify">{t('Escolha aguardando confirmação')}</p> : null}
+                            {['manual', 'manual_cache'].includes(track.matchSource) ? <Button variant="secondary" size="sm" onClick={() => forgetChoice(track)}>{t('Esquecer escolha futura')}</Button> : null}
+                            <p className="text-xs text-muted">{track.inserted ? t('Inserção confirmada no destino.') : track.status === 'matched' ? t("Correspondência preservada. Aguardando inserção no destino.") : t(track.lastError)}</p>
                         </div>
-                        {canReview && ['not_found', 'failed'].includes(track.status) && !track.inserted && (
+                        {canReview && ['not_found', 'needs_review', 'failed'].includes(track.status) && !track.inserted && (
                             <Button variant="secondary" size="sm" onClick={() => setReviewing(track)}>{t("Escolher alternativa")}</Button>
                         )}
                     </div>
@@ -367,7 +449,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                         <dl className="my-4 grid grid-cols-2 gap-4 text-sm">
                             <div><dt className="text-muted">{t("Adicionadas")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-green-300">{getInsertedCount(item)}</dd></div>
                             <div><dt className="text-muted">{t("Total")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-white">{item.totalTracks}</dd></div>
-                            <div><dt className="text-muted">{t("Pendentes")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-sky-300">{getPendingCount(item)}</dd></div>
+                            <div><dt className="text-muted">{t("Pendentes")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-sky-300">{getDisplayPendingCount(item)}</dd></div>
                             <div><dt className="text-muted">{t("Não encontradas")}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-amber-200">{item.notFoundCount || 0}</dd></div>
                         </dl>
                         <p className="mb-4 text-xs text-muted">{formatDate(item.createdAt)}</p>
@@ -421,7 +503,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                         <span className="px-1 text-gray-400">/</span>
                                         {item.totalTracks}
                                         <span className="px-1 text-gray-400">/</span>
-                                        <span className={getPendingCount(item) ? 'text-sky-300' : 'text-gray-400'}>{getPendingCount(item)}</span>
+                                        <span className={getDisplayPendingCount(item) ? 'text-sky-300' : 'text-gray-400'}>{getDisplayPendingCount(item)}</span>
                                     </td>
                                     <td className="p-5 font-medium text-gray-400 text-sm">{formatDate(item.createdAt)}</td>
                                     <td className="p-5 text-right">

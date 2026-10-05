@@ -60,7 +60,7 @@ const readPlaylist = async (playlistId, { limit = PLAYLIST_MAX_ITEMS } = {}) => 
     };
 };
 
-const toCandidate = (track) => ({ id: track.tidalId, name: track.name, artists: track.artists, durationMs: track.durationMs, isrc: track.isrc });
+const toCandidate = (track) => ({ id: track.tidalId, name: track.name, artists: track.artists, album: track.album, durationMs: track.durationMs, isrc: track.isrc });
 
 /**
  * TIDAL: API oficial v2 com OAuth PKCE. Origem e destino, busca por ISRC.
@@ -152,20 +152,23 @@ const tidalProvider = {
 
     createSearchClient() {
         return {
-            async searchBestMatch({ track }) {
+            kind: 'tidal-search', capabilities: { isrcSearch: true },
+            async searchCandidates({ track, strategy, limit = 10 }) {
                 const token = await getTidalCatalogToken();
                 const countryCode = getCountryCode();
-
-                if (track.isrc) {
-                    const [byIsrc] = await getTracksByIsrc({ token, countryCode, isrc: track.isrc });
-                    if (byIsrc) return { ...toCandidate(byIsrc), matchScore: 100 };
+                if (strategy?.id === 'isrc') return (await getTracksByIsrc({ token, countryCode, isrc: track.isrc })).map(toCandidate);
+                const query = strategy?.query || [track.name, track.artist].filter(Boolean).join(' ');
+                const ids = await searchTrackIds({ token, countryCode, query, limit });
+                return ids.length ? (await getTracksByIds({ token, countryCode, ids })).map(toCandidate) : [];
+            },
+            async searchBestMatch({ track }) {
+                let candidates = [];
+                if (this.capabilities.isrcSearch && track.isrc) {
+                    candidates = await this.searchCandidates({ track, strategy: { id: 'isrc' } });
+                    const best = pickBestCandidate(track, candidates);
+                    if (best?.matching.decision === 'accepted') return best;
                 }
-
-                const query = [track.name, track.artist?.split(',')[0]].filter(Boolean).join(' ');
-                const ids = await searchTrackIds({ token, countryCode, query });
-                if (!ids.length) return null;
-                const candidates = await getTracksByIds({ token, countryCode, ids });
-                return pickBestCandidate(track, candidates.map(toCandidate));
+                return pickBestCandidate(track, [...candidates, ...await this.searchCandidates({ track })]);
             },
         };
     },
@@ -179,6 +182,10 @@ const tidalProvider = {
                 if (!playlistId) throw new Error('TIDAL não retornou o ID da playlist criada.');
                 return playlistId;
             },
+            async readTrackIds({ playlistId }) {
+                return getPlaylistTrackIds({ token: await getTidalUserToken(), playlistId, countryCode: getCountryCode() });
+            },
+
             async addTracks({ playlistId, ids, expectedIds }) {
                 const token = await getTidalUserToken();
                 const existingIds = await getPlaylistTrackIds({ token, playlistId, countryCode: getCountryCode() });

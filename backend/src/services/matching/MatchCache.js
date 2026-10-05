@@ -1,3 +1,4 @@
+import { decideCandidates, MATCH_ALGORITHM_VERSION } from './decision.js';
 import crypto from 'node:crypto';
 import { readStore, writeStore } from '../../storage/jsonStore.js';
 import logger from '../../utils/logger.js';
@@ -9,8 +10,8 @@ export const MATCH_CACHE_LIMIT = 5000;
 // Mantém título completo, incluindo versões, e duração na identidade da gravação.
 const text = (value) => String(value || '').trim().toLowerCase();
 const keyFor = (scope, track) => crypto.createHash('sha256').update(JSON.stringify([
-    1, scope, text(track.name), text(track.artist), text(track.album),
-    text(track.isrc), Number(track.durationMs) || 0,
+    MATCH_ALGORITHM_VERSION, scope, text(track.name), text(track.artist), text(track.album),
+    text(track.isrc), Number(track.durationMs) || 0, track.artists || null, track.artistAliases || null, track.explicit ?? null,
 ])).digest('hex');
 
 // Um índice por processo reúne atualizações de todas as raias de destino.
@@ -66,22 +67,26 @@ export default class MatchCache {
         if (disabled) return null;
         try {
             const entry = loadEntries().get(keyFor(this.scope, track));
-            if (!entry?.targetId || !Number.isFinite(entry.matchScore)
+            if (entry?.matching?.algorithmVersion !== MATCH_ALGORITHM_VERSION || !['accepted', 'manual'].includes(entry?.matching?.decision)
+                || !entry?.targetId || (entry.matching.decision === 'accepted' && !Number.isFinite(entry.matchScore))
                 || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= this.now()) return null;
-            return { targetId: entry.targetId, matchScore: entry.matchScore };
+            if (entry.matching.decision === 'accepted'
+                && decideCandidates(track, (entry.matching.candidates || []).map((item) => item.candidate)).decision !== 'accepted') return null;
+            return { targetId: entry.targetId, matchScore: entry.matchScore, matching: entry.matching };
         } catch {
             return null;
         }
     }
 
-    set(track, { targetId, matchScore }) {
-        if (disabled || !targetId || !Number.isFinite(matchScore) || matchScore < 45) return;
+    set(track, { targetId, matchScore, matching }) {
+        if (disabled || !targetId || (matching?.decision === 'accepted' && !Number.isFinite(matchScore))
+            || matching?.algorithmVersion !== MATCH_ALGORITHM_VERSION || !['accepted', 'manual'].includes(matching?.decision)) return;
         try {
             const now = this.now();
             const index = loadEntries();
             const key = keyFor(this.scope, track);
             index.delete(key);
-            index.set(key, { targetId, matchScore, savedAt: now, expiresAt: now + MATCH_CACHE_TTL_MS });
+            index.set(key, { targetId, matchScore, matching, savedAt: now, expiresAt: now + MATCH_CACHE_TTL_MS });
             while (index.size > MATCH_CACHE_LIMIT) index.delete(index.keys().next().value);
             dirty = true;
             pendingWrites += 1;
@@ -94,6 +99,14 @@ export default class MatchCache {
             disabled = true;
             logger.warn('Cache de correspondências indisponível. A transferência continuará com buscas normais.');
         }
+    }
+
+    forget(track) {
+        try {
+            const removed = loadEntries().delete(keyFor(this.scope, track));
+            if (removed) { dirty = true; this.flush(); }
+            return removed;
+        } catch { return false; }
     }
 
     flush() {

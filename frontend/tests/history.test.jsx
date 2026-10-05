@@ -78,3 +78,30 @@ it.each(['pending', 'processing', 'paused', 'needs_auth'])('estado %s usa acompa
     await screen.findAllByText('Arquivo');
     expect(screen.queryByRole('button', { name: 'Tentar todas' })).toBeNull();
 });
+
+it('seleciona duas ocorrências e confirma um lote depois de mostrar o resumo', async () => {
+    const transfer = { ...completed, targetProvider: 'spotify', needsReviewCount: 2, matchedCount: 0, pendingInsertCount: 0 };
+    const tracks = [0, 1].map((index) => ({ index, name: `Faixa ${index}`, artist: 'Fictício', status: 'needs_review' }));
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [transfer] } : url.endsWith('/candidates')
+            ? { candidates: [{ id: url.includes('/tracks/0/') ? 'primeira' : 'segunda', revision: 1, name: 'Original', artist: 'Fictício' }] }
+            : { counts: { total: 2 }, tracks } } }));
+    api.post.mockResolvedValue({ data: { message: 'Revisão salva', data: { transfer } } });
+    const queued = vi.fn();
+    const user = userEvent.setup();
+    render(<HistoryTab onTransfersQueued={queued} />);
+    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    for (let index = 0; index < 2; index += 1) {
+        await user.click((await screen.findAllByRole('button', { name: 'Escolher alternativa' }))[index]);
+        await user.click(await screen.findByRole('radio', { name: 'Original Fictício' }));
+        await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
+    }
+    expect(api.post).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Revisar escolhas antes de confirmar' }));
+    expect(screen.getByText('As escolhas confirmadas serão adicionadas ao fim da playlist.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Confirmar escolhas' }));
+    expect(api.post).toHaveBeenCalledWith('/transfer/transferencia-ficticia/review', { choices: [
+        { trackIndex: 0, action: 'choose', candidateId: 'primeira', revision: 1 },
+        { trackIndex: 1, action: 'choose', candidateId: 'segunda', revision: 1 },
+    ] });
+});

@@ -1,3 +1,6 @@
+import { withCatalogTimeout } from '../matching/requestBudget.js';
+import { searchWithStrategies } from '../matching/searchOrchestrator.js';
+import { decideCandidates, MATCH_ALGORITHM_VERSION } from '../matching/decision.js';
 import { clampConcurrency, mapWithConcurrency } from '../../utils/concurrency.js';
 import {
     classifyProviderError,
@@ -31,7 +34,6 @@ export default class TrackMatcher {
     constructor({
         // `null`: usa o atraso da plataforma de destino (`getSearchDelayMs`).
         delayMs = null,
-        minMatchScore = 45,
         searchConcurrency = getSearchConcurrency(),
         maxTrackAttempts = clampConcurrency(process.env.MAX_TRACK_ATTEMPTS, { max: 20, fallback: 5 }),
         inlineRetries = 2,
@@ -39,7 +41,6 @@ export default class TrackMatcher {
         now = () => Date.now(),
     } = {}) {
         this.delayMs = delayMs;
-        this.minMatchScore = minMatchScore;
         this.searchConcurrency = searchConcurrency;
         this.maxTrackAttempts = maxTrackAttempts;
         this.inlineRetries = inlineRetries;
@@ -47,14 +48,14 @@ export default class TrackMatcher {
         this.now = now;
     }
 
-    async search(searchClient, track) {
+    async search(searchClient, track, options = {}) {
         let lastError;
 
         for (let attempt = 0; attempt <= this.inlineRetries; attempt += 1) {
             try {
-                return searchClient.searchBestMatch
-                    ? await searchClient.searchBestMatch({ track })
-                    : await searchClient.searchBestVideoMatch({ track });
+                const stopped = options.getStopError?.();
+                if (stopped) throw stopped;
+                return await searchWithStrategies({ searchClient, track, ...options });
             } catch (error) {
                 lastError = error;
                 if (classifyProviderError(error) !== ERROR_KINDS.TRANSIENT || attempt === this.inlineRetries) break;
@@ -107,25 +108,50 @@ export default class TrackMatcher {
             const startedAt = this.now();
 
             try {
-                const cached = matchCache?.get(track);
-                const cacheHit = Boolean(cached?.targetId && Number.isFinite(cached.matchScore) && cached.matchScore >= this.minMatchScore);
-                if (!cacheHit && delayMs > 0) await wait(delayMs);
-                const match = cacheHit ? cached : await this.search(searchClient, track);
-                const matchId = cacheHit ? cached.targetId : getMatchId(match);
+                let cached = matchCache?.get(track);
+                if (cached && searchClient.validateCachedMatch) {
+                    let available;
+                    const validationCheckpoint = { requests: track.cacheRequestCount || 0 };
+                    try {
+                        available = await withCatalogTimeout({ checkpoint: validationCheckpoint, maxRequests: 12,
+                            scope: JSON.stringify(matchCache?.scope || providerLabel), delayMs, getStopError: () => halt?.error },
+                        () => searchClient.validateCachedMatch({ targetId: cached.targetId }));
+                    }
+                    catch (error) {
+                        if (Number(error.status || error.response?.status) !== 404) throw error;
+                        available = false;
+                    } finally { track.cacheRequestCount = validationCheckpoint.requests; }
+                    if (available === false) {
+                        matchCache.forget(track);
+                        delete track.searchCheckpoint;
+                        cached = null;
+                    }
+                }
+                const cacheHit = Boolean(cached?.targetId && cached.matching?.algorithmVersion === MATCH_ALGORITHM_VERSION
+                    && ['accepted', 'manual'].includes(cached.matching?.decision));
+                if (!cacheHit && !searchClient.searchCandidates && delayMs > 0) await wait(delayMs);
+                const match = cacheHit ? cached : await this.search(searchClient, track, { getMatchId, delayMs, scope: JSON.stringify(matchCache?.scope || providerLabel), maxRequests: Math.max(0, 12 - (track.cacheRequestCount || 0)), getStopError: () => halt?.error, onCheckpoint: checkpoint });
+                const matchId = cacheHit ? cached.targetId : match?.matching?.best?.candidate.targetId || getMatchId(match);
 
-                if (!matchId || !Number.isFinite(match?.matchScore) || match.matchScore < this.minMatchScore) {
-                    track.status = TRACK_STATUS.NOT_FOUND;
-                    track.errorKind = ERROR_KINDS.NOT_FOUND;
-                    track.lastError = noConfidentMatchReason;
-                    track.matchScore = Number.isFinite(match?.matchScore) ? match.matchScore : null;
+                const matching = cacheHit ? { ...cached.matching, queries: 0, requests: track.cacheRequestCount || 0, strategy: 'cache' }
+                    : match?.matching || decideCandidates(track, match ? [{ ...match, targetId: matchId }] : []);
+                matching.requests = (matching.requests || 0) + (cacheHit ? 0 : track.cacheRequestCount || 0);
+                track.matching = matching;
+                track.searchLatencyMs = cacheHit ? 0 : this.now() - startedAt;
+                track.matchScore = cacheHit && matching.decision === 'manual' ? null : matching.best?.matchScore ?? null;
+                if (!matchId || (matching.decision !== 'accepted' && !(cacheHit && matching.decision === 'manual'))) {
+                    track.status = matching.decision === 'needs_review' ? TRACK_STATUS.NEEDS_REVIEW : TRACK_STATUS.NOT_FOUND;
+                    track.errorKind = matching.decision === 'no_match' ? ERROR_KINDS.NOT_FOUND : null;
+                    track.lastError = matching.decision === 'needs_review' ? 'A correspondência precisa de revisão.' : noConfidentMatchReason;
+                    track.targetId = null;
                 } else {
                     track.status = TRACK_STATUS.MATCHED;
                     track.targetId = matchId;
-                    track.matchScore = match.matchScore;
                     track.errorKind = null;
                     track.lastError = null;
-                    track.matchSource = cacheHit ? 'cache' : 'search';
-                    if (!cacheHit) matchCache?.set(track, { targetId: matchId, matchScore: match.matchScore });
+                    track.matchSource = cacheHit ? (matching.decision === 'manual' ? 'manual_cache' : 'cache') : 'search';
+                    track.chosenCandidate = matching.best?.candidate || null;
+                    if (!cacheHit) matchCache?.set(track, { targetId: matchId, matchScore: track.matchScore, matching });
                 }
                 if (!cacheHit) metrics?.recordSearch(this.now() - startedAt);
             } catch (error) {

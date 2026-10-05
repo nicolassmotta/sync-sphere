@@ -1,3 +1,4 @@
+import { withTransferActionLock } from './transferActionLock.js';
 import { resolveTransferProviders } from '../../constants/transferDirections.js';
 import Transfer from '../../models/Transfer.js';
 import AppError from '../../utils/AppError.js';
@@ -36,6 +37,14 @@ const requeueFailedTracks = (transferId) => {
         if (track.status === TRACK_STATUS.FAILED || track.status === TRACK_STATUS.RETRY_QUEUED) {
             track.status = TRACK_STATUS.RETRY_QUEUED;
             track.attempts = 0;
+            if (track.searchCheckpoint?.failure) {
+                track.searchCheckpoint.previousQueries = (track.searchCheckpoint.previousQueries || 0) + track.searchCheckpoint.queries;
+                track.searchCheckpoint.previousRequests = (track.searchCheckpoint.previousRequests || 0) + (track.searchCheckpoint.requests || 0);
+                track.searchCheckpoint.queries = 0;
+                track.searchCheckpoint.requests = 0;
+                delete track.searchCheckpoint.failure;
+                track.cacheRequestCount = 0;
+            }
             requeued += 1;
         }
     }
@@ -93,17 +102,7 @@ const retryTransferUnlocked = async ({ transferId, userId }) => {
     return { transfer, requeued: result.requeued };
 };
 
-const retryingTransfers = new Set();
-export const retryTransfer = async (options) => {
-    const id = String(options.transferId);
-    if (retryingTransfers.has(id)) throw new AppError('Esta transferência já está sendo reenfileirada.', 409);
-    retryingTransfers.add(id);
-    try {
-        return await retryTransferUnlocked(options);
-    } finally {
-        retryingTransfers.delete(id);
-    }
-};
+export const retryTransfer = (options) => withTransferActionLock(options.transferId, () => retryTransferUnlocked(options));
 
 export const retryAllTransfers = async ({ userId }) => {
     const transfers = await Transfer.find({ user: userId });
@@ -171,7 +170,11 @@ export const recoverUnfinishedTransfers = async () => {
     let recovered = 0;
 
     for (const transfer of transfers) {
-        if (!RESUMABLE_STATUSES.has(transfer.status) || hasTransferJob(transfer._id)) continue;
+        if (hasTransferJob(transfer._id)) continue;
+        const tracks = loadTransferTracks(transfer._id) || [];
+        const pendingChoices = tracks.some((track) => track.status === TRACK_STATUS.MATCHED && !track.inserted && track.review);
+        if (!RESUMABLE_STATUSES.has(transfer.status) && !pendingChoices) continue;
+        if (pendingChoices) await markQueued(transfer, 'Recuperando escolhas confirmadas antes do reinício.', summarizeTransferTracks(tracks));
 
         const runAfter = transfer.status === 'paused' ? transfer.resumeAt : null;
         await enqueue(transfer, { runAfter });

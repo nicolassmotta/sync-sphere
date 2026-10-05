@@ -1,3 +1,4 @@
+import { fetchWithSearchBudget as fetch } from '../../services/matching/requestBudget.js';
 /**
  * Cliente da API do site do SoundCloud (api-v2), a mesma usada pelo
  * soundcloud.com. Não oficial: a API oficial só libera credenciais para

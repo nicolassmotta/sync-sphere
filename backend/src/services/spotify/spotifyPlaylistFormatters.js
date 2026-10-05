@@ -32,6 +32,8 @@ export const normalizeSpotifyTrackItems = (items) => {
         tracks.push({
             spotifyId: track.id,
             name: track.name,
+            artists: track.artists?.map((artist) => artist.name).filter(Boolean) || [],
+            explicit: typeof track.explicit === 'boolean' ? track.explicit : null,
             artist: track.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown',
             album: track.album?.name || '',
             durationMs: track.duration_ms || 0,
@@ -72,6 +74,7 @@ export const normalizeSpotifyPathfinderTrackItems = (items) => {
         tracks.push({
             spotifyId: track.uri?.startsWith('spotify:track:') ? track.uri.split(':').at(-1) : undefined,
             name: track.name,
+            artists: track.artists?.items?.map((artist) => artist.profile?.name).filter(Boolean) || [],
             artist: track.artists?.items
                 ?.map((artist) => artist.profile?.name)
                 .filter(Boolean)

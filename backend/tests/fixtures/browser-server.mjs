@@ -26,7 +26,7 @@ const { startWorker } = await import('../../src/workers/transferWorker.js');
 const { registerTransferSocket } = await import('../../src/socket/transferSocket.js');
 const { Server } = await import('socket.io');
 const { default: express } = await import('express');
-const cases = ['normal', 'partial', 'transient', 'rate-limit', 'needs-auth', 'not-found', 'truncated', 'unknown-total', 'empty', 'invalid-score'];
+const cases = ['normal', 'partial', 'transient', 'rate-limit', 'needs-auth', 'not-found', 'truncated', 'unknown-total', 'empty', 'invalid-score', 'robust-review'];
 const remote = readStore('fixture-destinations.json', {});
 const observations = { searches: {}, creations: {}, insertions: [] };
 const authorized = {};
@@ -53,11 +53,16 @@ for (const provider of listProviders().filter((value) => value.id !== 'file')) {
         const tracks = snapshot.tracks.slice(0, Number(limit));
         return { ...snapshot, tracks, returnedTracks: tracks.length, hasMore: snapshot.tracks.length > tracks.length };
     };
-    provider.createSearchClient = () => ({ searchBestMatch: async ({ track }) => {
+    provider.createSearchClient = () => ({ searchCandidates: async ({ track }) => {
         observations.searches[provider.id] = (observations.searches[provider.id] || 0) + 1;
-        if (track.name === 'Não localizada') return null;
+        if (track.name === 'Não localizada') return [];
         const id = crypto.createHash('sha256').update(`${provider.id}:${track.name}:${track.artist}`).digest('hex').slice(0, 22);
-        return { id, videoId: id, uri: `spotify:track:${id}`, rawName: track.name, artist: track.artist, durationMs: track.durationMs, matchScore: String(track.sourceId).includes('invalid-score') ? NaN : 95 };
+        if (String(track.sourceId).includes('invalid-score')) return [{ id, videoId: id, uri: `spotify:track:${id}`, matchScore: 100 }];
+        const candidate = { id, videoId: id, uri: `spotify:track:${id}`, name: track.name, artists: [track.artist], durationMs: track.durationMs };
+        return String(track.sourceId).includes('robust-review') ? [
+            { ...candidate, album: 'Edição A' },
+            { ...candidate, id: `${id}-alternative`, videoId: `${id}-alternative`, uri: `spotify:track:${id}-alternative`, album: 'Edição B' },
+        ] : [candidate];
     } });
     provider.createDestinationClient = () => ({
         createPlaylist: async ({ title }) => {
@@ -67,6 +72,7 @@ for (const provider of listProviders().filter((value) => value.id !== 'file')) {
             writeStore('fixture-destinations.json', remote);
             return id;
         },
+        readTrackIds: async ({ playlistId }) => remote[playlistId]?.ids || [],
         getPlaylistUrl: (id) => `https://example.com/playlist/${id}`,
         addTracks: async ({ playlistId, ids, expectedIds }) => {
             const destination = remote[playlistId];

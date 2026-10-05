@@ -105,3 +105,9 @@ describe('direção da transferência', () => {
         });
     });
 });
+
+it('todos os destinos remotos expõem candidatos sem esconder alternativas', () => {
+    for (const provider of listProviders().filter((item) => item.id !== 'file')) {
+        expect(typeof provider.createSearchClient({ userId: 'local' }).searchCandidates).toBe('function');
+    }
+});

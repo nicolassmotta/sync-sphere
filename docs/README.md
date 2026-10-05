@@ -27,6 +27,8 @@ Esta documentação acompanha a versão da `main`. Para instalar uma versão pub
 - [Segurança](../SECURITY.md): proteção da instalação e relato de vulnerabilidades.
 - [Conferência com pessoas](usability-testing.md): roteiro de tarefas e registro de dificuldades.
 - [Plano das fases](roadmap.md): entregas integradas e validações pendentes.
+- [Validação de correspondência](validation-matching-quality.md): amostra, política, revisão, cache e integridade.
+- [Plano de correspondência robusta](plano-correspondencia-robusta.md): busca progressiva, revisão de alternativas, relatórios e integridade da playlist.
 - [Notas da 1.1.0](releases/v1.1.0.md): mudanças, atualização e limites da versão.
 
 ## Apresentar o projeto
