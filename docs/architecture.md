@@ -114,3 +114,30 @@ Não há autenticação própria de HTTP ou Socket.io: o usuário local é impl�
 Os testes usam diretórios temporários isolados e respostas simuladas de plataformas. O CI executa testes, lint, build e verificação da aplicação empacotada. Veja [CONTRIBUTING.md](../CONTRIBUTING.md), [API](api.md) e [SECURITY.md](../SECURITY.md).
 
 Evidências das correções de integridade e recuperação: [Validação local](validation-transfer-integrity.md).
+
+
+## Fluxo guiado e suporte local
+
+O Início organiza a migração em Origem, Destino, Conexões, Playlists e Resultado. A seleção do par e da etapa fica apenas na sessão do navegador, sem credenciais. A demonstração importa três ocorrências fictícias pelo servidor e usa o trabalhador real do destino Arquivo. A interface identifica escritas experimentais a partir de metadados do registro de provedores.
+
+`/api/v1/system` reúne demonstração, configuração de Client IDs, diagnóstico por lista permitida e download de backup. Essas rotas aceitam somente conexões de loopback. Client IDs do painel ficam em `provider-settings.json`, uma coleção essencial cifrada, reaplicada no boot. Trocar o aplicativo exige conta desconectada e fila vazia.
+
+Relatórios por transferência exportam apenas campos definidos do resultado, sem erros brutos ou credenciais. O CSV neutraliza células que poderiam iniciar fórmulas ao serem abertas em planilhas.
+
+O servidor usa bloqueio exclusivo do diretório de dados e escuta em loopback por padrão. A restauração ocorre em um processo separado com o servidor fechado: o pacote cifrado por senha é validado antes de gravar, recifrado para a chave de destino e aplicado com diário de rollback cifrado. O boot recupera um diário de restauração interrompida antes de verificar as coleções. Cache e estatísticas permanecem fora do backup.
+
+O empacotamento copia uma lista explícita de código e documentação, instala apenas dependências de produção e confere o runtime Node.js contra a soma SHA-256 oficial. Artefatos locais não são uma publicação de versão. Veja [distribuição](distribution.md), [backup](backups.md) e [conferência com pessoas](usability-testing.md).
+
+Evidências da primeira experiência e dos pacotes: [Validação local](validation-first-experience.md).
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
+
+
+## Auditoria de falhas e navegação
+
+Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
+
+As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.

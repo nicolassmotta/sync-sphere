@@ -12,7 +12,7 @@ A origem oferece, conforme suas capacidades:
 - Link ou ID de uma playlist.
 - Importação de CSV, JSON, M3U/M3U8 ou TXT.
 
-Selecione as playlists, confira a estimativa e confirme a transferência. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
+Siga Origem, Destino e Conexões. Em Playlists, selecione a origem, confira a estimativa e confirme a transferência. Resultado mostra o progresso. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
 
 ## Acompanhar o processamento
 
@@ -94,3 +94,22 @@ A busca compara título, artista e duração; ISRC é usado quando a origem o in
 Se a chave não corresponder aos dados ou um arquivo essencial estiver corrompido, o servidor interrompe a inicialização. Se a falha surgir durante a execução, `/api/ready` retorna 503 e operações sobre esses dados falham explicitamente. Os arquivos não são tratados como listas vazias.
 
 Confira se `DATA_DIR` aponta para a instalação correta e se `ENCRYPTION_KEY` corresponde à chave original. Preserve os arquivos e restaure um backup compatível antes de retomar. Não gere outra chave para tentar abrir dados existentes. Cache e estatísticas são descartáveis; falhas nesses arquivos permitem continuar sem reutilizar suas informações.
+
+
+## Relatório e ajuda
+
+Em **Histórico > Ver detalhes**, baixe o relatório CSV ou JSON. Ele diferencia faixas adicionadas, correspondências aguardando inserção, músicas não encontradas e pendências. Também preserva total original, omissões e indisponibilidade quando conhecidos. Registros antigos sem estado por faixa informam essa limitação.
+
+Em **Ajuda e segurança**, escolha o sintoma para encontrar a próxima ação, crie um [backup protegido](backups.md) ou revise o diagnóstico. O diagnóstico contém contagens e informações de versão, sem credenciais, nomes de playlists, caminhos ou logs. Nada é enviado automaticamente à comunidade.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](localization.md) e [guias em inglês](en/README.md).
+
+
+## Recuperação na interface
+
+Se o Histórico ou suas faixas não puderem ser carregados, a tela informa o erro e permite tentar novamente. Indisponibilidade não aparece como histórico vazio ou resultado completamente resolvido. No celular, cartões mostram separadamente adicionadas, total, pendentes e não encontradas.
+
+Resultados com músicas não encontradas indicam **Revisar resultado**. Origens recusadas por corte de leitura não oferecem um retry que repetiria o mesmo corte. Divida a playlist conforme a mensagem. As abas possuem endereço próprio; recarregar ou voltar no navegador conserva a aba escolhida. A perda do socket informa tentativa de reconexão sem declarar encerramento da transferência. OAuth pode ser autorizado novamente sem remover previamente a conexão salva.

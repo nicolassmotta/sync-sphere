@@ -12,6 +12,8 @@ import { globalLimiter } from './middlewares/rateLimiter.js';
 import authRoutes from './routes/authRoutes.js';
 import transferRoutes from './routes/transferRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
+import { languageMiddleware } from './i18n/localization.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
 import { validateEssentialStores } from './storage/jsonStore.js';
 
@@ -34,6 +36,7 @@ app.use(helmet({
 // Configuração CORS para aceitar múltiplas origens locais, como Vite 5173/5174.
 app.use(cors(corsOptions));
 
+app.use('/api', languageMiddleware);
 app.use(express.json()); // Permite ler o corpo de requisições JSON.
 app.use(cookieParser()); // Intercepta cookies e coloca automaticamente em req.cookies.
 
@@ -41,6 +44,7 @@ app.use(cookieParser()); // Intercepta cookies e coloca automaticamente em req.c
 app.use('/api', globalLimiter);
 
 // Rotas principais.
+app.use('/api/v1/system', systemRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/transfer', transferRoutes);
 app.use('/api/v1/integrations', integrationRoutes);
@@ -49,6 +53,9 @@ app.use('/api/v1/integrations', integrationRoutes);
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
+        application: 'SyncSphere',
+        pid: process.pid,
+        version: '1.1.0',
         message: 'API da Migração funcionando perfeitamente!',
         env: {
             nodeEnv,

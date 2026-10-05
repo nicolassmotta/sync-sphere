@@ -50,6 +50,7 @@ const spotifyProvider = {
         const connected = hasSpotifyConnection(user);
         return {
             connected,
+            configured: Boolean(String(process.env.SPOTIFY_CLIENT_ID || '').trim()),
             authMethod: connected ? 'oauth-pkce' : null,
             expiresAt: user?.spotifyTokenExpiresAt || null,
         };

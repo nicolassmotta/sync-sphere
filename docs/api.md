@@ -143,3 +143,34 @@ O snapshot de progresso usa `counts`, `etaSeconds`, `tracksPerMinute`, `resumeAt
 Respostas de sucesso usam `status: "success"` e `data`. Erros operacionais expõem `message`. Os status usuais incluem `400` para entrada inválida, `404` para recurso ausente, `409` para conflito de estado e `429` para limite de requisições.
 
 Os limites gerais e de ações estão em [rateLimiter.js](../backend/src/middlewares/rateLimiter.js). A API não fornece paginação completa do histórico na implementação atual. Veja os [limites de leitura e importação](usage.md#limites-atuais).
+
+
+## Suporte local
+
+As rotas abaixo só aceitam conexões de loopback e respondem com `Cache-Control: no-store`:
+
+| Método e rota | Contrato |
+|---|---|
+| `POST /api/v1/system/demo` | Importa uma playlist com três ocorrências fictícias e devolve `data.playlist`. Não inicia transferência sozinho. |
+| `GET /api/v1/system/diagnostic` | Devolve `data` com versão, plataforma, prontidão e contagens, sem dados privados ou logs. |
+| `GET /api/v1/system/providers/:providerId/setup` | Para Spotify/TIDAL, informa `configured` e `redirectUri`, sem devolver o Client ID. |
+| `PUT /api/v1/system/providers/:providerId/setup` | Recebe `{ clientId }`, valida caracteres/tamanho e persiste cifrado. Recusa alteração com conta conectada ou fila pendente. |
+| `POST /api/v1/system/backups` | Recebe `{ password }`, com 12 a 200 caracteres. Devolve arquivo `.ssb` cifrado e recusa fila pendente. |
+
+`GET /api/v1/transfer/:transferId/report?format=json|csv` baixa um relatório da transferência local, com situação por ocorrência, contagens e metadados de leitura da origem. O padrão é JSON.
+
+A restauração não possui rota HTTP. Use o iniciador Restaurar-backup ou `npm run backup:restore -- --interactive`, com o servidor fechado. Saúde inclui `application`, `version` e `pid`; o iniciador usa a identificação da instância para evitar abrir uma instalação diferente que ocupe a mesma porta.
+
+
+## Idioma das respostas
+
+`Accept-Language: en` solicita inglês; `pt-BR` solicita português. A ausência de idioma compatível usa português. Respostas incluem `Content-Language` e `Vary: Accept-Language`. Somente mensagens próprias e labels permitidos são localizados. Códigos HTTP, enums, IDs, nomes e metadados continuam iguais. O relatório CSV/JSON segue o idioma solicitado para cabeçalhos, resultados e nota. Eventos Socket.io mantêm o contrato e são localizados no cliente. Veja [idiomas](localization.md).
+
+
+## Erros e simulações
+
+Corpos JSON inválidos retornam 400, conteúdo acima do limite retorna 413 e origem CORS não permitida retorna 403. A resposta não contém pilha ou cópia do corpo/consulta. Erros inesperados retornam mensagem genérica; falhas essenciais de armazenamento retornam 503 com orientação para DATA_DIR, ENCRYPTION_KEY e backup.
+
+Leitura remota, inclusive pré-validação do início, distingue 401 (reconexão), 429 (limite, com Retry-After quando informado), 503 (indisponibilidade) e 404 (playlist ausente). Mensagens construídas pelo aplicativo mantêm sua orientação; detalhes brutos de consultas remotas não são devolvidos nesses caminhos. A inscrição Socket.io exige um identificador textual não vazio de até 100 caracteres.
+
+Veja a [matriz de auditoria](qa-audit.md) para os cenários executados. A fixture de navegador possui rotas privadas de teste que não entram na aplicação de produção.

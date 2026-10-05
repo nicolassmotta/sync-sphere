@@ -1,3 +1,4 @@
+import AppError from '../utils/AppError.js';
 import fs from 'fs';
 import crypto from 'node:crypto';
 import { ensureDataDir, dataFile, DATA_DIR } from '../config/paths.js';
@@ -10,8 +11,16 @@ import { encryptText, decryptText } from '../utils/crypto.js';
  */
 const DISCARDABLE_STORES = new Set(['match-cache.json', 'provider-stats.json']);
 const unreadableStores = new Set();
-const storageError = () => new Error(
-    'Não foi possível abrir os dados locais. Confira DATA_DIR, ENCRYPTION_KEY e o backup antes de continuar.'
+const hasEssentialShape = (name, value) => {
+    const object = value !== null && typeof value === 'object' && !Array.isArray(value);
+    if (/^(credentials|provider-credentials|provider-settings)\.json$/.test(name)) return object;
+    if (/^(transfers|queue|file-imports|file-exports)\.json$/.test(name) || /^transfer-tracks-.*\.json$/.test(name)) {
+        return Array.isArray(value) && value.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item));
+    }
+    return true;
+};
+const storageError = () => new AppError(
+    'Não foi possível abrir os dados locais. Confira DATA_DIR, ENCRYPTION_KEY e o backup antes de continuar.', 503
 );
 
 export const readStore = (name, fallback) => {
@@ -19,6 +28,7 @@ export const readStore = (name, fallback) => {
         ensureDataDir();
         const raw = fs.readFileSync(dataFile(name), 'utf8');
         const value = JSON.parse(decryptText(raw.trim()));
+        if (!hasEssentialShape(name, value)) throw storageError();
         unreadableStores.delete(name);
         return value;
     } catch (error) {
@@ -33,7 +43,7 @@ export const readStore = (name, fallback) => {
 export const validateEssentialStores = () => {
     ensureDataDir();
     for (const name of fs.readdirSync(DATA_DIR)) {
-        if (/^(credentials|provider-credentials|transfers|queue|file-imports|file-exports)\.json$/.test(name)
+        if (/^(credentials|provider-credentials|provider-settings|transfers|queue|file-imports|file-exports)\.json$/.test(name)
             || /^transfer-tracks-.*\.json$/.test(name)) readStore(name, null);
     }
 };

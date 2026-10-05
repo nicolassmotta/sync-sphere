@@ -1,3 +1,5 @@
+import { useText } from '../i18n/useText';
+import LanguageSelector from '../components/ui/LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -25,8 +27,10 @@ const quickSnippets = setupSnippets.filter((snippet) => (
 ));
 
 const Landing = () => {
+    const { t } = useText();
     const navigate = useNavigate();
     const goToApp = () => navigate('/dashboard');
+    const goToDemo = () => navigate('/dashboard?demo=1');
     const scrollToTutorial = () => document.getElementById('tutorial-local')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
@@ -42,18 +46,14 @@ const Landing = () => {
                             <RefreshCw size={21} />
                         </span>
                         <span className="min-w-0">
-                            <span className="block text-lg font-extrabold text-white">SyncSphere</span>
-                            <span className="block truncate text-xs font-semibold text-muted">playlists entre plataformas, localmente</span>
+                            <span className="block text-lg font-extrabold text-white">{t("SyncSphere")}</span>
+                            <span className="hidden truncate text-xs font-semibold text-muted sm:block">{t("playlists entre plataformas, localmente")}</span>
                         </span>
                     </button>
 
-                    <div className="flex items-center gap-2">
-                        <Button onClick={scrollToTutorial} variant="ghost" size="sm" leftIcon={<BookOpen size={15} />}>
-                            Tutorial
-                        </Button>
-                        <Button onClick={goToApp} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}>
-                            Abrir painel
-                        </Button>
+                    <div className="flex items-center gap-2"><LanguageSelector />
+                        <Button className="hidden md:inline-flex" onClick={scrollToTutorial} variant="ghost" size="sm" leftIcon={<BookOpen size={15} />}>{t("Tutorial")}</Button>
+                        <Button aria-label={t("Abrir painel")} onClick={goToApp} variant="primary" size="sm" rightIcon={<ArrowRight size={15} />}><span className="hidden sm:inline">{t("Abrir painel")}</span></Button>
                     </div>
                 </div>
             </nav>
@@ -66,23 +66,13 @@ const Landing = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="max-w-3xl"
                         >
-                            <Badge tone="info" size="md" icon={<Code2 size={14} />}>
-                                código aberto local
-                            </Badge>
-                            <h1 className="mt-5 text-4xl font-black leading-tight text-white md:text-6xl">
-                                Suas playlists entre plataformas, na sua máquina.
-                            </h1>
-                            <p className="mt-5 max-w-2xl text-base leading-8 text-muted md:text-lg">
-                                Escolha entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. Acompanhe cada faixa, retome transferências e revise o resultado. Os dados ficam cifrados na sua instalação local.
-                            </p>
+                            <Badge tone="info" size="md" icon={<Code2 size={14} />}>{t("código aberto local")}</Badge>
+                            <h1 className="mt-5 text-4xl font-black leading-tight text-white md:text-6xl">{t("Suas playlists entre plataformas, na sua máquina.")}</h1>
+                            <p className="mt-5 max-w-2xl text-base leading-8 text-muted md:text-lg">{t("Escolha entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e Arquivo. Acompanhe cada faixa, retome transferências e revise o resultado. Os dados ficam cifrados na sua instalação local.")}</p>
 
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                                <Button onClick={goToApp} variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>
-                                    Abrir painel local
-                                </Button>
-                                <Button onClick={scrollToTutorial} variant="secondary" size="lg" leftIcon={<Terminal size={18} />}>
-                                    Ver comandos
-                                </Button>
+                                <Button onClick={goToApp} variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>{t("Abrir painel local")}</Button>
+                                <Button onClick={goToDemo} variant="secondary" size="lg">{t("Experimentar sem contas")}</Button>
                             </div>
                         </motion.div>
 
@@ -94,8 +84,8 @@ const Landing = () => {
                         >
                             <div className="mb-5 flex items-center justify-between gap-4">
                                 <div>
-                                    <p className="text-xs font-bold uppercase text-white/40">Fluxo guiado</p>
-                                    <h2 className="mt-1 text-2xl font-black text-white">Da configuração ao histórico</h2>
+                                    <p className="text-xs font-bold uppercase text-muted">{t("Fluxo guiado")}</p>
+                                    <h2 className="mt-1 text-2xl font-black text-white">{t("Da configuração ao histórico")}</h2>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <SpotifyIcon className="h-7 w-7 fill-spotify" />
@@ -111,8 +101,8 @@ const Landing = () => {
                                             {index + 1}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-bold text-white">{step.title}</p>
-                                            <p className="mt-1 text-sm leading-6 text-muted">{step.description}</p>
+                                            <p className="font-bold text-white">{t(step.title)}</p>
+                                            <p className="mt-1 text-sm leading-6 text-muted">{t(step.description)}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -125,16 +115,12 @@ const Landing = () => {
                     <div className="mx-auto max-w-7xl">
                         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div>
-                                <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-white/45">
-                                    <Terminal size={14} className="text-spotify" />
-                                    Tutorial no front-end
-                                </p>
-                                <h2 className="text-3xl font-black text-white md:text-4xl">Comandos copiáveis para rodar localmente</h2>
-                                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                                    Os exemplos usam valores demonstrativos. Preencha segredos e cookies apenas no seu `.env` local.
-                                </p>
+                                <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-muted">
+                                    <Terminal size={14} className="text-spotify" />{t("Tutorial no front-end")}</p>
+                                <h2 className="text-3xl font-black text-white md:text-4xl">{t("Comandos copiáveis para rodar localmente")}</h2>
+                                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{t("Os exemplos usam valores demonstrativos. Preencha segredos e cookies apenas no seu `.env` local.")}</p>
                             </div>
-                            <Badge tone="warning" size="md">sem tokens reais</Badge>
+                            <Badge tone="warning" size="md">{t("sem tokens reais")}</Badge>
                         </div>
 
                         <div className="grid gap-5 lg:grid-cols-2">
@@ -145,11 +131,11 @@ const Landing = () => {
                                             <Server size={17} className="text-spotify" />
                                         </div>
                                         <div>
-                                            <h3 className="font-black text-white">{snippet.title}</h3>
-                                            <p className="mt-1 text-sm leading-6 text-muted">{snippet.description}</p>
+                                            <h3 className="font-black text-white">{t(snippet.title)}</h3>
+                                            <p className="mt-1 text-sm leading-6 text-muted">{t(snippet.description)}</p>
                                         </div>
                                     </div>
-                                    <CopySnippet code={snippet.code} label={snippet.label} language={snippet.language} />
+                                    <CopySnippet code={snippet.code} label={t(snippet.label)} language={snippet.language} />
                                 </section>
                             ))}
                         </div>
@@ -159,24 +145,20 @@ const Landing = () => {
                 <section className="px-5 py-12 md:px-8 md:py-16">
                     <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.8fr_1.2fr]">
                         <div>
-                            <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-white/45">
-                                <ListChecks size={14} className="text-spotify" />
-                                Validação
-                            </p>
-                            <h2 className="text-3xl font-black text-white">O painel continua o tutorial.</h2>
-                            <p className="mt-3 text-sm leading-7 text-muted">
-                                A aba Início orienta a configuração, a escolha dos provedores e a seleção de playlists. Você pode experimentar a conversão entre arquivos sem conectar contas.
-                            </p>
+                            <p className="mb-2 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold uppercase text-muted">
+                                <ListChecks size={14} className="text-spotify" />{t("Validação")}</p>
+                            <h2 className="text-3xl font-black text-white">{t("O painel continua o tutorial.")}</h2>
+                            <p className="mt-3 text-sm leading-7 text-muted">{t("A aba Início orienta a configuração, a escolha dos provedores e a seleção de playlists. Você pode experimentar a conversão entre arquivos sem conectar contas.")}</p>
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
                             {[
-                                'Back-end online/offline via /api/health',
-                                'Dados e fila locais (sem banco externo)',
-                                'Sete provedores e configuração por plataforma',
-                                'Conversão CSV, JSON, M3U e TXT sem contas',
-                                'Progresso em tempo real via Socket.io',
-                                'Histórico, pendências e revisão manual de faixas',
+                                t("Back-end online/offline via /api/health"),
+                                t("Dados e fila locais (sem banco externo)"),
+                                t("Sete provedores e configuração por plataforma"),
+                                t("Conversão CSV, JSON, M3U e TXT sem contas"),
+                                t("Progresso em tempo real via Socket.io"),
+                                t("Histórico, pendências e revisão manual de faixas"),
                             ].map((item) => (
                                 <div key={item} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/35 p-4">
                                     <CheckCircle2 size={17} className="shrink-0 text-spotify" />
@@ -189,7 +171,7 @@ const Landing = () => {
 
                 <section className="px-5 pb-16 md:px-8">
                     <div className="mx-auto max-w-7xl rounded-lg border border-white/10 bg-white/[0.045] p-6">
-                        <h2 className="text-2xl font-black text-white">Solução de problemas rápida</h2>
+                        <h2 className="text-2xl font-black text-white">{t("Solução de problemas rápida")}</h2>
                         <div className="mt-5 grid gap-3 md:grid-cols-2">
                             {troubleshootingItems.map((item) => (
                                 <div key={item.title} className="rounded-lg border border-white/10 bg-black/35 p-4">

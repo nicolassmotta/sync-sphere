@@ -115,7 +115,7 @@ export const retryTransferTracks = async (req, res, next) => {
 
         res.status(202).json({
             status: 'success',
-            message: `${requeued} ${requeued === 1 ? 'faixa voltou' : 'faixas voltaram'} para a fila.`,
+            message: requeued ? `${requeued} ${requeued === 1 ? 'faixa voltou' : 'faixas voltaram'} para a fila.` : transfer.lastMessage,
             data: { transfer, requeued },
         });
     } catch (error) {
@@ -172,4 +172,16 @@ export const getTransferEstimate = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+
+export const downloadTransferReport = async (req, res, next) => {
+    try {
+        const { buildTransferReport } = await import('../services/transfer/transferReportService.js');
+        const report = await buildTransferReport({ transferId: req.params.transferId, userId: req.user.id, format: req.query.format, locale: req.locale });
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Content-Type', report.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="syncsphere-relatorio.${report.extension}"`);
+        res.send(report.body);
+    } catch (error) { next(error); }
 };

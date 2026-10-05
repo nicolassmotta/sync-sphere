@@ -118,7 +118,7 @@ Back-end `.env.example`:
 - `ENCRYPTION_KEY` opcional (64 caracteres hex; se ausente, gerada em `data/encryption.key`)
 - `DATA_DIR` opcional (padrão `backend/data`)
 
-A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1` quando o React é servido pelo back-end e tenta `http://localhost:8000/api/v1` quando roda no Vite. Mantém `http://localhost:4001/api/v1` apenas como fallback técnico para ambientes locais antigos.
+O cliente HTTP em `frontend/src/services/api.js` usa `/api/v1` no app servido pelo back-end e `http://localhost:8000/api/v1` no Vite. `VITE_API_URL` configura outra origem explicitamente. Falhas de rede não fazem o painel procurar outras instalações em portas diferentes; erro 401 de plataforma mantém a tela atual para reconexão.
 
 ## Padrões de Trabalho
 
@@ -148,3 +148,27 @@ A alternativa atual do front-end em `frontend/src/services/api.js` usa `/api/v1`
 - Progresso de transferência deve ser emitido em tempo real por Socket.io.
 - `withCredentials` deve ser mantido no Axios para o fluxo de OAuth do Spotify.
 - Integrações externas precisam prever rate limit, falhas parciais e logs de músicas não encontradas.
+
+
+## Primeira experiência e suporte
+
+- Início usa cinco etapas: Origem, Destino, Conexões, Playlists e Resultado. O par e a etapa são preservados na sessão do navegador; não persista credenciais no front.
+- Demonstração integrada usa `/system/demo` e o fluxo real Arquivo para Arquivo. Dados são fictícios e a repetição intencional aparece no resultado.
+- `provider-settings.json` é essencial e cifrado. Client IDs salvos pelo painel têm prioridade sobre o `.env`; a conta deve ser desconectada antes de alterar o identificador.
+- Escritas de Deezer, TIDAL, Apple Music e SoundCloud são marcadas experimentais até a conferência com contas reais. Não declare essa validação com base em mocks.
+- Suporte em `services/system/`: diagnóstico por lista permitida, backup cifrado por senha e restauração offline com bloqueio/journal de rollback. As rotas `/system` aceitam apenas loopback.
+- `scripts/start-local.mjs` inicia e abre o painel; não sobrescreve `.env` existente. `scripts/package-local.mjs` gera pacotes com Node.js oficial verificado por SHA-256 e somente dependências de produção. `artifacts/` e backups `.ssb` ficam ignorados.
+- Fonte Sora é servida localmente com a licença OFL. Modais preservam foco ao digitar, isolam o conteúdo de fundo e respeitam teclado. Interface PT/EN e guias iniciais em inglês disponíveis; referências técnicas e prompts de terminal permanecem em português.
+- Guias: `docs/primeira-migracao.md`, `docs/backups.md`, `docs/distribution.md` e `docs/usability-testing.md`.
+
+
+## Português e inglês
+
+A interface possui seletor PT/EN, com preferência salva no navegador e fallback em português. Catálogos locais em `shared/locales/` são compartilhados pela API e pelo React. A API negocia `Accept-Language`, preserva enums e metadados, e retorna `Content-Language` e `Vary`. Relatórios localizam mensagens próprias; nomes de músicas e playlists permanecem originais. A troca de idioma não cria jobs nem limpa seleções. Veja [idiomas](../localization.md) e [guias em inglês](../en/README.md).
+
+
+## Auditoria de falhas e navegação
+
+Coleções essenciais validam o formato básico de objeto ou lista antes de abrir os consumidores. Erros locais esperados retornam orientação; erros inesperados não devolvem corpo, consulta ou pilha. Leitura remota diferencia autenticação, rate limit, indisponibilidade e ausência, inclusive antes da fila. Reconectar uma plataforma retoma somente transferências cujo par a contém. O matcher exige pontuação numérica finita para correspondência automática e cache.
+
+As abas do painel usam links com `?tab=`, preservando recarga e navegação do navegador. O Histórico tem cartões em tela pequena e estados de erro com recuperação. A assinatura Socket.io continua não terminal durante perda de conexão; a interface informa a reconexão. Testes de interação React usam Vitest e Testing Library. A fixture de navegador em `backend/tests/fixtures/browser-server.mjs` exige diretório temporário e bloqueia rede externa; ela não comprova operações em contas reais.

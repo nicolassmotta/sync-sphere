@@ -14,7 +14,7 @@ export default {
             darkBackground: '#070808',
             surfaceCard: '#101313',
             ink: '#F4F7F5',
-            muted: '#98A29E',
+            muted: '#B5C0BA',
             line: 'rgba(255,255,255,0.10)'
         },
         boxShadow: {

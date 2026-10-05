@@ -1,10 +1,11 @@
+import { translate as text } from '../../i18n/index';
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import Spinner from './Spinner';
 
 const variants = {
     primary: 'border border-spotify/30 bg-spotify text-black hover:bg-spotify/90',
-    youtube: 'bg-youtube text-white shadow-[0_18px_50px_rgba(255,0,0,0.18)] hover:bg-youtube/90',
+    youtube: 'bg-red-700 text-white shadow-[0_18px_50px_rgba(255,0,0,0.18)] hover:bg-red-800',
     secondary: 'border border-white/10 bg-white/10 text-white hover:bg-white/20',
     ghost: 'bg-white/5 text-gray-200 hover:bg-white/10',
     danger: 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20',
@@ -23,7 +24,7 @@ const Button = forwardRef(({
     disabled,
     fullWidth = false,
     loading = false,
-    loadingLabel = 'Carregando...',
+    loadingLabel = text("Carregando..."),
     leftIcon,
     rightIcon,
     size = 'md',
@@ -40,7 +41,7 @@ const Button = forwardRef(({
             disabled={isDisabled}
             aria-busy={loading || undefined}
             className={cn(
-                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
+                'inline-flex items-center justify-center gap-2 rounded-lg font-extrabold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground disabled:cursor-not-allowed disabled:opacity-60',
                 variants[variant],
                 sizes[size],
                 fullWidth && 'w-full',

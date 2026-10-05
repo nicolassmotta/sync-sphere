@@ -36,3 +36,10 @@ A documentação pública está organizada por instalação, integração, uso, 
 A escrita real em Deezer, TIDAL, Apple Music e SoundCloud precisa de credenciais da conta e de uma playlist pequena de teste. Testes automatizados usam respostas simuladas e não substituem essa confirmação.
 
 Retomadas em destinos remotos acrescentam faixas recuperadas ao fim da playlist. A ordem exata após buscas tardias pode diferir da origem. A criação de uma playlist remota também depende do comportamento de cada API; uma interrupção imediatamente após sua criação pode exigir conferência manual antes de tentar novamente.
+
+
+## Primeira experiência
+
+Fluxo guiado, demonstração integrada, assistentes de conexão, relatórios, ajuda por sintoma, diagnóstico revisável, backup protegido e geração de pacotes portáteis estão implementados. A interface PT/EN, o README em inglês e os guias iniciais traduzidos vêm na etapa seguinte, ainda em preparação. Referências técnicas completas e prompts de terminal permanecem em português. Veja [idiomas](localization.md).
+
+Além da confirmação real das integrações, ficam pendentes a execução dos pacotes em sistemas/arquiteturas não disponíveis na máquina de desenvolvimento, sessões de usabilidade com participantes reais e eventual assinatura de instaladores. O [roteiro de conferência](usability-testing.md) descreve como obter evidência sem pedir credenciais aos participantes.

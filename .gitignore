@@ -90,3 +90,7 @@ data/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Pacotes locais e backups protegidos
+/artifacts/
+*.ssb
