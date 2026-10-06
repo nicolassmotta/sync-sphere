@@ -14,14 +14,14 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
         previousTab.current = activeTab;
     }, [activeTab]);
     return (
-        <div className="app-shell flex min-h-screen overflow-hidden text-ink selection:bg-spotify/30">
+        <div className="app-shell flex min-h-screen overflow-x-clip text-ink selection:bg-spotify/30">
             <a href="#dashboard-content" className="skip-link">{t("Pular para o conteúdo")}</a>
             <Sidebar activeTab={activeTab} />
             
-            <div className="relative z-10 flex min-w-0 flex-1 flex-col border-l border-white/10 bg-black/35 backdrop-blur-3xl shadow-2xl">
+            <div className="relative z-10 flex min-w-0 flex-1 flex-col bg-black/15">
                 <Header activeTab={activeTab} onOpenHelp={() => setActiveTab('settings')} />
 
-                <nav className="sticky top-20 z-20 flex gap-2 overflow-x-auto bg-darkBackground border-b border-white/10 px-4 py-3 md:hidden" aria-label={t("Navegação do painel")}>
+                <nav className="sticky top-16 z-20 flex gap-2 overflow-x-auto border-b border-white/10 bg-darkBackground/95 px-4 py-3 backdrop-blur-xl md:hidden" aria-label={t("Navegação do painel")}>
                     {DASHBOARD_TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -41,7 +41,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
                     })}
                 </nav>
                 
-                <main ref={mainRef} id="dashboard-content" tabIndex={-1} className="w-full flex-1 overflow-y-auto p-5 sm:p-8 lg:p-10">
+                <main ref={mainRef} id="dashboard-content" tabIndex={-1} className="w-full flex-1 p-5 sm:p-8">
                     {children}
                 </main>
             </div>

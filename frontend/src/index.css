@@ -45,16 +45,45 @@
 
 @layer components {
   .app-shell {
-    background: #070808;
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(29, 185, 84, 0.10), transparent 45%),
+      radial-gradient(ellipse at 100% 10%, rgba(255, 65, 76, 0.065), transparent 40%),
+      linear-gradient(180deg, #121817, #070808 65%);
+  }
+
+  .app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, #000, transparent 85%);
   }
 
   .glass-effect,
   .elevated-card {
-    @apply border border-white/15 bg-surfaceCard shadow-panel;
+    @apply border border-white/10 bg-white/[0.045] backdrop-blur-xl shadow-panel;
   }
 
   .elevated-card {
-    @apply rounded-lg;
+    @apply rounded-2xl;
+  }
+
+  [role="dialog"].elevated-card {
+    @apply bg-surfaceCard;
+  }
+
+  .music-route-card {
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(29, 185, 84, 0.12), transparent 65%),
+      radial-gradient(ellipse at 100% 100%, rgba(255, 65, 76, 0.07), transparent 60%),
+      rgba(255,255,255,0.035);
   }
 
   .data-card {

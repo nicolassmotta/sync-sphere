@@ -19,6 +19,7 @@ process.env.NODE_ENV = 'test';
 global.fetch = async () => { throw new Error('A simulação não permite rede externa.'); };
 
 const { listProviders } = await import('../../src/providers/registry.js');
+const { default: AppError } = await import('../../src/utils/AppError.js');
 const { readStore, writeStore } = await import('../../src/storage/jsonStore.js');
 const { getMissingTrackIds } = await import('../../src/services/transfer/reconcileTrackIds.js');
 const { globalLimiter, transferLimiter, transferActionLimiter } = await import('../../src/middlewares/rateLimiter.js');
@@ -35,12 +36,14 @@ const tracksFor = (name) => name === 'empty' ? [] : [
     { name: 'Faixa fictícia A', artist: 'Banda fictícia', durationMs: 180000 },
     { name: name === 'not-found' ? 'Não localizada' : 'Faixa fictícia B', artist: 'Banda fictícia', durationMs: 200000 },
     { name: 'Faixa fictícia A', artist: 'Banda fictícia', durationMs: 180000 },
-].map((track) => name === 'invalid-score' ? { ...track, name: `Sem confiança: ${track.name}` } : track);
+].map((track) => name === 'invalid-score' ? { ...track, name: `Sem confiança: ${track.name}` }
+    : name === 'robust-review' ? { ...track, name: `Revisão: ${track.name}` } : track);
 for (const provider of listProviders().filter((value) => value.id !== 'file')) {
     authorized[provider.id] = true;
-    provider.getStatus = async () => ({ connected: authorized[provider.id], configured: true, credentialSource: 'panel', canRead: authorized[provider.id], canWrite: authorized[provider.id], authMethod: 'simulated' });
-    provider.ensureReadable = async () => {};
-    provider.ensureWritable = async () => {};
+    const publicRead = ['deezer', 'appleMusic', 'soundcloud'].includes(provider.id);
+    provider.getStatus = async () => ({ connected: authorized[provider.id], configured: true, credentialSource: authorized[provider.id] ? 'panel' : null, canRead: authorized[provider.id] || publicRead, canWrite: authorized[provider.id], authMethod: 'simulated' });
+    provider.ensureReadable = async () => { if (!authorized[provider.id] && !publicRead) throw new AppError('Conecte a origem simulada antes de continuar.', 400); };
+    provider.ensureWritable = async () => { if (!authorized[provider.id]) throw new AppError('Conecte o destino simulado antes de continuar.', 400); };
     provider.normalizePlaylistId = (value) => String(value).trim();
     provider.getSearchDelayMs = () => 0;
     provider.listPlaylists = async () => ({ playlists: cases.map((name) => ({ id: `fixture-${name}-0001`, name: `Simulação: ${name}`, trackCount: name === 'empty' ? 0 : 3 })), total: cases.length, hasMore: false });
@@ -92,15 +95,15 @@ for (const provider of listProviders().filter((value) => value.id !== 'file')) {
     provider.saveCredentials = async () => { authorized[provider.id] = true; };
     provider.disconnect = async () => { authorized[provider.id] = false; };
     if (provider.oauth) {
-        provider.oauth.getAuthorizationUrl = async () => `http://localhost:${process.env.PORT}/api/v1/integrations/${provider.id}/callback?code=ficticio`;
-        provider.oauth.handleCallback = async () => { authorized[provider.id] = true; return { connected: true, userId: 'local', redirectUrl: `http://localhost:${process.env.PORT}/dashboard?tab=integrations&provider=${provider.id}&status=connected` }; };
+        provider.oauth.getAuthorizationUrl = async () => `http://127.0.0.1:${process.env.PORT}/api/v1/integrations/${provider.id}/callback?code=ficticio`;
+        provider.oauth.handleCallback = async () => { authorized[provider.id] = true; return { connected: true, userId: 'local', redirectUrl: `http://127.0.0.1:${process.env.PORT}/dashboard?tab=integrations&provider=${provider.id}&status=connected` }; };
     }
 }
 const { default: app } = await import('../../src/app.js');
 const wrapper = express();
 // Cotas reais são verificadas na suíte HTTP; a fixture permite percorrer os cenários.
 wrapper.use((req, res, next) => { for (const limiter of [globalLimiter, transferLimiter, transferActionLimiter]) limiter.resetKey(req.socket.remoteAddress); next(); });
-wrapper.get('/__qa/observations', (req, res) => res.json({ observations, destinations: remote }));
+wrapper.get('/__qa/observations', (req, res) => res.json({ simulation: true, observations, destinations: remote }));
 wrapper.use(app);
 const server = http.createServer(wrapper);
 const io = new Server(server);

@@ -9,6 +9,7 @@ import Button from '../ui/Button';
 import FadeInPage from '../ui/FadeInPage';
 import Modal from '../ui/Modal';
 import ActiveTransferCard from './home/ActiveTransferCard';
+import MigrationOverview from './home/MigrationOverview';
 import { ProviderRow } from './home/ProviderPairCard';
 import MigrationSteps from './home/MigrationSteps';
 import ProviderPlaylistLinkCard from './home/ProviderPlaylistLinkCard';
@@ -67,12 +68,20 @@ const HomeTab = ({
     const [trackPreviews, setTrackPreviews] = useState({});
     const [linkPreview, setLinkPreview] = useState(null);
     const [removingPlaylist, setRemovingPlaylist] = useState(null);
+    const [guided, setGuided] = useState(() => {
+        try { return sessionStorage.getItem('syncsphere-home-view-v1') === 'guided'; } catch { return false; }
+    });
+    useEffect(() => {
+        try { sessionStorage.setItem('syncsphere-home-view-v1', guided ? 'guided' : 'overview'); } catch { /* A preferência funciona sem persistência. */ }
+    }, [guided]);
     const headingRef = useRef(null);
     const previousStepRef = useRef(wizardStep);
+    const previousViewRef = useRef(guided);
     useEffect(() => {
-        if (previousStepRef.current !== wizardStep) headingRef.current?.focus();
+        if (previousStepRef.current !== wizardStep || previousViewRef.current !== guided) headingRef.current?.focus();
         previousStepRef.current = wizardStep;
-    }, [wizardStep]);
+        previousViewRef.current = guided;
+    }, [wizardStep, guided]);
     const selectedPlaylistIdSet = useMemo(() => new Set(sourcePlaylistIds), [sourcePlaylistIds]);
     const blockedPlaylistIdSet = useMemo(() => new Set(
         Object.entries(trackPreviews)
@@ -96,7 +105,8 @@ const HomeTab = ({
 
     const selectedCount = sourcePlaylistIds.length || (sourcePlaylistId ? 1 : 0);
     const providersReady = Boolean(source.canRead && target.canWrite);
-    const readyToTransfer = providersReady && selectedCount > 0;
+    const readyToTransfer = providersReady && selectedCount > 0
+        && (listMode ? selectedPlaylists.length === selectedCount : !linkPreview?.blocked && !linkPreview?.loading);
 
     const selectedTrackCount = useMemo(
         () => selectedPlaylists.reduce((sum, playlist) => sum + (Number(playlist.trackCount) || 0), 0),
@@ -288,9 +298,28 @@ const HomeTab = ({
     const goBack = () => setWizardStep(Math.max(0, wizardStep - 1));
     const experimental = target.validation?.write === 'experimental';
     const titles = [t("De onde vêm suas playlists?"), t("Para onde você quer levar suas músicas?"), t("Vamos preparar suas conexões"), t("Escolha as playlists que quer migrar"), t("Acompanhe sua migração")];
+    const playlistPicker = listMode ? <ProviderPlaylistListCard provider={source} connected={Boolean(source.connected)}
+        playlists={sourcePlaylists} playlistsSummary={sourcePlaylistsSummary} playlistsLoading={sourcePlaylistsLoading} playlistsError={sourcePlaylistsError}
+        sourcePlaylistIds={sourcePlaylistIds} selectedPlaylistIdSet={selectedPlaylistIdSet} trackPreviews={trackPreviews}
+        onRefreshPlaylists={() => refreshSourcePlaylists({ force: true })} onSelectAllPlaylists={selectAllPlaylists} onClearSelectedPlaylists={clearSelectedPlaylists}
+        onTogglePlaylist={togglePlaylist} onToggleTrackPreview={toggleTrackPreview} onOpenIntegrations={() => setActiveTab('integrations')}
+        onImportFile={source.auth?.type === 'file' ? importFile : undefined} onDeletePlaylist={source.auth?.type === 'file' ? setRemovingPlaylist : undefined} />
+        : <ProviderPlaylistLinkCard source={source} target={target} preview={linkPreview} sourcePlaylistId={sourcePlaylistId}
+            onLoadPreview={loadLinkPreview} onOpenIntegrations={() => setActiveTab('integrations')} onPlaylistChange={handleManualPlaylistChange} onReviewTransfer={openTransferModal} />;
 
     return (
-        <FadeInPage className="mx-auto w-full max-w-5xl">
+        <FadeInPage className="mx-auto w-full max-w-7xl">
+            <div role="group" aria-label={t('Visualização da migração')} className="mb-6 flex w-fit gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
+                {[false, true].map((mode) => <button key={String(mode)} type="button" aria-pressed={guided === mode} onClick={() => setGuided(mode)}
+                    className={`min-h-10 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${guided === mode ? 'bg-white/10 text-white' : 'text-muted hover:text-white'}`}>{t(mode ? 'Passo a passo' : 'Visão geral')}</button>)}
+            </div>
+            {demoMode && <p role="status" className="mb-5 rounded-xl border border-sky-400/30 bg-sky-400/10 p-4 text-sm text-sky-100">{t("Demonstração com três músicas fictícias, incluindo uma repetição. Nenhuma conta de música será acessada.")}</p>}
+            {!guided ? <MigrationOverview headingRef={headingRef} providers={providers} source={source} target={target} onProvidersChange={onProvidersChange}
+                selectedCount={selectedCount} selectedTrackCount={selectedTrackCount} readyToTransfer={readyToTransfer} isTransferring={isTransferring}
+                onReviewTransfer={openTransferModal} onOpenIntegrations={() => setActiveTab('integrations')} onStartDemo={onStartDemo} demoLoading={demoLoading} integrationsLoading={integrationsLoading}
+                progress={progress} progressMessage={progressMessage} connectionState={connectionState} transfers={transfers} onResumeTransfer={onResumeTransfer} onOpenHistory={() => setActiveTab('history')}>
+                {playlistPicker}
+            </MigrationOverview> : <>
             <MigrationSteps step={wizardStep} onChange={setWizardStep} />
             <div className="mb-7">
                 <h1 ref={headingRef} tabIndex={-1} className="max-w-3xl text-3xl font-bold leading-tight text-white sm:text-4xl">{titles[wizardStep]}</h1>
@@ -298,7 +327,6 @@ const HomeTab = ({
                     {wizardStep === 0 ? t("Você escolhe o caminho. Nós ajudamos a conectar, copiar e conferir cada música.") : t("{{value0}} para {{value1}}. Suas playlists de origem serão preservadas.", { value0: source.label, value1: target.label })}
                 </p>
             </div>
-            {demoMode && <p role="status" className="mb-5 rounded-lg border border-sky-400/30 bg-sky-400/10 p-4 text-sm text-sky-100">{t("Demonstração com três músicas fictícias, incluindo uma repetição. Nenhuma conta de música será acessada.")}</p>}
             {experimental && wizardStep > 0 && <p className="mb-5 rounded-lg border border-amber-300/30 bg-amber-300/10 p-4 text-sm text-amber-100">{t("Escrita no ")}{t(target.label)}{t(" experimental: os testes automatizados usam respostas simuladas. A validação com uma conta real ainda está pendente.")}</p>}
 
             {wizardStep < 2 && <section className="elevated-card p-5 sm:p-7">
@@ -324,14 +352,7 @@ const HomeTab = ({
             </section>}
 
             {wizardStep === 3 && <div className="space-y-5">
-                {listMode ? <ProviderPlaylistListCard provider={source} connected={Boolean(source.connected)}
-                    playlists={sourcePlaylists} playlistsSummary={sourcePlaylistsSummary} playlistsLoading={sourcePlaylistsLoading} playlistsError={sourcePlaylistsError}
-                    sourcePlaylistIds={sourcePlaylistIds} selectedPlaylistIdSet={selectedPlaylistIdSet} trackPreviews={trackPreviews}
-                    onRefreshPlaylists={() => refreshSourcePlaylists({ force: true })} onSelectAllPlaylists={selectAllPlaylists} onClearSelectedPlaylists={clearSelectedPlaylists}
-                    onTogglePlaylist={togglePlaylist} onToggleTrackPreview={toggleTrackPreview} onOpenIntegrations={() => setActiveTab('integrations')}
-                    onImportFile={source.auth?.type === 'file' ? importFile : undefined} onDeletePlaylist={source.auth?.type === 'file' ? setRemovingPlaylist : undefined} />
-                    : <ProviderPlaylistLinkCard source={source} target={target} preview={linkPreview} sourcePlaylistId={sourcePlaylistId}
-                        onLoadPreview={loadLinkPreview} onOpenIntegrations={() => setActiveTab('integrations')} onPlaylistChange={handleManualPlaylistChange} onReviewTransfer={openTransferModal} />}
+                {playlistPicker}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Button onClick={goBack}>{t("Voltar")}</Button>
                     <p role="status" className="text-sm text-muted">{selectedCount} {selectedCount === 1 ? t("playlist selecionada") : t("playlists selecionadas")}</p>
@@ -345,6 +366,7 @@ const HomeTab = ({
                 <div className="flex flex-wrap gap-3"><Button onClick={() => { setWizardStep(0); }}>{t("Migrar outra playlist")}</Button><Button onClick={() => setActiveTab('history')}>{t("Ver resultado e baixar relatório")}</Button></div>
             </div>}
             {transfers.length > 0 && wizardStep !== 4 && <Button className="mt-5" onClick={() => setWizardStep(4)}>{t("Acompanhar minhas transferências")}</Button>}
+            </>}
             <p className="mt-6 text-sm leading-6 text-muted">{t("Precisa de orientação? ")}<button type="button" className="font-semibold text-white underline underline-offset-4" onClick={() => setActiveTab('settings')}>{t("Abrir ajuda")}</button>{t(". Seus dados ficam neste computador.")}</p>
             <Modal isOpen={Boolean(removingPlaylist)} onClose={() => setRemovingPlaylist(null)} title={t("Remover o arquivo importado?")} size="sm"
                 description={t("A playlist será removida da lista local de importações. Exportações e playlists nas plataformas serão preservadas.")}

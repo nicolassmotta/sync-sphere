@@ -23,11 +23,23 @@ import { formatCountdown, formatEta } from '../../../utils/formatDuration';
 const TERMINAL_STATUSES = ['completed', 'failed'];
 
 const trackStatusIcons = {
-    matched: <CheckCircle2 size={14} className="shrink-0 text-spotify" aria-label={text("Encontrada")} />,
-    not_found: <XCircle size={14} className="shrink-0 text-yellow-300" aria-label={text("Não encontrada")} />,
-    retry_queued: <RotateCw size={14} className="shrink-0 text-sky-300" aria-label={text("Na fila de retry")} />,
-    failed: <AlertTriangle size={14} className="shrink-0 text-red-400" aria-label={text("Falhou")} />,
+    matched: [CheckCircle2, 'text-green-300', 'Encontrada'],
+    not_found: [XCircle, 'text-yellow-300', 'Não encontrada'],
+    needs_review: [AlertTriangle, 'text-amber-200', 'Aguardando revisão'],
+    retry_queued: [RotateCw, 'text-sky-300', 'Na fila de retry'],
+    failed: [AlertTriangle, 'text-red-400', 'Falhou'],
 };
+
+const TrackStatusIcon = ({ status }) => {
+    const { t } = useText();
+    const entry = trackStatusIcons[status];
+    if (!entry) return null;
+    const [Icon, color, label] = entry;
+    return <Icon role="img" size={14} className={`shrink-0 ${color}`} aria-label={t(label)} />;
+};
+
+const hasUnresolvedTracks = (transfer) => transfer.status === 'failed'
+    || ['notFound', 'needsReview', 'retryQueued', 'failed', 'pendingInserts'].some((key) => transfer.counts?.[key] > 0);
 
 // Relógio que só roda enquanto houver contagem regressiva na tela.
 const useNow = (active) => {
@@ -75,10 +87,11 @@ const CountChips = ({ counts }) => {
     return (
         <div className="mt-3 flex flex-wrap gap-2">
             <Badge tone="success" icon={<CheckCircle2 size={12} aria-hidden="true" />}>
-                {counts.matched}{t(" encontradas")}</Badge>
+                {counts.matched === 1 ? t('1 encontrada') : <>{counts.matched}{t(" encontradas")}</>}</Badge>
+            {counts.needsReview > 0 && <Badge tone="warning" icon={<AlertTriangle size={12} aria-hidden="true" />}>{t('{{value0}} para revisar', { value0: counts.needsReview })}</Badge>}
             {counts.notFound > 0 && (
                 <Badge tone="warning" icon={<XCircle size={12} aria-hidden="true" />}>
-                    {counts.notFound}{t(" não encontradas")}</Badge>
+                    {counts.notFound === 1 ? t('1 não encontrada') : <>{counts.notFound}{t(" não encontradas")}</>}</Badge>
             )}
             {pendingCount > 0 && (
                 <Badge tone="info" icon={<RotateCw size={12} aria-hidden="true" />}>
@@ -166,7 +179,7 @@ const LiveFeed = ({ transfer }) => {
             )}
             {recentTracks.map((track) => (
                 <p key={track.index} className="flex items-center gap-2 text-xs font-semibold text-white/60">
-                    {trackStatusIcons[track.status]}
+                    <TrackStatusIcon status={track.status} />
                     <span className="min-w-0 truncate">{track.name} - {track.artist}</span>
                 </p>
             ))}
@@ -181,9 +194,9 @@ const TransferRow = ({ transfer, now, onResume, onOpenIntegrations }) => {
             <p className="min-w-0 truncate text-sm font-extrabold text-white">
                 {transfer.playlistName || t("Playlist")}
             </p>
-            <StatusBadge status={transfer.status} label={transfer.status === 'completed' && transfer.counts?.notFound > 0 ? t("Revisar resultado") : undefined} tone={transfer.status === 'completed' && transfer.counts?.notFound > 0 ? 'warning' : undefined} />
+            <StatusBadge status={transfer.status} label={transfer.status === 'completed' && hasUnresolvedTracks(transfer) ? t("Revisar resultado") : undefined} tone={transfer.status === 'completed' && hasUnresolvedTracks(transfer) ? 'warning' : undefined} />
         </div>
-        <ProgressBar value={transfer.progress || 0} className="h-2" />
+        {!TERMINAL_STATUSES.includes(transfer.status) && <ProgressBar value={transfer.progress || 0} className="h-2" />}
         {describeProgress(transfer) && (
             <p className="mt-2 text-xs font-semibold text-muted">{describeProgress(transfer)}</p>
         )}
@@ -211,16 +224,14 @@ const ActiveTransferCard = ({
     const now = useNow(hasCountdown);
     const running = transfers.filter((transfer) => !TERMINAL_STATUSES.includes(transfer.status));
     const totalEta = running.reduce((sum, transfer) => sum + (transfer.etaSeconds || 0), 0);
-    const hasPendingTracks = transfers.some((transfer) => (
-        (transfer.counts?.failed || 0) + (transfer.counts?.retryQueued || 0) + (transfer.counts?.pendingInserts || 0) > 0
-    ));
+    const hasPendingTracks = transfers.some(hasUnresolvedTracks);
 
     return (
         <div className="elevated-card p-6">
             <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                     <p className="text-xs font-bold text-gray-300">{t("Migração ativa")}</p>
-                    <h2 className="mt-1 text-xl font-black text-white">{progress}{t("% concluído")}</h2>
+                    <h2 className="mt-1 text-xl font-bold text-white">{isTransferring ? <>{progress}{t("% concluído")}</> : t(transfers.length ? hasPendingTracks ? 'Resultado para revisar' : 'Migração concluída' : 'Pronto para migrar')}</h2>
                     {isTransferring && totalEta > 0 && (
                         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-spotify">
                             <Clock size={13} /> {formatEta(totalEta)}{t(" restantes")}</p>
@@ -230,7 +241,7 @@ const ActiveTransferCard = ({
             </div>
 
             {isTransferring && connectionState === 'reconnecting' && <p role="status" className="mb-4 rounded-lg border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">{t("A conexão de progresso caiu. Tentando reconectar. Mantenha o aplicativo aberto; o estado da transferência continua salvo.")}</p>}
-            <ProgressBar value={progress} />
+            {(isTransferring || (transfers.length > 0 && !hasPendingTracks)) && <ProgressBar value={progress} />}
             <p role="status" className="mt-4 text-sm font-semibold leading-6 text-white/70">
                 {isTransferring ? (progressMessage || t("Sincronizando faixas...")) : (transfers.length ? t("Processamento encerrado. Confira o resultado de cada playlist abaixo.") : t("Nenhuma transferência em execução."))}
             </p>
