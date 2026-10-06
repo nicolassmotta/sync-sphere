@@ -17,6 +17,7 @@ import {
 import api from '../services/api';
 
 import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardTabBoundary from '../components/dashboard/DashboardTabBoundary';
 
 const HomeTab = lazy(() => import('../components/dashboard/HomeTab'));
 const SettingsTab = lazy(() => import('../components/dashboard/SettingsTab'));
@@ -201,9 +202,10 @@ const Dashboard = () => {
             setSourcePlaylistIds([response.data.data.playlist.id]);
             setDemoMode(true);
             setWizardStep(3);
+            if (source.id === 'file') await refreshSourcePlaylists({ force: true, silent: true });
         } catch (error) { toast.error(error.response?.data?.message || t("Não foi possível carregar a demonstração. Confira se o aplicativo está iniciado.")); }
         finally { setDemoLoading(false); }
-    }, [t]);
+    }, [refreshSourcePlaylists, source.id, t]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -241,6 +243,7 @@ const Dashboard = () => {
 
     return (
         <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+            <DashboardTabBoundary key={activeTab}>
             <Suspense fallback={<DashboardTabFallback />}>
                 {activeTab === 'home' && (
                     <HomeTab 
@@ -311,6 +314,7 @@ const Dashboard = () => {
                     />
                 )}
             </Suspense>
+            </DashboardTabBoundary>
         </DashboardLayout>
     );
 };

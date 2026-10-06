@@ -17,7 +17,10 @@ const EstimateNotice = ({ estimate, targetLabel }) => {
                 <Clock size={15} className="text-spotify" />
                 {formatEta(estimate.etaSeconds)}{t(" para ")}{formatTrackCount(estimate.trackCount)}
             </p>
-            <p className="mt-1">{t("Cerca de ")}{estimate.tracksPerMinute}{t(" faixas por minuto no ")}{targetLabel}{t(", com base nas últimas migrações.")}{estimate.queueAheadSeconds > 0 && t(" Antes dela, a fila ainda tem {{value0}} de trabalho.", { value0: formatEta(estimate.queueAheadSeconds) })}
+            <p className="mt-1">{Number.isFinite(estimate.tracksPerMinute) && estimate.tracksPerMinute > 0
+                ? <>{t("Cerca de ")}{estimate.tracksPerMinute}{t(" faixas por minuto no ")}{targetLabel}{t(", com base nas últimas migrações.")}</>
+                : t('Esta é uma estimativa. O tempo pode variar conforme a plataforma e a fila.')}
+                {estimate.queueAheadSeconds > 0 && t(" Antes dela, a fila ainda tem {{value0}} de trabalho.", { value0: formatEta(estimate.queueAheadSeconds) })}
             </p>
             <p className="mt-1 text-muted">{t("Se a plataforma limitar as buscas, a migração pausa e conserva o progresso para a retomada.")}</p>
         </div>

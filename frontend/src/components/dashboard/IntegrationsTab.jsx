@@ -96,8 +96,9 @@ const CredentialForm = ({ provider, onSaved }) => {
     };
 
     return (
-        <div className="space-y-3">
+        <form onSubmit={(event) => { event.preventDefault(); if (requiredFilled && !saving && !removing) save(); }} className="space-y-3">
             {error && <Alert tone="danger" title={t("Conexão não confirmada")}>{t(error)}</Alert>}
+            <fieldset disabled={saving || removing} className="space-y-3">
             {fields.map((field, index) => (
                 <TextField
                     key={field.name}
@@ -116,7 +117,7 @@ const CredentialForm = ({ provider, onSaved }) => {
             ))}
             <div className="flex flex-wrap gap-2">
                 <Button
-                    onClick={save}
+                    type="submit"
                     variant={ui.buttonVariant}
                     disabled={!requiredFilled}
                     loading={saving}
@@ -133,10 +134,11 @@ const CredentialForm = ({ provider, onSaved }) => {
                     >{t("Desconectar e remover")}</Button>
                 )}
             </div>
+            </fieldset>
             <Modal isOpen={confirmRemoval} onClose={() => setConfirmRemoval(false)} size="sm" title={t("Desconectar {{value0}}?", { value0: provider.label })}
                 description={t("A credencial salva pelo painel será removida deste computador. As playlists na plataforma serão preservadas.")}
                 footer={<Button onClick={remove} loading={removing} variant="danger">{t("Desconectar e remover")}</Button>} />
-        </div>
+        </form>
     );
 };
 
@@ -421,11 +423,22 @@ const IntegrationsTab = ({
             </Card>
 
             </details>
-            <div role="group" className="mb-5 flex flex-wrap gap-2" aria-label={t("Escolher plataforma para conectar")}>
-                {providers.map((provider) => <Button key={provider.id} size="sm" variant={selectedProvider?.id === provider.id ? 'primary' : 'secondary'}
-                    aria-pressed={selectedProvider?.id === provider.id} onClick={() => setSelectedProviderId(provider.id)}>{t(provider.label)}{preferredProviderIds.includes(provider.id) ? t(" (escolhida)") : ''}</Button>)}
+            {!backendOnline && !systemStatusLoading && <Alert tone="danger" className="mb-6" title={t('Aplicativo local indisponível')}>{t('O aplicativo local não respondeu. Abra Ajuda para conferir como iniciar.')}</Alert>}
+            <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div role="group" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:sticky lg:top-24 lg:grid-cols-1" aria-label={t("Escolher plataforma para conectar")}>
+                    {providers.map((provider) => <button key={provider.id} type="button"
+                        aria-label={`${t(provider.label)}${preferredProviderIds.includes(provider.id) ? t(' (escolhida)') : ''}`}
+                        aria-describedby={`integration-status-${provider.id}`}
+                        aria-pressed={selectedProvider?.id === provider.id} onClick={() => setSelectedProviderId(provider.id)}
+                        className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${selectedProvider?.id === provider.id ? 'border-spotify/40 bg-spotify/10' : 'border-white/10 bg-black/20 hover:bg-white/5'}`}>
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-black/30"><ProviderIcon providerId={provider.id} size="sm" /></span>
+                        <span className="min-w-0"><span className="block break-words text-sm font-semibold text-white">{t(provider.label)}</span>
+                            <span id={`integration-status-${provider.id}`} className={`mt-1 block text-xs ${provider.connected ? 'text-green-300' : provider.canRead ? 'text-sky-300' : 'text-muted'}`}>{t(provider.connected ? 'Conectado' : provider.canRead ? 'Leitura pública' : 'Preparar conexão')}</span>
+                        </span>
+                    </button>)}
+                </div>
+                {selectedProvider && <ProviderIntegrationCard key={selectedProvider.id} provider={selectedProvider} onChanged={refreshProviders} />}
             </div>
-            {selectedProvider && <ProviderIntegrationCard key={selectedProvider.id} provider={selectedProvider} onChanged={refreshProviders} />}
             {onContinue && <Button className="mt-6" variant="primary" onClick={onContinue}>{t("Voltar à minha migração")}</Button>}
 
         </FadeInPage>

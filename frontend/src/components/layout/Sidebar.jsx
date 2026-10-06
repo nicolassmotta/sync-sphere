@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useText } from '../../i18n/useText';
-import { BookOpen, LayoutDashboard, RefreshCw, History, Plug } from 'lucide-react';
+import { BookOpen, LayoutDashboard, RefreshCw, History, Plug, ShieldCheck } from 'lucide-react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { DASHBOARD_TABS, getDashboardTabUrl } from '../../constants/dashboardTabs';
 
@@ -37,10 +37,10 @@ const SidebarItem = ({ icon: Icon, label, isActive, href }) => {
 const Sidebar = ({ activeTab }) => {
     const { t } = useText();
     return (
-        <aside className="relative z-30 hidden w-72 flex-col border-r border-white/10 bg-black/60 md:flex">
-            <div className="flex h-20 items-center border-b border-white/10 px-6">
+        <aside className="sticky top-0 z-30 hidden h-screen w-60 shrink-0 flex-col border-r border-white/10 bg-black/30 backdrop-blur-xl md:flex">
+            <div className="flex h-16 items-center border-b border-white/10 px-6">
                 <Link to="/dashboard" className="flex items-center gap-3 text-spotify" aria-label="SyncSphere">
-                    <div className="grid h-10 w-10 place-items-center rounded-lg border border-spotify/25 bg-spotify/15">
+                    <div className="grid h-10 w-10 place-items-center rounded-xl border border-spotify/25 bg-spotify/15 shadow-glowGreen">
                         <RefreshCw size={20} className="text-spotify" />
                     </div>
                     <p translate="no" className="text-xl font-extrabold text-white">SyncSphere</p>
@@ -61,6 +61,10 @@ const Sidebar = ({ activeTab }) => {
                     ))}
                 </LayoutGroup>
             </nav>
+            <div className="mx-4 mb-5 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold text-white"><ShieldCheck aria-hidden="true" size={16} className="text-green-300" />{t('Local e privado')}</p>
+                <p className="mt-2 text-xs leading-5 text-muted">{t('Suas músicas conectadas. Seus dados neste computador.')}</p>
+            </div>
         </aside>
     );
 };

@@ -37,7 +37,7 @@ const ProviderPlaylistLinkCard = ({
     const loading = Boolean(preview?.loading);
     const hasPlaylist = Boolean(sourcePlaylistId?.trim());
     const canPreview = hasPlaylist && source.canRead && !loading;
-    const readyToReview = hasPlaylist && source.canRead && target.canWrite;
+    const readyToReview = hasPlaylist && source.canRead && target.canWrite && !loading && !preview?.blocked;
 
     return (
         <div className="elevated-card p-6 lg:p-7">
