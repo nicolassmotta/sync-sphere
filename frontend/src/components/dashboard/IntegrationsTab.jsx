@@ -1,6 +1,6 @@
 import { useText } from '../../i18n/useText';
 import { translate as text } from '../../i18n/index';
-import { useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import {
     Database,
     ExternalLink,
@@ -44,6 +44,29 @@ const TechnicalStatusCard = ({ detail, icon: Icon, label, state, tone }) => {
 const credentialSourceLabels = {
     panel: 'Salvo pelo painel',
     env: 'Lido do backend/.env',
+};
+
+// Endereços citados nos passos viram links para abrir em outra aba.
+const LINK_PATTERN = /((?:https?:\/\/)?(?:[a-z0-9-]+\.)+(?:com|io|net|org)(?:\/[^\s,)]*)?)/gi;
+const linkifyStep = (step) => String(step).split(LINK_PATTERN).map((part, index) => (index % 2
+    ? <a key={index} href={/^https?:/i.test(part) ? part : `https://${part}`} target="_blank" rel="noreferrer"
+        className="font-semibold text-spotify underline underline-offset-4 hover:text-green-300">{part}</a>
+    : <Fragment key={index}>{part}</Fragment>));
+
+const SetupSteps = ({ steps }) => {
+    const { t } = useText();
+    return <ol className="mt-3 space-y-3">
+        {steps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-gray-200">
+            <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/20 text-xs font-bold text-white">{index + 1}</span>
+            <span className="min-w-0"><span className="sr-only">{t("Passo {{value0}}: ", { value0: index + 1 })}</span>{linkifyStep(step)}</span>
+        </li>)}
+    </ol>;
+};
+
+const providerReadiness = (provider) => {
+    if (provider.connected || provider.auth?.type === 'file') return { tone: 'bg-spotify', label: 'conectado' };
+    if (provider.canRead) return { tone: 'bg-sky-300', label: 'leitura pública' };
+    return { tone: 'bg-amber-300', label: 'precisa conectar' };
 };
 
 const DEFAULT_FIELDS = [{ name: 'cookie', label: 'Cookie' }];
@@ -251,13 +274,12 @@ const describeStatus = (provider) => {
     if (!provider.connected) {
         return provider.auth?.type === 'cookie' ? text("Aguardando cookie") : text("Pendente de conexão");
     }
-    const source = credentialSourceLabels[provider.credentialSource] || text("Pronto para usar");
-    return provider.accountName ? text("{{value0}} · conta {{value1}}", { value0: text(source), value1: provider.accountName }) : source;
+    const source = text(credentialSourceLabels[provider.credentialSource] || "Pronto para usar");
+    return provider.accountName ? text("{{value0}} · conta {{value1}}", { value0: source, value1: provider.accountName }) : source;
 };
 
 const ProviderIntegrationCard = ({ provider, onChanged }) => {
     const { t } = useText();
-    const [guideStep, setGuideStep] = useState(0);
     const ui = getProviderUi(provider.id);
     const roles = [
         provider.capabilities?.read && t("origem"),
@@ -290,14 +312,15 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
             {provider.validation?.write === 'experimental' && <Alert tone="warning" title={t("Escrita experimental")} className="mb-5">{t("A validação com uma conta real ainda está pendente. Os testes automatizados de escrita usam respostas simuladas.")}</Alert>}
             {provider.validation?.method === 'oficial e alternativa não oficial' && <p className="mb-5 text-sm text-amber-100">{t("Esta plataforma oferece MusicKit e um caminho alternativo não oficial pelo site. Confira no guia qual método você está usando.")}</p>}
             {provider.validation?.method === 'não oficial ou misto' && <p className="mb-5 text-sm text-amber-100">{t("Esta conexão usa recursos do site da plataforma e pode mudar sem aviso.")}</p>}
-            {ui.setupSteps?.length > 0 && <section className="mb-5 rounded-lg border border-white/15 p-4">
-                <p className="font-semibold text-white">{t("Etapa ")}{guideStep + 1}{t(" de ")}{ui.setupSteps.length}</p>
-                <p className="mt-3 text-sm leading-7 text-gray-200">{ui.setupSteps[guideStep]}</p>
-                <div className="mt-4 flex justify-between gap-2">
-                    <Button size="sm" disabled={guideStep === 0} onClick={() => setGuideStep(guideStep - 1)}>{t("Anterior")}</Button>
-                    <Button size="sm" disabled={guideStep === ui.setupSteps.length - 1} onClick={() => setGuideStep(guideStep + 1)}>{t("Próxima etapa")}</Button>
-                </div>
-            </section>}
+            {ui.setupSteps?.length > 0 && (provider.connected
+                ? <details className="mb-5 rounded-lg border border-white/15 p-4">
+                    <summary className="cursor-pointer font-semibold text-white">{t("Como conectar")}</summary>
+                    <SetupSteps steps={ui.setupSteps} />
+                </details>
+                : <section className="mb-5 rounded-lg border border-white/15 p-4">
+                    <h3 className="font-semibold text-white">{t("Como conectar")}</h3>
+                    <SetupSteps steps={ui.setupSteps} />
+                </section>)}
             {provider.configured === false && ['spotify', 'tidal'].includes(provider.id) && <div className="mb-5"><AppSetupForm providerId={provider.id} onSaved={onChanged} /></div>}
             {provider.configured !== false && !provider.connected && ['spotify', 'tidal'].includes(provider.id) && <details className="mb-5"><summary className="cursor-pointer text-sm text-gray-200">{t("Alterar aplicativo da conexão")}</summary><div className="mt-4"><AppSetupForm providerId={provider.id} onSaved={onChanged} /></div></details>}
             {provider.configured === false && !['spotify', 'tidal'].includes(provider.id) && <Alert tone="warning" title={t("Preparação necessária")} className="mb-5">{t("Confira o guia desta plataforma em Ajuda antes de conectar.")}</Alert>}
@@ -348,6 +371,7 @@ const ProviderIntegrationCard = ({ provider, onChanged }) => {
 const IntegrationsTab = ({
     providers = [],
     preferredProviderIds = [],
+    focusProviderId,
     onContinue,
     integrationsLoading,
     refreshIntegrations,
@@ -356,7 +380,8 @@ const IntegrationsTab = ({
     systemStatusLoading,
 }) => {
     const { t } = useText();
-    const [selectedProviderId, setSelectedProviderId] = useState(preferredProviderIds[0] || 'spotify');
+    const [selectedProviderId, setSelectedProviderId] = useState(focusProviderId || preferredProviderIds[0] || 'spotify');
+    useEffect(() => { if (focusProviderId) setSelectedProviderId(focusProviderId); }, [focusProviderId]);
     const selectedProvider = providers.find((provider) => provider.id === selectedProviderId) || providers[0];
     const backendOnline = systemStatus?.backend?.status === 'online';
 
@@ -422,8 +447,13 @@ const IntegrationsTab = ({
 
             </details>
             <div role="group" className="mb-5 flex flex-wrap gap-2" aria-label={t("Escolher plataforma para conectar")}>
-                {providers.map((provider) => <Button key={provider.id} size="sm" variant={selectedProvider?.id === provider.id ? 'primary' : 'secondary'}
-                    aria-pressed={selectedProvider?.id === provider.id} onClick={() => setSelectedProviderId(provider.id)}>{t(provider.label)}{preferredProviderIds.includes(provider.id) ? t(" (escolhida)") : ''}</Button>)}
+                {providers.map((provider) => {
+                    const readiness = providerReadiness(provider);
+                    return <Button key={provider.id} size="sm" variant={selectedProvider?.id === provider.id ? 'primary' : 'secondary'}
+                        aria-pressed={selectedProvider?.id === provider.id} onClick={() => setSelectedProviderId(provider.id)}
+                        leftIcon={<span aria-hidden="true" className={`h-2 w-2 rounded-full ${readiness.tone}`} />}>
+                        {t(provider.label)}{preferredProviderIds.includes(provider.id) ? t(" (escolhida)") : ''}<span className="sr-only">{`: ${t(readiness.label)}`}</span></Button>;
+                })}
             </div>
             {selectedProvider && <ProviderIntegrationCard key={selectedProvider.id} provider={selectedProvider} onChanged={refreshProviders} />}
             {onContinue && <Button className="mt-6" variant="primary" onClick={onContinue}>{t("Voltar à minha migração")}</Button>}
