@@ -7,12 +7,16 @@ import {
     AlertTriangle,
     CheckCircle2,
     ArrowRightLeft,
-    ExternalLink,
+    ChevronRight,
+    Download,
     History,
+    KeyRound,
     ListVideo,
     MinusCircle,
+    Play,
     RotateCw,
     Search,
+    Trash2,
     XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -44,7 +48,7 @@ const formatDate = (date) => {
 
 const getDirectionLabel = (item) => {
     const { sourceProvider, targetProvider } = getTransferProviders(item);
-    return `${getProviderLabel(sourceProvider)} -> ${getProviderLabel(targetProvider)}`;
+    return `${getProviderLabel(sourceProvider)} → ${getProviderLabel(targetProvider)}`;
 };
 
 const getStatusLabel = (item) => {
@@ -84,7 +88,7 @@ const legacyTracks = (item) => (item.errors || []).map((error, index) => ({
     status: error.status || (error.reason?.includes(text("Nenhum resultado")) ? 'not_found' : 'failed'),
 }));
 
-const TransferDetails = ({ item, onQueued }) => {
+const TransferDetails = ({ item, onQueued, onPendingChoicesChange }) => {
     const { t } = useText();
     const [tracks, setTracks] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
@@ -98,6 +102,8 @@ const TransferDetails = ({ item, onQueued }) => {
     const [downloading, setDownloading] = useState(null);
     const [trackError, setTrackError] = useState('');
     const [trackAttempt, setTrackAttempt] = useState(0);
+    const pendingChoices = Object.keys(selections).length + Object.keys(corrections).length;
+    useEffect(() => { onPendingChoicesChange?.(pendingChoices); }, [onPendingChoicesChange, pendingChoices]);
     const createCopy = async () => {
         setConfirming(true);
         try {
@@ -211,12 +217,12 @@ const TransferDetails = ({ item, onQueued }) => {
                         <p>{t('As escolhas confirmadas serão adicionadas ao fim da playlist.')}</p>
                         <div className="flex flex-wrap gap-2"><Button variant="primary" onClick={confirmBatch} loading={confirming} loadingLabel={t('Confirmando...')}>{t('Confirmar escolhas')}</Button>
                             <Button disabled={confirming} onClick={() => setShowBatchSummary(false)}>{t('Continuar revisando')}</Button></div></>
-                        : <Button onClick={() => setShowBatchSummary(true)}>{t('Revisar escolhas antes de confirmar')}</Button>}
+                        : <Button variant="primary" onClick={() => setShowBatchSummary(true)}>{Object.keys(selections).length === 1 ? t('Revisar e confirmar 1 escolha') : t('Revisar e confirmar {{value0}} escolhas', { value0: Object.keys(selections).length })}</Button>}
                 </div>
             ) : null}
             {item.targetPlaylistId && getTransferProviders(item).targetProvider === 'file' && (
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="text-spotify">{t("Baixar arquivo:")}</span>
+                    <span className="inline-flex items-center gap-2 font-semibold text-white"><Download size={15} aria-hidden="true" className="text-spotify" />{t("Baixar a playlist gerada:")}</span>
                     {FILE_EXPORT_FORMATS.map(({ format, label }) => (
                         <a
                             key={format}
@@ -228,7 +234,8 @@ const TransferDetails = ({ item, onQueued }) => {
                     ))}
                 </div>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted">{t("Relatório da migração, faixa a faixa:")}</span>
                 <Button size="sm" loading={downloading === 'csv'} disabled={Boolean(downloading)} onClick={() => downloadReport('csv')}>{t("Baixar relatório CSV")}</Button>
                 <Button size="sm" loading={downloading === 'json'} disabled={Boolean(downloading)} onClick={() => downloadReport('json')}>{t("Baixar relatório JSON")}</Button>
             </div>
@@ -339,8 +346,14 @@ const TransferDetails = ({ item, onQueued }) => {
     );
 };
 
-const HistoryTab = ({ onTransfersQueued }) => {
+const HistoryTab = ({ onTransfersQueued, focusTransferId, onOpenIntegrations }) => {
     const { t } = useText();
+    const [pendingChoices, setPendingChoices] = useState(0);
+    const [confirmDiscard, setConfirmDiscard] = useState(false);
+    const [confirmRemoval, setConfirmRemoval] = useState(null);
+    const [removing, setRemoving] = useState(false);
+    const [resuming, setResuming] = useState(false);
+    const focusedRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [historyFilter, setHistoryFilter] = useState('all');
     const [selectedLog, setSelectedLog] = useState(null);
@@ -375,6 +388,51 @@ const HistoryTab = ({ onTransfersQueued }) => {
         return () => requestRef.current?.abort();
     }, [fetchHistory]);
 
+    // Vindo do resultado, abre direto o relatório da transferência indicada.
+    useEffect(() => {
+        if (!focusTransferId || focusedRef.current === focusTransferId || loading) return;
+        const item = history.find((entry) => String(entry._id) === String(focusTransferId));
+        if (item) { focusedRef.current = focusTransferId; setSelectedLog(item); }
+    }, [focusTransferId, history, loading]);
+
+    // Escolhas ainda não confirmadas não somem sem aviso ao fechar o relatório.
+    const closeDetails = useCallback((force = false) => {
+        if (!force && pendingChoices > 0) { setConfirmDiscard(true); return; }
+        setConfirmDiscard(false);
+        setPendingChoices(0);
+        setSelectedLog(null);
+    }, [pendingChoices]);
+
+    const removeTransfer = useCallback(async (item) => {
+        setRemoving(true);
+        try {
+            const response = await api.delete(`/transfer/${item._id}`);
+            toast.success(response.data.message || t("Migração removida do histórico."));
+            setConfirmRemoval(null);
+            setPendingChoices(0);
+            setSelectedLog(null);
+            await fetchHistory();
+        } catch (err) {
+            toast.error(err.response?.data?.message || t("Não foi possível remover do histórico."));
+        } finally {
+            setRemoving(false);
+        }
+    }, [fetchHistory, t]);
+
+    const resumeTransfer = useCallback(async (item) => {
+        setResuming(true);
+        try {
+            const response = await api.post(`/transfer/${item._id}/resume`);
+            toast.success(response.data.message || t("Transferência retomada."));
+            onTransfersQueued?.([item._id]);
+            await fetchHistory();
+        } catch (err) {
+            toast.error(err.response?.data?.message || t("Não foi possível retomar a transferência."));
+        } finally {
+            setResuming(false);
+        }
+    }, [fetchHistory, onTransfersQueued, t]);
+
     const retryTransfer = useCallback(async (item) => {
         setRetrying(item._id);
         try {
@@ -408,6 +466,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
     const handleReviewQueued = (response) => {
         toast.success(response.message);
         onTransfersQueued?.([response.data.transfer._id]);
+        setPendingChoices(0);
         setSelectedLog(null);
         fetchHistory();
     };
@@ -509,7 +568,7 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                 <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Playlist")}</th>
                                 <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Direção")}</th>
                                 <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Status")}</th>
-                                <th className="p-5 text-xs font-bold text-gray-300">{t('Músicas adicionadas')}</th>
+                                <th className="p-5 text-xs font-bold uppercase text-gray-300">{t('Músicas adicionadas')}</th>
                                 <th className="p-5 text-xs font-bold uppercase text-gray-300">{t("Data")}</th>
                                 <th className="p-5 text-right text-xs font-bold uppercase text-gray-300">{t("Ação")}</th>
                             </tr>
@@ -551,7 +610,8 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                             onClick={() => setSelectedLog(item)}
                                             variant="secondary"
                                             size="sm"
-                                            rightIcon={<ExternalLink size={14} />}
+                                            aria-label={t("Ver detalhes de {{value0}}", { value0: item.playlistName })}
+                                            rightIcon={<ChevronRight size={14} aria-hidden="true" />}
                                         >{t("Ver detalhes")}</Button>
                                     </td>
                                 </tr>
@@ -575,11 +635,18 @@ const HistoryTab = ({ onTransfersQueued }) => {
             <Modal
                 size="lg"
                 isOpen={Boolean(selectedLog)}
-                onClose={() => setSelectedLog(null)}
+                onClose={() => closeDetails()}
                 title={selectedLog ? t("Relatório: {{value0}}", { value0: selectedLog.playlistName }) : ''}
                 description={selectedLog ? t("{{value0}}/{{value1}} faixas migradas - {{value2}}", { value0: getInsertedCount(selectedLog), value1: selectedLog.totalTracks, value2: formatDate(selectedLog.updatedAt) }) : ''}
                 footer={selectedLog && (
                     <>
+                        {['completed', 'failed'].includes(selectedLog.status) && <Button variant="ghost" className="sm:mr-auto" leftIcon={<Trash2 size={15} aria-hidden="true" />}
+                            onClick={() => setConfirmRemoval(selectedLog)}>{t("Remover do histórico")}</Button>}
+                        {selectedLog.status === 'needs_auth' && <>
+                            <Button variant="primary" leftIcon={<KeyRound size={15} aria-hidden="true" />} onClick={() => { closeDetails(true); onOpenIntegrations?.(selectedLog.authProvider); }}>
+                                {selectedLog.authProvider ? t("Reconectar {{value0}}", { value0: getProviderLabel(selectedLog.authProvider) }) : t("Abrir integrações")}</Button>
+                            <Button variant="secondary" leftIcon={<Play size={15} aria-hidden="true" />} loading={resuming} loadingLabel={t("Retomando...")} onClick={() => resumeTransfer(selectedLog)}>{t("Já reconectei")}</Button>
+                        </>}
                         {isActiveTransfer(selectedLog) && <Button variant="secondary" onClick={fetchHistory} loading={loading} loadingLabel={t('Atualizando...')}>{t('Atualizar resultado')}</Button>}
                         {canRetry(selectedLog) && (
                             <Button
@@ -596,14 +663,27 @@ const HistoryTab = ({ onTransfersQueued }) => {
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-spotify px-4 py-3 text-sm font-extrabold text-black transition-all hover:bg-spotify/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:ring-offset-darkBackground"
-                            >{t("Abrir playlist")}</a>
+                            >{getTransferProviders(selectedLog).targetProvider === 'file' ? t("Baixar playlist (CSV)") : t("Abrir playlist")}</a>
                         )}
-                        <Button onClick={() => setSelectedLog(null)} variant="inverse">{t("Fechar")}</Button>
+                        <Button onClick={() => closeDetails()} variant="secondary">{t("Fechar")}</Button>
                     </>
                 )}
             >
-                {selectedLog && <TransferDetails item={selectedLog} onQueued={handleReviewQueued} />}
+                {selectedLog && <TransferDetails item={selectedLog} onQueued={handleReviewQueued} onPendingChoicesChange={setPendingChoices} />}
             </Modal>
+            <Modal isOpen={confirmDiscard} onClose={() => setConfirmDiscard(false)} size="sm"
+                title={pendingChoices === 1 ? t("Descartar 1 escolha não confirmada?") : t("Descartar {{value0}} escolhas não confirmadas?", { value0: pendingChoices })}
+                description={t("As alternativas escolhidas ainda não foram enviadas para o destino. Confirme as escolhas antes de fechar para mantê-las.")}
+                footer={<>
+                    <Button onClick={() => setConfirmDiscard(false)}>{t("Continuar revisando")}</Button>
+                    <Button variant="danger" onClick={() => closeDetails(true)}>{t("Descartar e fechar")}</Button>
+                </>} />
+            <Modal isOpen={Boolean(confirmRemoval)} onClose={() => !removing && setConfirmRemoval(null)} size="sm"
+                title={t("Remover esta migração do histórico?")}
+                description={confirmRemoval && getTransferProviders(confirmRemoval).targetProvider === 'file'
+                    ? t("O registro, o relatório e o arquivo gerado serão apagados deste computador. Baixe o arquivo antes, se ainda precisar dele.")
+                    : t("O registro e o relatório serão apagados deste computador. A playlist criada no destino continua na sua conta.")}
+                footer={<Button variant="danger" loading={removing} loadingLabel={t("Removendo...")} leftIcon={<Trash2 size={15} aria-hidden="true" />} onClick={() => removeTransfer(confirmRemoval)}>{t("Remover do histórico")}</Button>} />
         </FadeInPage>
     );
 };
