@@ -5,6 +5,7 @@ import {
     getTransferStatus,
     getTransferTracks,
     listTransfers,
+    removeTransfer,
     resumeTransferNow,
     retryAllTransferTracks,
     retryTransferTracks,
@@ -37,6 +38,7 @@ router.get('/estimate', validate(transferEstimateSchema), getTransferEstimate);
 router.post('/retry-all', transferActionLimiter, retryAllTransferTracks);
 router.get('/:transferId/report', validate(transferIdSchema), downloadTransferReport);
 router.get('/:transferId', getTransferStatus);
+router.delete('/:transferId', transferActionLimiter, validate(transferIdSchema), removeTransfer);
 router.get('/:transferId/tracks', validate(transferTracksSchema), getTransferTracks);
 router.get('/:transferId/tracks/:trackIndex/correction-candidates', validate(manualCandidatesSchema), getCorrectionAlternatives);
 router.post('/:transferId/tracks/:trackIndex/correction-search', transferActionLimiter, validate(manualMatchSearchSchema), searchCorrectionAlternative);

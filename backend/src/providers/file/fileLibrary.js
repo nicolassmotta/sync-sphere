@@ -40,6 +40,13 @@ const listExports = () => readStore(EXPORTS_STORE, []);
 
 export const findExport = (exportId) => listExports().find((item) => item.id === exportId) || null;
 
+export const deleteExport = (exportId) => {
+    const exports = listExports();
+    const next = exports.filter((item) => item.id !== exportId);
+    if (next.length !== exports.length) writeStore(EXPORTS_STORE, next);
+    return next.length !== exports.length;
+};
+
 export const createExport = ({ title, description }) => {
     const record = {
         id: newId('export'),

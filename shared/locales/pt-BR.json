@@ -989,5 +989,7 @@
   "{{value0}} pendentes": "{{value0}} pendentes",
   "1 pendente": "1 pendente",
   "1 não encontrada": "1 não encontrada",
+  "Migração removida do histórico.": "Migração removida do histórico.",
+  "Esta migração ainda está em andamento. Aguarde terminar antes de remover do histórico.": "Esta migração ainda está em andamento. Aguarde terminar antes de remover do histórico.",
   "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.": "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo."
 }

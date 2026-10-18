@@ -989,5 +989,7 @@
   "{{value0}} pendentes": "{{value0}} pending",
   "1 pendente": "1 pending",
   "1 não encontrada": "1 not found",
+  "Migração removida do histórico.": "Transfer removed from history.",
+  "Esta migração ainda está em andamento. Aguarde terminar antes de remover do histórico.": "This transfer is still running. Wait for it to finish before removing it from history.",
   "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.": "Too many transfers started in the last hour. Wait a few minutes and try again."
 }

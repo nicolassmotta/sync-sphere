@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 jest.unstable_mockModule('../src/utils/logger.js', () => ({ default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 const { default: app } = await import('../src/app.js');
 const { default: Transfer } = await import('../src/models/Transfer.js');
-const { buildTransferTracks, saveTransferTracks } = await import('../src/services/transfer/TransferTrackStore.js');
+const { buildTransferTracks, loadTransferTracks, saveTransferTracks } = await import('../src/services/transfer/TransferTrackStore.js');
 const { getProvider, listProviders } = await import('../src/providers/registry.js');
 const { globalLimiter, transferLimiter, transferActionLimiter } = await import('../src/middlewares/rateLimiter.js');
 const { resetQueueForTests } = await import('../src/services/queueService.js');
@@ -180,4 +180,21 @@ it('retomada e revisão manual validam o estado, a proposta e jobs existentes', 
     const confirmed = await request(app).post(`/api/v1/transfer/${record._id}/tracks/0/confirm`).send({ candidateId: searched.body.data.candidate.id });
     expect(confirmed.status).toBe(202);
     expect((await request(app).post(`/api/v1/transfer/${record._id}/tracks/0/search`).send({ name: 'Nova faixa', artist: 'Artista fictício' })).status).toBe(409);
+});
+
+it('DELETE /transfer/:id remove do histórico a migração terminada, suas faixas e o arquivo gerado', async () => {
+    const response = await request(app).delete(`/api/v1/transfer/${record._id}`).set('Accept-Language', 'en');
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Transfer removed from history.');
+    expect((await request(app).get(`/api/v1/transfer/${record._id}`)).status).toBe(404);
+    expect(loadTransferTracks(record._id)).toBeNull();
+    expect((await request(app).get(`/api/v1/integrations/file/exports/${exportId}/download`)).status).toBe(404);
+    expect((await request(app).delete(`/api/v1/transfer/${record._id}`)).status).toBe(404);
+});
+it.each(['pending', 'processing', 'paused', 'needs_auth'])('DELETE /transfer/:id recusa migração %s e preserva o registro', async (status) => {
+    const [active] = await Transfer.insertMany([{ user: 'local', sourceProvider: 'file', targetProvider: 'file', sourcePlaylistId: 'import-ficticio-ativo', playlistName: 'Ativa', status }]);
+    const response = await request(app).delete(`/api/v1/transfer/${active._id}`);
+    expect(response.status).toBe(409);
+    expect(response.body.message).toContain('ainda está em andamento');
+    expect((await request(app).get(`/api/v1/transfer/${active._id}`)).body.data.transfer.status).toBe(status);
 });
