@@ -23,13 +23,20 @@ const readJson = async (response) => {
     }
 };
 
+const POLL_INTERVAL_MS = 20000;
+const sameStatus = (current, next) => current.backend.status === next.backend.status
+    && current.backend.message === next.backend.message
+    && current.dependencies.storage === next.dependencies.storage
+    && current.dependencies.queue === next.dependencies.queue;
+
 export const useLocalSystemStatus = () => {
     const { t } = useText();
     const [systemStatus, setSystemStatus] = useState(DEFAULT_STATUS);
     const [loading, setLoading] = useState(false);
 
-    const refreshSystemStatus = useCallback(async () => {
-        setLoading(true);
+    // `silent` confere em segundo plano sem acionar indicadores de carregamento.
+    const refreshSystemStatus = useCallback(async ({ silent = false } = {}) => {
+        if (!silent) setLoading(true);
 
         const healthUrl = `${API_ORIGIN}/api/health`;
         const readyUrl = `${API_ORIGIN}/api/ready`;
@@ -69,13 +76,27 @@ export const useLocalSystemStatus = () => {
             };
         }
 
-        setSystemStatus(nextStatus);
-        setLoading(false);
+        setSystemStatus((current) => (silent && sameStatus(current, nextStatus) ? current : nextStatus));
+        if (!silent) setLoading(false);
         return nextStatus;
     }, [t]);
 
     useEffect(() => {
         refreshSystemStatus();
+    }, [refreshSystemStatus]);
+
+    // Percebe quando a janela do aplicativo é fechada enquanto o painel continua aberto.
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+        const check = () => { if (document.visibilityState === 'visible') refreshSystemStatus({ silent: true }); };
+        const interval = window.setInterval(check, POLL_INTERVAL_MS);
+        document.addEventListener('visibilitychange', check);
+        window.addEventListener('focus', check);
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', check);
+            window.removeEventListener('focus', check);
+        };
     }, [refreshSystemStatus]);
 
     return {

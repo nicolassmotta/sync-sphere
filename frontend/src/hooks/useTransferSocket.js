@@ -1,6 +1,6 @@
 import { translate as text } from '../i18n';
 import { useText } from '../i18n/useText';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { API_ORIGIN } from '../services/api';
@@ -28,14 +28,18 @@ const isTerminal = (snapshot) => TERMINAL_STATUSES.includes(snapshot.status);
  * Acompanha uma ou mais transferências via Socket.io. Expõe a lista com o
  * estado de cada uma (contadores, ETA, faixas recentes, pausa) e o agregado
  * usado pelos cards mais simples.
+ *
+ * `freshTransferIds` (ref com Set) marca o que foi iniciado nesta sessão: só
+ * essas transferências, ou as vistas em andamento, anunciam a conclusão.
  */
-export const useTransferSocket = (transferIds) => {
+export const useTransferSocket = (transferIds, { freshTransferIds } = {}) => {
     const { t } = useText();
     const [isTransferring, setIsTransferring] = useState(false);
     const [progress, setProgress] = useState(0);
     const [progressMessage, setProgressMessage] = useState('');
     const [transfers, setTransfers] = useState([]);
     const [connectionState, setConnectionState] = useState('idle');
+    const seenRunningRef = useRef(new Set());
 
     const prepareTransferProgress = useCallback((message) => {
         setIsTransferring(true);
@@ -121,15 +125,22 @@ export const useTransferSocket = (transferIds) => {
             notifyStatusChange(snapshot);
             publish();
 
-            if (!isTerminal(snapshot)) return;
+            if (!isTerminal(snapshot)) {
+                seenRunningRef.current.add(transferId);
+                return;
+            }
 
             const list = [...snapshots.values()];
             if (!list.every(isTerminal)) return;
 
+            // Ao recarregar a página, transferências já encerradas não repetem o aviso.
+            const fresh = freshTransferIds?.current;
+            const announce = list.some((item) => seenRunningRef.current.has(item.transferId) || fresh?.has(item.transferId));
+            list.forEach((item) => { seenRunningRef.current.delete(item.transferId); fresh?.delete(item.transferId); });
             const failedCount = list.filter((item) => item.status === 'failed').length;
-            if (failedCount) {
+            if (announce && failedCount) {
                 toast.error(text("{{value0}}/{{value1}} playlists falharam.", { value0: failedCount, value1: list.length }));
-            } else {
+            } else if (announce) {
                 toast.success(list.length === 1 ? text(snapshot.message) : text("{{value0}} playlists migradas.", { value0: list.length }));
             }
             socket.disconnect();
@@ -140,7 +151,7 @@ export const useTransferSocket = (transferIds) => {
         });
 
         return () => { disposed = true; socket.disconnect(); };
-    }, [transferIds]);
+    }, [transferIds, freshTransferIds]);
 
     return {
         isTransferring,

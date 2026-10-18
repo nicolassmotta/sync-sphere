@@ -36,7 +36,7 @@ const statusPresets = {
     needs_auth: {
         icon: <KeyRound size={12} aria-hidden="true" />,
         label: 'Reconectar',
-        tone: 'danger',
+        tone: 'warning',
     },
     processing: {
         icon: <Clock size={12} aria-hidden="true" />,

@@ -12,11 +12,11 @@ const ConnectNotice = ({ provider, text, onOpenIntegrations }) => {
         <h3 className="text-lg font-black text-white">{t("Conecte o ")}{t(provider.label)}</h3>
         <p className="mt-2 text-sm leading-6 text-muted">{t(text)}</p>
         <Button
-            onClick={onOpenIntegrations}
+            onClick={() => onOpenIntegrations(provider.id)}
             variant={getProviderUi(provider.id).buttonVariant}
             className="mt-5"
             rightIcon={<ArrowRight size={16} />}
-        >{t("Abrir integrações")}</Button>
+        >{t("Conectar ")}{t(provider.label)}</Button>
     </div>;
 };
 
@@ -43,7 +43,7 @@ const ProviderPlaylistLinkCard = ({
         <div className="elevated-card p-6 lg:p-7">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <p className="text-sm font-bold uppercase text-white/40">{t("Escolha a origem")}</p>
+                    <p className="text-sm font-bold uppercase text-muted">{t("Origem: {{value0}}", { value0: t(source.label) })}</p>
                     <h2 className="mt-2 text-2xl font-black text-white">{t("Playlist do ")}{t(source.label)}</h2>
                     <p className="mt-2 max-w-xl text-sm leading-6 text-muted">{t("Cole o link ou ID da playlist. A prévia lê as primeiras faixas antes de criar a tarefa na fila.")}</p>
                 </div>

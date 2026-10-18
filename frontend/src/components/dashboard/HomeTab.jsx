@@ -1,15 +1,16 @@
 import { translate as text } from '../../i18n';
 import { useText } from '../../i18n/useText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, PlayCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleDashed, Heart, PlayCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useTransferEstimate } from '../../hooks/useTransferEstimate';
 import Button from '../ui/Button';
 import FadeInPage from '../ui/FadeInPage';
 import Modal from '../ui/Modal';
+import ProviderIcon from '../ui/ProviderIcon';
 import ActiveTransferCard from './home/ActiveTransferCard';
-import { ProviderRow } from './home/ProviderPairCard';
+import { ProviderRow } from './home/ProviderRow';
 import MigrationSteps from './home/MigrationSteps';
 import ProviderPlaylistLinkCard from './home/ProviderPlaylistLinkCard';
 import ProviderPlaylistListCard from './home/ProviderPlaylistListCard';
@@ -27,6 +28,27 @@ const emptyPreview = (overrides = {}) => ({
 });
 
 const isBlockedPreviewMessage = (message) => text(message, undefined, 'pt-BR').includes('não permitiu ler as faixas');
+
+// Linha da etapa Conexões: o que a plataforma precisa fazer e se já está pronta.
+const ConnectionRow = ({ provider, ready, role, note, onConnect }) => {
+    const { t } = useText();
+    return <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/15 p-4">
+        <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-black/35">
+                <ProviderIcon providerId={provider.id} />
+            </span>
+            <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-white">{t(provider.label)}</h2>
+                <p className={`mt-1 inline-flex items-center gap-1.5 text-sm ${ready ? 'text-green-300' : 'text-amber-200'}`}>
+                    {ready ? <CheckCircle2 size={15} aria-hidden="true" /> : <CircleDashed size={15} aria-hidden="true" />}
+                    {role}: {ready ? t("pronto para usar") : t("precisa de conexão")}.
+                </p>
+                {note && <p className="mt-1 text-xs leading-5 text-muted">{note}</p>}
+            </div>
+        </div>
+        {!ready && <Button variant="primary" onClick={onConnect} rightIcon={<ArrowRight size={16} />}>{t("Conectar ")}{t(provider.label)}</Button>}
+    </div>;
+};
 
 const HomeTab = ({
     providers,
@@ -54,11 +76,14 @@ const HomeTab = ({
     sourcePlaylistsError,
     refreshSourcePlaylists,
     setActiveTab,
+    onOpenIntegrations,
+    onOpenHistory,
     wizardStep,
     setWizardStep,
     onStartDemo,
     demoLoading,
     demoMode,
+    onRestartMigration,
 }) => {
     const { t } = useText();
     // Sem conta conectada, plataformas que leem por link (Deezer) mostram o campo de link.
@@ -97,6 +122,7 @@ const HomeTab = ({
     const selectedCount = sourcePlaylistIds.length || (sourcePlaylistId ? 1 : 0);
     const providersReady = Boolean(source.canRead && target.canWrite);
     const readyToTransfer = providersReady && selectedCount > 0;
+    const missingProvider = !source.canRead ? source : !target.canWrite ? target : null;
 
     const selectedTrackCount = useMemo(
         () => selectedPlaylists.reduce((sum, playlist) => sum + (Number(playlist.trackCount) || 0), 0),
@@ -204,6 +230,7 @@ const HomeTab = ({
         }
 
         setSourcePlaylistId('');
+        setLinkPreview(null);
         setSourcePlaylistIds((currentIds) => (
             currentIds.includes(playlistId) ? currentIds : [...currentIds, playlistId]
         ));
@@ -215,12 +242,14 @@ const HomeTab = ({
         source.label,
         trackPreviews, t]);
 
-    const selectAllPlaylists = useCallback(() => {
-        const selectablePlaylists = sourcePlaylists.filter((playlist) => !blockedPlaylistIdSet.has(playlist.id));
+    // Com busca ativa, seleciona somente as playlists visíveis.
+    const selectAllPlaylists = useCallback((visiblePlaylists = sourcePlaylists) => {
+        const selectablePlaylists = visiblePlaylists.filter((playlist) => !blockedPlaylistIdSet.has(playlist.id));
         setSourcePlaylistId('');
-        setSourcePlaylistIds(selectablePlaylists.map((playlist) => playlist.id));
+        setLinkPreview(null);
+        setSourcePlaylistIds((currentIds) => [...new Set([...currentIds, ...selectablePlaylists.map((playlist) => playlist.id)])]);
 
-        if (selectablePlaylists.length < sourcePlaylists.length) {
+        if (selectablePlaylists.length < visiblePlaylists.length) {
             toast.error(t("Playlists bloqueadas pelo {{value0}} ficaram fora da seleção.", { value0: source.label }));
         }
     }, [blockedPlaylistIdSet, setSourcePlaylistId, setSourcePlaylistIds, source.label, sourcePlaylists, t]);
@@ -286,8 +315,15 @@ const HomeTab = ({
         onProvidersChange(next);
     };
     const goBack = () => setWizardStep(Math.max(0, wizardStep - 1));
+    const openIntegrations = (providerId) => (onOpenIntegrations ? onOpenIntegrations(providerId) : setActiveTab('integrations'));
+    const openHistory = (transferId) => (onOpenHistory ? onOpenHistory(transferId) : setActiveTab('history'));
     const experimental = target.validation?.write === 'experimental';
     const titles = [t("De onde vêm suas playlists?"), t("Para onde você quer levar suas músicas?"), t("Vamos preparar suas conexões"), t("Escolha as playlists que quer migrar"), t("Acompanhe sua migração")];
+    // No destino, a origem só aparece como opção quando a plataforma aceita o mesmo par (Arquivo).
+    const sameProviderBlocked = wizardStep === 1 && !source.capabilities?.sameProviderTransfer;
+    const sourceNote = !source.connected && source.canRead && source.capabilities?.listUserPlaylists
+        ? t("Sem login, cole o link de uma playlist pública. Conecte a conta para escolher na lista das suas playlists.")
+        : null;
 
     return (
         <FadeInPage className="mx-auto w-full max-w-5xl">
@@ -303,8 +339,10 @@ const HomeTab = ({
 
             {wizardStep < 2 && <section className="elevated-card p-5 sm:p-7">
                 <ProviderRow showExperimental={wizardStep === 1} title={wizardStep === 0 ? t("Escolha a origem") : t("Escolha o destino")}
+                    role={wizardStep === 0 ? 'source' : 'target'}
                     providers={providers.filter((provider) => provider.capabilities?.[wizardStep === 0 ? 'read' : 'write'] !== false)}
                     selectedId={wizardStep === 0 ? source.id : target.id}
+                    disabledIds={sameProviderBlocked ? [source.id] : []} disabledReason="escolhida como origem"
                     onSelect={(id) => selectProvider(id, wizardStep === 0 ? 'sourceProvider' : 'targetProvider')} />
                 <div className="mt-6 flex flex-wrap justify-between gap-3">
                     {wizardStep > 0 ? <Button onClick={goBack} leftIcon={<ArrowLeft size={16} />}>{t("Voltar")}</Button>
@@ -314,13 +352,17 @@ const HomeTab = ({
             </section>}
 
             {wizardStep === 2 && <section className="elevated-card space-y-5 p-5 sm:p-7">
-                <p className="text-muted">{t("Só precisamos preparar as duas plataformas escolhidas. Arquivo funciona sem conectar uma conta.")}</p>
-                {[{ provider: source, ready: source.canRead, role: t("Ler playlists") }, { provider: target, ready: target.canWrite, role: t("Criar a saída") }].map(({ provider, ready, role }) => <div key={role} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/15 p-4">
-                    <div><h2 className="text-lg font-semibold text-white">{t(provider.label)}</h2><p className="mt-1 text-sm text-muted">{role}: {ready ? t("pronto para usar") : t("precisa de conexão")}.</p></div>
-                    {!ready && <Button onClick={() => setActiveTab('integrations')}>{t("Conectar ")}{t(provider.label)}</Button>}
-                </div>)}
-                {systemStatus?.backend?.status !== 'online' && <p role="alert" className="text-amber-200">{t("O aplicativo local não respondeu. Abra Ajuda para conferir como iniciar.")}</p>}
-                <div className="flex justify-between gap-3"><Button onClick={goBack}>{t("Voltar")}</Button><Button variant="primary" disabled={!providersReady || integrationsLoading} onClick={() => setWizardStep(3)}>{t("Escolher playlists")}</Button></div>
+                <p className="text-muted">{t("Só precisamos preparar as duas plataformas escolhidas.")}</p>
+                <ConnectionRow provider={source} ready={Boolean(source.canRead)} role={t("Ler playlists")} note={sourceNote} onConnect={() => openIntegrations(source.id)} />
+                <ConnectionRow provider={target} ready={Boolean(target.canWrite)} role={t("Criar a saída")} onConnect={() => openIntegrations(target.id)} />
+                {systemStatus?.backend?.status === 'offline' && <p role="alert" className="text-amber-200">{t("O aplicativo local não respondeu. Abra Ajuda para conferir como iniciar.")}</p>}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Button onClick={goBack} leftIcon={<ArrowLeft size={16} />}>{t("Voltar")}</Button>
+                    <div className="flex flex-wrap items-center justify-end gap-3">
+                        {!providersReady && missingProvider && <p className="text-sm text-muted">{t("Conecte o {{value0}} para continuar.", { value0: t(missingProvider.label) })}</p>}
+                        <Button variant="primary" disabled={!providersReady || integrationsLoading} onClick={() => setWizardStep(3)} rightIcon={<ArrowRight size={16} />}>{t("Escolher playlists")}</Button>
+                    </div>
+                </div>
             </section>}
 
             {wizardStep === 3 && <div className="space-y-5">
@@ -328,28 +370,39 @@ const HomeTab = ({
                     playlists={sourcePlaylists} playlistsSummary={sourcePlaylistsSummary} playlistsLoading={sourcePlaylistsLoading} playlistsError={sourcePlaylistsError}
                     sourcePlaylistIds={sourcePlaylistIds} selectedPlaylistIdSet={selectedPlaylistIdSet} trackPreviews={trackPreviews}
                     onRefreshPlaylists={() => refreshSourcePlaylists({ force: true })} onSelectAllPlaylists={selectAllPlaylists} onClearSelectedPlaylists={clearSelectedPlaylists}
-                    onTogglePlaylist={togglePlaylist} onToggleTrackPreview={toggleTrackPreview} onOpenIntegrations={() => setActiveTab('integrations')}
-                    onImportFile={source.auth?.type === 'file' ? importFile : undefined} onDeletePlaylist={source.auth?.type === 'file' ? setRemovingPlaylist : undefined} />
+                    onTogglePlaylist={togglePlaylist} onToggleTrackPreview={toggleTrackPreview} onOpenIntegrations={() => openIntegrations(source.id)}
+                    onImportFile={source.auth?.type === 'file' ? importFile : undefined} onDeletePlaylist={source.auth?.type === 'file' ? setRemovingPlaylist : undefined}
+                    link={source.capabilities?.readByLink ? { value: sourcePlaylistId, preview: linkPreview, onChange: handleManualPlaylistChange, onPreview: loadLinkPreview } : null} />
                     : <ProviderPlaylistLinkCard source={source} target={target} preview={linkPreview} sourcePlaylistId={sourcePlaylistId}
-                        onLoadPreview={loadLinkPreview} onOpenIntegrations={() => setActiveTab('integrations')} onPlaylistChange={handleManualPlaylistChange} onReviewTransfer={openTransferModal} />}
+                        onLoadPreview={loadLinkPreview} onOpenIntegrations={openIntegrations} onPlaylistChange={handleManualPlaylistChange} onReviewTransfer={openTransferModal} />}
+                {source.id === 'spotify' && listMode && <p className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted">
+                    <Heart size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-spotify" />
+                    <span>{t("Suas Músicas Curtidas não aparecem como playlist. No app do Spotify, abra Músicas Curtidas, selecione todas (Ctrl+A ou Cmd+A), adicione a uma nova playlist e atualize esta lista.")}</span>
+                </p>}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Button onClick={goBack}>{t("Voltar")}</Button>
+                    <Button onClick={goBack} leftIcon={<ArrowLeft size={16} />}>{t("Voltar")}</Button>
                     <p role="status" className="text-sm text-muted">{selectedCount} {selectedCount === 1 ? t("playlist selecionada") : t("playlists selecionadas")}</p>
-                    <Button variant="primary" disabled={!readyToTransfer || isTransferring} onClick={openTransferModal}>{t("Conferir e migrar")}</Button>
+                    <div className="flex flex-wrap items-center justify-end gap-3">
+                        {selectedCount > 0 && missingProvider && <Button variant="secondary" onClick={() => openIntegrations(missingProvider.id)}>{t("Conectar ")}{t(missingProvider.label)}</Button>}
+                        <Button variant="primary" disabled={!readyToTransfer || isTransferring} onClick={openTransferModal} rightIcon={<ArrowRight size={16} />}>{t("Conferir e migrar")}</Button>
+                    </div>
                 </div>
             </div>}
 
             {wizardStep === 4 && <div className="space-y-5">
                 <ActiveTransferCard connectionState={connectionState} isTransferring={isTransferring} progress={progress} progressMessage={progressMessage} transfers={transfers}
-                    onResume={onResumeTransfer} onOpenIntegrations={() => setActiveTab('integrations')} onOpenHistory={() => setActiveTab('history')} />
-                <div className="flex flex-wrap gap-3"><Button onClick={() => { setWizardStep(0); }}>{t("Migrar outra playlist")}</Button><Button onClick={() => setActiveTab('history')}>{t("Ver resultado e baixar relatório")}</Button></div>
+                    onResume={onResumeTransfer} onOpenIntegrations={openIntegrations} onOpenHistory={openHistory} />
+                <div className="flex flex-wrap gap-3">
+                    <Button variant={isTransferring ? 'secondary' : 'primary'} onClick={() => openHistory(transfers.length === 1 ? transfers[0].transferId : null)}>{t("Ver resultado e baixar relatório")}</Button>
+                    <Button onClick={() => (onRestartMigration ? onRestartMigration() : setWizardStep(0))}>{t("Migrar outra playlist")}</Button>
+                </div>
             </div>}
             {transfers.length > 0 && wizardStep !== 4 && <Button className="mt-5" onClick={() => setWizardStep(4)}>{t("Acompanhar minhas transferências")}</Button>}
             <p className="mt-6 text-sm leading-6 text-muted">{t("Precisa de orientação? ")}<button type="button" className="font-semibold text-white underline underline-offset-4" onClick={() => setActiveTab('settings')}>{t("Abrir ajuda")}</button>{t(". Seus dados ficam neste computador.")}</p>
             <Modal isOpen={Boolean(removingPlaylist)} onClose={() => setRemovingPlaylist(null)} title={t("Remover o arquivo importado?")} size="sm"
                 description={t("A playlist será removida da lista local de importações. Exportações e playlists nas plataformas serão preservadas.")}
                 footer={<Button variant="danger" onClick={async () => { await deleteImportedPlaylist(removingPlaylist); setRemovingPlaylist(null); }}>{t("Remover importação")}</Button>} />
-            <TransferConfirmModal isOpen={showModal} onClose={() => setShowModal(false)} sourceLabel={t(source.label)} targetLabel={t(target.label)}
+            <TransferConfirmModal isOpen={showModal} onClose={() => setShowModal(false)} sourceLabel={t(source.label)} targetLabel={t(target.label)} targetProvider={target.id}
                 playlistUrlExample={source.playlistUrlExample} allowLink={false} selectedPlaylists={selectedPlaylists} sourcePlaylistId={sourcePlaylistId}
                 onManualPlaylistChange={handleManualPlaylistChange} onStartTransfer={startTransferProcess} selectedCount={selectedCount} isTransferring={isTransferring} estimate={transferEstimate} />
         </FadeInPage>

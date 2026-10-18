@@ -8,7 +8,7 @@ const LanguageSelector = () => {
             <select name="language" aria-label={locale === 'en' ? 'Language' : 'Idioma'} value={locale}
                 onChange={(event) => i18n.changeLanguage(event.target.value)}
                 className="max-w-36 rounded-lg border border-white/20 bg-surfaceCard px-2 py-2 text-sm text-white">
-                <option value="pt-BR" lang="pt-BR">Português (Brasil)</option>
+                <option value="pt-BR" lang="pt-BR">Português</option>
                 <option value="en" lang="en">English</option>
             </select>
         </label>
