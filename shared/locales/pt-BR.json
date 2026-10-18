@@ -988,5 +988,6 @@
   "Reconecte a plataforma em Integrações para continuar a migração.": "Reconecte a plataforma em Integrações para continuar a migração.",
   "{{value0}} pendentes": "{{value0}} pendentes",
   "1 pendente": "1 pendente",
-  "1 não encontrada": "1 não encontrada"
+  "1 não encontrada": "1 não encontrada",
+  "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.": "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo."
 }
