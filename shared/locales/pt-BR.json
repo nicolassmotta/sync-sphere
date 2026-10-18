@@ -636,7 +636,6 @@
   "Conecte sua conta TIDAL (ou defina TIDAL_CLIENT_SECRET) para ler playlists.": "Conecte sua conta TIDAL (ou defina TIDAL_CLIENT_SECRET) para ler playlists.",
   "Configure o cookie do YouTube Music em Integrações (ou YTMUSIC_COOKIE no backend/.env) para {{value0}} no YouTube Music.": "Configure o cookie do YouTube Music em Integrações (ou YTMUSIC_COOKIE no backend/.env) para {{value0}} no YouTube Music.",
   "Cabeçalho Cookie de music.youtube.com": "Cabeçalho Cookie de music.youtube.com",
-  "Cole o cabeçalho Cookie completo": "Cole o cabeçalho Cookie completo",
   "ler playlists": "ler playlists",
   "Abra o aplicativo neste computador para usar backup e diagnóstico.": "Abra o aplicativo neste computador para usar backup e diagnóstico.",
   "Escolha Spotify ou TIDAL.": "Escolha Spotify ou TIDAL.",
@@ -991,5 +990,6 @@
   "1 não encontrada": "1 não encontrada",
   "Migração removida do histórico.": "Migração removida do histórico.",
   "Esta migração ainda está em andamento. Aguarde terminar antes de remover do histórico.": "Esta migração ainda está em andamento. Aguarde terminar antes de remover do histórico.",
-  "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.": "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo."
+  "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.": "Muitas migrações iniciadas na última hora. Aguarde alguns minutos e tente de novo.",
+  "Cole o cabeçalho Cookie ou o comando copiado como cURL": "Cole o cabeçalho Cookie ou o comando copiado como cURL"
 }
