@@ -38,7 +38,11 @@ const startServer = async () => {
         registerTransferSocket(io);
 
         server.on('error', (error) => {
-            logger.error(`[Servidor] Não foi possível escutar na porta ${PORT}: ${error.message}`);
+            const guidance = {
+                EADDRINUSE: `A porta ${PORT} já está em uso por outro programa. Feche esse programa ou defina outra porta em backend/.env (por exemplo, PORT=${Number(PORT) + 1}) e inicie de novo.`,
+                EACCES: `Sem permissão para usar a porta ${PORT}. Defina uma porta acima de 1024 em backend/.env e inicie de novo.`,
+            }[error.code];
+            logger.error(`[Servidor] Não foi possível escutar na porta ${PORT}: ${guidance || error.message}`);
             process.exit(1);
         });
 

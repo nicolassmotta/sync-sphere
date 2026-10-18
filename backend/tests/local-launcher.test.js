@@ -25,8 +25,9 @@ afterAll(async () => {
     fs.rmSync(workspace, { recursive: true, force: true });
 });
 
-it('iniciador preserva ambiente, reutiliza sua instância e recusa outra instalação na porta', async () => {
+const prepareWorkspace = () => {
     const backend = path.join(workspace, 'backend');
+    if (fs.existsSync(backend)) return { backend, script: path.join(workspace, 'scripts', 'start-local.mjs') };
     fs.mkdirSync(path.join(workspace, 'scripts'), { recursive: true });
     fs.mkdirSync(path.join(workspace, 'frontend', 'dist'), { recursive: true });
     fs.mkdirSync(backend);
@@ -37,6 +38,11 @@ it('iniciador preserva ambiente, reutiliza sua instância e recusa outra instala
     const script = path.join(workspace, 'scripts', 'start-local.mjs');
     fs.copyFileSync(path.join(project, 'scripts', 'start-local.mjs'), script);
     fs.writeFileSync(path.join(workspace, 'frontend', 'dist', 'index.html'), '<!doctype html><title>Demonstração</title>');
+    return { backend, script };
+};
+
+it('iniciador preserva ambiente, reutiliza sua instância e recusa outra instalação na porta', async () => {
+    const { backend, script } = prepareWorkspace();
     const port = await freePort();
     const envFile = `PORT=${port}\nAPP_ENV=test\n# Conteúdo fictício preservado\n`;
     fs.writeFileSync(path.join(backend, '.env'), envFile);
@@ -60,3 +66,20 @@ it('iniciador preserva ambiente, reutiliza sua instância e recusa outra instala
     expect(other.status).toBe(1);
     expect(other.stderr).toContain('Outra instalação');
 }, 15000);
+
+it('iniciador explica porta ocupada por outro programa antes de iniciar o servidor', async () => {
+    const { backend, script } = prepareWorkspace();
+    const occupant = net.createServer((socket) => socket.end());
+    await new Promise((resolve) => occupant.listen(0, '127.0.0.1', resolve));
+    const { port } = occupant.address();
+    fs.writeFileSync(path.join(backend, '.env'), `PORT=${port}\nAPP_ENV=test\n`);
+    try {
+        const result = spawnSync(process.execPath, [script, '--no-browser'], { cwd: workspace, env: environment(path.join(workspace, 'data-occupied')), encoding: 'utf8', timeout: 5000 });
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(`A porta ${port} já está em uso por outro programa`);
+        expect(result.stderr).toContain(`PORT=${port + 1}`);
+        expect(fs.existsSync(path.join(workspace, 'data-occupied', 'server.lock'))).toBe(false);
+    } finally {
+        await new Promise((resolve) => occupant.close(resolve));
+    }
+}, 10000);

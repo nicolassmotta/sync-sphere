@@ -43,3 +43,19 @@ it('origem não permitida recebe 403 com mensagem de orientação', async () => 
     expect(response.status).toBe(403);
     expect(response.body.message).toContain('origem');
 });
+it('painel servido em outra porta continua aceito quando FRONTEND_URL ficou com a porta antiga', async () => {
+    const previous = { port: process.env.PORT, frontend: process.env.FRONTEND_URL };
+    process.env.PORT = '8123';
+    process.env.FRONTEND_URL = 'http://localhost:8000';
+    try {
+        for (const origin of ['http://localhost:8123', 'http://127.0.0.1:8123']) {
+            const response = await request(app).get('/api/health').set('Origin', origin);
+            expect(response.status).toBe(200);
+            expect(response.headers['access-control-allow-origin']).toBe(origin);
+        }
+        expect((await request(app).get('/api/health').set('Origin', 'http://localhost:8124')).status).toBe(403);
+    } finally {
+        if (previous.port === undefined) delete process.env.PORT; else process.env.PORT = previous.port;
+        if (previous.frontend === undefined) delete process.env.FRONTEND_URL; else process.env.FRONTEND_URL = previous.frontend;
+    }
+});
