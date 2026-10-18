@@ -6,8 +6,8 @@ Configure only the providers needed for your transfer. **Connections** shows a s
 
 | Provider | Connection and capabilities |
 |---|---|
-| Spotify | Create a Spotify app, register the callback URI shown by the panel, save its Client ID, then authorize via OAuth with PKCE. No Client Secret is required. API permissions govern account/link reads and private playlist creation. |
-| YouTube Music | Copy the complete Cookie request header from an authenticated music.youtube.com session into the panel. This unofficial connection reads playlists and creates private playlists visible on YouTube Music/YouTube. |
+| Spotify | Create a Spotify app, register the callback URI shown by the panel, check **Web API**, save its Client ID, then authorize via OAuth with PKCE. No Client Secret is required. Add any account other than the app owner under **User Management**. API permissions govern account/link reads and private playlist creation. |
+| YouTube Music | Copy the complete Cookie request header from an authenticated music.youtube.com session into the panel, or paste the whole **Copy as cURL** command (bash or cmd) or the copied request headers: the panel extracts the Cookie. This unofficial connection reads playlists and creates private playlists visible on YouTube Music/YouTube. |
 | Deezer | Public reads/search need no login. Paste the account's `arl` cookie to list account playlists, read private playlists and create playlists. Authenticated website operations are unofficial. |
 | TIDAL | Create an app, register the callback URI shown, save the Client ID, and authorize OAuth with PKCE. Playlist writing is experimental and requires real-account validation. Compatible app configuration may enable public reads. |
 | Apple Music | Public catalog reads/search work without account configuration. MusicKit authorization is available when its developer configuration is present; the panel also supports an alternative account token flow. Library writing requires account authorization. |

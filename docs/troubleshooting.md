@@ -18,14 +18,15 @@ No PowerShell, use `curl.exe` se necessário. Se não houver resposta, confirme 
 | Sintoma | Verificação e ação |
 |---|---|
 | `npm` ou `node` não encontrado | Instale Node.js com npm e abra um terminal novo. Confira `node --version`. |
-| Porta já em uso | Pare a outra instalação ou escolha outra `PORT`; ajuste origem e retornos OAuth. |
+| Porta já em uso | O iniciador e o servidor avisam qual porta está ocupada. Feche o outro programa ou defina outra `PORT` em `backend/.env`. O painel servido na nova porta é aceito automaticamente; ajuste só os retornos OAuth cadastrados nos apps Spotify/TIDAL. |
+| Painel mostra **Aplicativo parado** | A janela do terminal foi fechada ou o servidor caiu. Inicie de novo e use **Tentar de novo**; o progresso salvo é retomado. |
 | Interface ausente ou antiga | Rode `npm run build` na raiz e reinicie. O backend serve `frontend/dist`. |
 | Vite não alcança a API | Confira `VITE_API_URL`, a porta do backend e a origem em `FRONTEND_URL`/`FRONTEND_URLS`. |
 | Erro de CORS | Cadastre a origem exata do navegador, incluindo esquema e porta, e reinicie o backend. |
 | Spotify retorna erro de callback | Use `127.0.0.1` no callback; confira se a URI é idêntica no app Spotify e no `.env`. |
 | Spotify recusa playlist de terceiros | Confira as permissões e restrições do app. Teste uma playlist pertencente à conta conectada. |
 | Spotify não consegue escrever | Reconecte para autorizar os escopos de criação e modificação de playlists. |
-| Cookie do YouTube Music incompleto | Copie o cabeçalho Cookie completo de uma requisição logada em `music.youtube.com`. |
+| Cookie do YouTube Music incompleto | Copie o cabeçalho Cookie completo de uma requisição logada em `music.youtube.com`, ou cole o comando **Copiar como cURL** inteiro: o painel extrai o Cookie. |
 | Credencial expirou | Atualize a plataforma em Integrações. O fluxo aguardando reconexão pode ser retomado. |
 | Plataforma limitou buscas | Aguarde a pausa automática. Evite aumentar concorrência; uma retomada imediata pode manter o bloqueio. |
 | Transferência fica na fila | Confira `WORKER_ENABLED=true`, reinicie e veja o estado no Histórico. |
@@ -53,7 +54,7 @@ Pare o servidor antes de investigar. Preserve os arquivos e o backup original; n
 
 ## Limpar histórico de uma instalação de teste
 
-Com o servidor parado, na raiz:
+Para apagar migrações específicas, use **Remover do histórico** nos detalhes de cada uma. Para apagar tudo de uma vez, com o servidor parado, na raiz:
 
 ```bash
 npm run history:clear --prefix backend

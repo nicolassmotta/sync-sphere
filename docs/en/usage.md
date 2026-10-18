@@ -4,7 +4,11 @@
 
 ## Choose and follow a transfer
 
-Select source and destination on Home. The source may offer account playlists, a playlist link/ID, or file import depending on its capabilities. Follow Source, Destination and Connections, select playlists, review the estimate, and confirm. A provider cannot transfer to itself, except File to File for format conversion.
+Select source and destination on Home. The source may offer account playlists, a playlist link/ID, or file import depending on its capabilities. Follow Source, Destination and Connections, select playlists, review the estimate, and confirm. A provider cannot transfer to itself, except File to File for format conversion: on the Destination step, the source platform is shown as unavailable. Destination cards show whether the platform can already create playlists, since public reading is not enough to write. In Connections, **Connect** opens the missing platform directly.
+
+With more than six playlists, a search box filters the list and **Select the N found** selects only the matches. **Use a playlist link** accepts a public playlist that is not in your account and replaces the list selection; Spotify may block playlists from other accounts, and the preview says so. File also accepts dragging the file onto the list. Spotify Liked Songs are not a playlist: select them all in the Spotify app (Ctrl+A or Cmd+A), add them to a new playlist, and refresh the list.
+
+The confirmation explains the output: one new playlist per item, with the same name and the destination's visibility (private; unlisted on TIDAL; library on Apple Music), or a file to download in History.
 
 The queue has one processing lane per destination. Reading, matching and insertion run outside the HTTP request. Socket.io updates the panel. Estimates can change after throttling or cache hits.
 
@@ -17,13 +21,17 @@ The queue has one processing lane per destination. Reading, matching and inserti
 | Completed | Check output and unmatched tracks. |
 | Needs attention | Read the error and use retry or manual review. |
 
+Each playlist in Outcome shows its next step: **Open on** the destination, **Review tracks** when something is pending or unmatched, **Download the file** for File, and **Reconnect** naming the platform that expired. Playlists waiting for reconnection are left out of the time estimate. **View the result and download a report** opens that transfer's report; with several playlists it opens History. **Transfer another playlist** clears the selection and keeps the source and destination.
+
 You can switch language while following progress. It does not create another transfer or clear the selection. Dates use the selected locale. Unknown third-party errors may stay in their original language.
 
 ## Retry and review
 
 Temporary failures stay paused while another persisted attempt is scheduled. Definitive failures appear as pending work in History. **Try again** and **Try all** also include matched tracks awaiting insertion. Retry keeps existing matches and a known destination playlist ID. Providers reconcile occurrence counts and insert only missing occurrences. Concurrent retry/review is refused while a job exists.
 
-Unmatched tracks need manual review. In History, open details, choose an alternative, adjust title and artist, search, inspect the proposal, and confirm it. Proposals expire after ten minutes. Already inserted tracks are preserved. Older records without per-track state cannot offer this review.
+Unmatched tracks need manual review. In History, open details, choose an alternative, adjust title and artist, search, inspect the proposal, and confirm it with **Review and confirm**. **Decide later** goes back without recording a choice, and closing the report with unconfirmed choices asks before discarding them. Proposals expire after ten minutes. Already inserted tracks are preserved. Older records without per-track state cannot offer this review.
+
+**Remove from history**, in the details of a completed or failed transfer, deletes its record, report and per-track state from this computer. For File destinations the generated file is deleted too, so download it first. Playlists created on the platforms stay in your account. Running, paused or reconnecting transfers cannot be removed.
 
 Recovery after remote playlist creation but before its ID is saved can require manual inspection. Initial insertion follows resolved source order; later remote recovery appends missing tracks. File reconstructs source order.
 

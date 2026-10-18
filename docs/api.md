@@ -83,6 +83,7 @@ Use o `data.playlist.id` retornado como origem de uma transferência.
 | `POST /transfer/:transferId/retry` | Tentar novamente pendências elegíveis. |
 | `POST /transfer/retry-all` | Reenfileirar pendências elegíveis do histórico. |
 | `POST /transfer/:transferId/resume` | Solicitar retomada agora. |
+| `DELETE /transfer/:transferId` | Remover do histórico uma transferência `completed` ou `failed` sem job, com estado por faixa e arquivo gerado no destino Arquivo. Em andamento retorna `409`. |
 
 Corpo recomendado de início:
 
@@ -136,13 +137,13 @@ Conecte à mesma origem do backend e envie `subscribe_transfer` com o ID da tran
 | `transfer_update` | Status, fase, progresso, contadores, ETA e dados da saída. |
 | `transfer_error` | Mensagem sobre inscrição inválida ou indisponível. |
 
-O snapshot de progresso usa `counts`, `etaSeconds`, `tracksPerMinute`, `resumeAt`, `pauseReason`, `targetPlaylistUrl` e `queuePosition`. Faixa atual e últimas faixas são informações de execução e podem estar vazias após reconectar.
+O snapshot de progresso usa `counts`, `etaSeconds`, `tracksPerMinute`, `resumeAt`, `pauseReason`, `authProvider`, `targetPlaylistUrl` e `queuePosition`. Em `needs_auth`, `authProvider` indica a plataforma a reconectar: origem quando a leitura falhou, destino na busca ou inserção, ou `null` quando não é possível saber. Faixa atual e últimas faixas são informações de execução e podem estar vazias após reconectar.
 
 ## Respostas e limites
 
 Respostas de sucesso usam `status: "success"` e `data`. Erros operacionais expõem `message`. Os status usuais incluem `400` para entrada inválida, `404` para recurso ausente, `409` para conflito de estado e `429` para limite de requisições.
 
-Os limites gerais e de ações estão em [rateLimiter.js](../backend/src/middlewares/rateLimiter.js). A API não fornece paginação completa do histórico na implementação atual. Veja os [limites de leitura e importação](usage.md#limites-atuais).
+Os limites gerais e de ações estão em [rateLimiter.js](../backend/src/middlewares/rateLimiter.js): 1.000 requisições a cada 15 minutos, 60 inícios por hora e 300 ações de transferência a cada 15 minutos. `GET /api/health` e `GET /api/ready` não consomem a cota geral. A API não fornece paginação completa do histórico na implementação atual. Veja os [limites de leitura e importação](usage.md#limites-atuais).
 
 
 ## Suporte local
