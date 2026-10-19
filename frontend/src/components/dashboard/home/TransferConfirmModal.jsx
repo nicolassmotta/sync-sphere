@@ -1,14 +1,15 @@
 import { useText } from '../../../i18n/useText';
-import { ArrowRight, Clock, Link2 } from 'lucide-react';
+import { ArrowRight, Clock, Link2, ListPlus } from 'lucide-react';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
 import TextField from '../../ui/TextField';
 import PlaylistArtwork from './PlaylistArtwork';
 import { formatTrackCount } from './formatTrackCount';
 import { formatEta } from '../../../utils/formatDuration';
+import { getProviderUi } from '../../../constants/providers';
 
-const EstimateNotice = ({ estimate, targetLabel }) => {
-    const { t } = useText();
+const EstimateNotice = ({ estimate, targetLabel, targetProvider }) => {
+    const { t, locale } = useText();
     if (!estimate?.trackCount) return null;
 
     return (
@@ -17,9 +18,9 @@ const EstimateNotice = ({ estimate, targetLabel }) => {
                 <Clock size={15} className="text-spotify" />
                 {formatEta(estimate.etaSeconds)}{t(" para ")}{formatTrackCount(estimate.trackCount)}
             </p>
-            <p className="mt-1">{t("Cerca de ")}{estimate.tracksPerMinute}{t(" faixas por minuto no ")}{targetLabel}{t(", com base nas últimas migrações.")}{estimate.queueAheadSeconds > 0 && t(" Antes dela, a fila ainda tem {{value0}} de trabalho.", { value0: formatEta(estimate.queueAheadSeconds) })}
+            <p className="mt-1">{t("Cerca de ")}{new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(estimate.tracksPerMinute || 0)}{t(" faixas por minuto no ")}{targetLabel}{t(", com base nas últimas migrações.")}{estimate.queueAheadSeconds > 0 && t(" Antes dela, a fila ainda tem {{value0}} de trabalho.", { value0: formatEta(estimate.queueAheadSeconds) })}
             </p>
-            <p className="mt-1 text-muted">{t("Se a plataforma limitar as buscas, a migração pausa e conserva o progresso para a retomada.")}</p>
+            {targetProvider !== 'file' && <p className="mt-1 text-muted">{t("Se a plataforma limitar as buscas, a migração pausa e conserva o progresso para a retomada.")}</p>}
         </div>
     );
 };
@@ -29,6 +30,7 @@ const TransferConfirmModal = ({
     onClose,
     sourceLabel,
     targetLabel,
+    targetProvider,
     playlistUrlExample,
     allowLink = true,
     selectedPlaylists,
@@ -74,7 +76,13 @@ const TransferConfirmModal = ({
             </div>
         )}
 
-        <EstimateNotice estimate={estimate} targetLabel={targetLabel} />
+        <p className="mb-5 flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm leading-6 text-white/80">
+            <ListPlus size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-spotify" />
+            <span>{targetProvider === 'file'
+                ? t("O resultado vira um arquivo. Ao terminar, baixe em CSV, JSON, M3U ou TXT no Histórico.")
+                : <>{t("Cada playlist vira uma nova playlist no {{value0}}, com o mesmo nome.", { value0: targetLabel })} {getProviderUi(targetProvider).createdVisibility}</>}</span>
+        </p>
+        <EstimateNotice estimate={estimate} targetLabel={targetLabel} targetProvider={targetProvider} />
         <p className="mb-4 text-sm leading-6 text-muted">{t("O aplicativo copia a lista de músicas, sem baixar arquivos de áudio. Algumas músicas podem não existir no catálogo de destino. Ao terminar, você poderá conferir o resultado e escolher alternativas no Histórico.")}</p>
 
         {allowLink && (

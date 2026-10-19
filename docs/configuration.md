@@ -18,8 +18,8 @@ WORKER_ENABLED=true
 
 | Variável | Uso |
 |---|---|
-| `PORT` | Porta do backend e do frontend empacotado. Exemplo: `8000`. |
-| `FRONTEND_URL` | Origem autorizada do painel e referência para retornos OAuth. |
+| `PORT` | Porta do backend e do frontend empacotado. Exemplo: `8000`. O painel servido em `localhost` ou `127.0.0.1` nessa porta é sempre aceito, mesmo que `FRONTEND_URL` aponte para outra. |
+| `FRONTEND_URL` | Origem autorizada do painel e referência para retornos OAuth. Necessária para outro host ou porta, como o Vite. |
 | `FRONTEND_URLS` | Origens adicionais separadas por vírgula. |
 | `NODE_ENV` | Ambiente Node.js, como `development`, `production` ou `test`. |
 | `APP_ENV` | Ambiente da aplicação: `dev`, `prod` ou `test`. |

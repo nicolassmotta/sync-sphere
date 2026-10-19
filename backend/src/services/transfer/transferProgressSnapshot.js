@@ -53,6 +53,7 @@ export const buildTransferSnapshot = (transfer, live = {}) => ({
     tracksPerMinute: transfer.tracksPerMinute ?? null,
     resumeAt: transfer.resumeAt || null,
     pauseReason: transfer.pauseReason || null,
+    authProvider: transfer.status === 'needs_auth' ? transfer.authProvider || null : null,
     targetPlaylistUrl: transfer.targetPlaylistUrl,
     queuePosition: live.queuePosition ?? null,
     currentTrack: live.currentTrack ?? null,

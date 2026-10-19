@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -38,7 +39,15 @@ try {
             return response.ok && health.application === 'SyncSphere' ? health : null;
         } catch { return false; }
     };
+    // Outro programa na porta faria o servidor falhar logo depois de abrir esta janela.
+    const isPortInUse = () => new Promise((resolve) => {
+        const socket = net.connect({ port: Number(port), host: '127.0.0.1' });
+        socket.setTimeout(1000, () => { socket.destroy(); resolve(true); });
+        socket.once('connect', () => { socket.destroy(); resolve(true); });
+        socket.once('error', () => resolve(false));
+    });
     const current = await isRunning();
+    if (!current && await isPortInUse()) throw new Error(`A porta ${port} já está em uso por outro programa. Feche esse programa ou defina outra porta em backend/.env (por exemplo, PORT=${Number(port) + 1}) e abra de novo.`);
     if (current) {
         let lock;
         try { lock = JSON.parse(fs.readFileSync(path.join(path.resolve(process.env.DATA_DIR || path.join(backend, 'data')), 'server.lock'), 'utf8')); } catch { /* Pode haver outra instalação na porta. */ }

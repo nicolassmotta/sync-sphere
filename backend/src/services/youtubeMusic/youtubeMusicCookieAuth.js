@@ -8,9 +8,19 @@ import {
 
 export const YTMUSIC_ORIGIN = 'https://music.youtube.com';
 
+// Também aceita o comando "Copiar como cURL" (bash ou cmd) e o bloco de
+// cabeçalhos copiado das ferramentas de desenvolvedor do navegador.
+const extractCookieHeader = (text) => {
+    const unescaped = text.includes('^"') ? text.replace(/\^\r?\n/g, '\n').replace(/\^([\^"%&|<>\\])/g, '$1') : text;
+    const fromCurl = unescaped.match(/(?:^|\s)(?:-H|--header)\s+(['"])\s*cookie\s*:\s*([\s\S]*?)\1/i)
+        || unescaped.match(/(?:^|\s)(?:-b|--cookie)\s+(['"])([\s\S]*?)\1/);
+    if (fromCurl) return fromCurl[2];
+    const headerLine = unescaped.split(/\r?\n/).find((row) => /^\s*cookie\s*:/i.test(row));
+    return headerLine ? headerLine.replace(/^\s*cookie\s*:\s*/i, '') : unescaped;
+};
+
 export const normalizeCookieHeader = (cookieHeader = '') => {
-    const rawCookieHeader = String(cookieHeader)
-        .replace(/\\n/g, '\n')
+    const rawCookieHeader = extractCookieHeader(String(cookieHeader).replace(/\\n/g, '\n'))
         .replace(/\\t/g, '\t')
         .trim();
 

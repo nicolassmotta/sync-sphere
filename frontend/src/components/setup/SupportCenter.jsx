@@ -1,6 +1,6 @@
 import { useText } from '../../i18n/useText';
 import { useState } from 'react';
-import { Download, LifeBuoy, ShieldCheck } from 'lucide-react';
+import { Copy, Download, LifeBuoy, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { downloadFile, getDownloadError } from '../../utils/downloadFile';
@@ -9,7 +9,7 @@ import Modal from '../ui/Modal';
 import TextField from '../ui/TextField';
 
 const topics = [
-    { title: 'O aplicativo não abre', text: 'Abra Iniciar na pasta do SyncSphere e mantenha essa janela aberta. Se a porta estiver ocupada, encerre a outra instância ou confira Configuração avançada.', action: 'Guia de instalação', href: 'https://github.com/nicolassmotta/sync-sphere/blob/main/docs/getting-started.md' },
+    { title: 'O aplicativo não abre', text: 'Abra Iniciar na pasta do SyncSphere (ou rode npm run open) e mantenha essa janela aberta. Se outro programa usa a porta, defina outra em backend/.env, por exemplo PORT=8001, e abra de novo.', action: 'Guia de instalação', href: 'https://github.com/nicolassmotta/sync-sphere/blob/main/docs/getting-started.md' },
     { title: 'Minha conexão expirou', text: 'Seu progresso continua salvo. Conecte novamente a plataforma indicada; as correspondências já encontradas serão preservadas.', action: 'Abrir conexões', tab: 'integrations' },
     { title: 'A migração está pausada', text: 'A plataforma pode limitar as buscas. Confira o horário de retomada no resultado. O aplicativo tenta continuar automaticamente enquanto estiver aberto.', action: 'Acompanhar migração', tab: 'home' },
     { title: 'Algumas músicas não foram encontradas', text: 'Catálogos podem ter versões diferentes. Abra os detalhes no Histórico e use Escolher alternativa para revisar título e artista.', action: 'Abrir histórico', tab: 'history' },
@@ -26,6 +26,12 @@ const SupportCenter = ({ onOpenTab }) => {
     const [confirmation, setConfirmation] = useState('');
     const [creating, setCreating] = useState(false);
     const [backupError, setBackupError] = useState('');
+    const copyDiagnostic = async () => {
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(diagnostic, null, 2));
+            toast.success(t("Diagnóstico copiado. Cole na sua issue."));
+        } catch { toast.error(t("Não foi possível copiar. Use Baixar diagnóstico.")); }
+    };
     const previewDiagnostic = async () => {
         setLoading(true);
         try { setDiagnostic((await api.get('/system/diagnostic')).data.data); }
@@ -98,7 +104,10 @@ const SupportCenter = ({ onOpenTab }) => {
                 <a className="ml-4 inline-block py-3 text-sm font-semibold text-spotify underline underline-offset-4" href="https://github.com/nicolassmotta/sync-sphere/issues/new/choose" target="_blank" rel="noreferrer">{t("Abrir uma issue (abre outra aba)")}</a>
             </section>
             <Modal isOpen={Boolean(diagnostic)} onClose={() => setDiagnostic(null)} title={t("Revise antes de compartilhar")} description={t("O diagnóstico exclui credenciais, logs, caminhos, nomes de playlists e dados de conta. Confira o texto abaixo.")}
-                footer={<Button onClick={() => downloadFile(JSON.stringify(diagnostic, null, 2), 'syncsphere-diagnostico.json')}>{t("Baixar diagnóstico")}</Button>}>
+                footer={<>
+                    <Button onClick={copyDiagnostic} leftIcon={<Copy size={15} aria-hidden="true" />}>{t("Copiar")}</Button>
+                    <Button onClick={() => downloadFile(JSON.stringify(diagnostic, null, 2), 'syncsphere-diagnostico.json')} leftIcon={<Download size={15} aria-hidden="true" />}>{t("Baixar diagnóstico")}</Button>
+                </>}>
                 <pre className="whitespace-pre-wrap break-words rounded-lg bg-black/40 p-4 text-xs leading-6 text-gray-200">{JSON.stringify(diagnostic, null, 2)}</pre>
             </Modal>
             <Modal isOpen={backupOpen} onClose={closeBackup} title={t("Criar backup protegido")} description={t("Escolha uma senha longa e guarde-a fora do arquivo de backup. Aguarde as transferências terminarem antes de continuar.")}

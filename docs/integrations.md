@@ -20,10 +20,11 @@ Cada provedor implementa leitura, busca e criação de destino. Configure apenas
 
 ## Spotify
 
-1. Crie ou abra um app no [painel de desenvolvedores](https://developer.spotify.com/dashboard).
-2. Cadastre exatamente `http://127.0.0.1:8000/api/v1/integrations/spotify/callback` em **Redirect URIs**.
+1. Crie ou abra um app no [painel de desenvolvedores](https://developer.spotify.com/dashboard) com **Create app**.
+2. Cadastre exatamente `http://127.0.0.1:8000/api/v1/integrations/spotify/callback` em **Redirect URIs**, marque **Web API** e salve.
 3. Em Integrações, salve o Client ID pelo assistente. O endereço de retorno correto para a porta atual aparece no painel.
 4. Use **Conectar Spotify**, autorize no navegador e volte à migração. A configuração por `SPOTIFY_CLIENT_ID` no `.env` continua disponível como alternativa avançada.
+5. Para conectar uma conta diferente da dona do app, adicione o e-mail dela em **User Management**.
 
 O fluxo usa Authorization Code + PKCE e não requer Client Secret. Se mudar a porta, ajuste também `SPOTIFY_REDIRECT_URI` e o cadastro no Spotify.
 
@@ -34,9 +35,9 @@ Reconecte se a autorização antiga não tiver escopos de escrita. Cada instala�
 ## YouTube Music
 
 1. Abra [music.youtube.com](https://music.youtube.com) com a conta escolhida.
-2. Abra as ferramentas do navegador e a aba **Rede**.
-3. Selecione uma requisição autenticada para `music.youtube.com`.
-4. Copie o cabeçalho **Cookie completo**.
+2. Abra as ferramentas do navegador (F12 ou Ctrl+Shift+I; no Mac, Cmd+Option+I), vá na aba **Rede** e recarregue a página.
+3. Filtre por `browse` e selecione uma requisição autenticada para `music.youtube.com`.
+4. Copie o cabeçalho **Cookie completo**. Também vale clicar com o botão direito e usar **Copiar como cURL**: o painel extrai o Cookie do comando, em bash ou cmd, e do bloco de cabeçalhos copiado.
 5. Cole no campo do YouTube Music em Integrações e salve.
 
 Também é possível definir `YTMUSIC_COOKIE` no `.env` e reiniciar. O valor do painel tem prioridade. Copiar apenas um cookie isolado ou o cookie de `youtube.com` pode não fornecer a sessão necessária.

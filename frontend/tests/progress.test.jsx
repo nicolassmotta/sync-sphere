@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
+import toast from 'react-hot-toast';
 import { useTransferSocket } from '../src/hooks/useTransferSocket';
 import i18n from '../src/i18n';
 
@@ -43,4 +44,25 @@ it('perda da conexão informa reconexão sem encerrar a transferência', async (
     expect(screen.getByText('Acompanhando')).toBeTruthy();
     await publish('connect');
     expect(screen.getByLabelText('Conexão').textContent).toBe('connected');
+});
+
+const FreshViewer = ({ fresh }) => {
+    const state = useTransferSocket(ids, { freshTransferIds: fresh });
+    return <p>{state.isTransferring ? 'Acompanhando' : 'Encerrado'}</p>;
+};
+it('transferência já encerrada ao recarregar a página não repete o aviso de conclusão', async () => {
+    render(<FreshViewer fresh={{ current: new Set() }} />);
+    await publish('connect');
+    await publish('transfer_update', { transferId: ids[0], status: 'completed', progress: 100, message: 'Migração concluída no Arquivo: 3/3 faixas adicionadas.' });
+    expect(screen.getByText('Encerrado')).toBeTruthy();
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(transport.disconnect).toHaveBeenCalled();
+});
+it('transferência iniciada nesta sessão anuncia a conclusão mesmo quando o primeiro evento já é final', async () => {
+    const fresh = { current: new Set(ids) };
+    render(<FreshViewer fresh={fresh} />);
+    await publish('connect');
+    await publish('transfer_update', { transferId: ids[0], status: 'completed', progress: 100, message: 'Migração concluída no Arquivo: 3/3 faixas adicionadas.' });
+    expect(toast.success).toHaveBeenCalledWith('Migração concluída no Arquivo: 3/3 faixas adicionadas.');
+    expect(fresh.current.size).toBe(0);
 });

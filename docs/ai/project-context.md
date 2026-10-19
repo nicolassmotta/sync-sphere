@@ -180,3 +180,18 @@ Filtros de Histórico ficam em `components/dashboard/historyPresentation.js`: at
 `services/matching/identity.js` e `decision.js` centralizam Unicode, artistas, versões e evidências na política `identity-v2`. `searchOrchestrator.js` persiste estratégias/candidatos e usa orçamento de seis consultas e 12 requisições por faixa. `requestBudget.js` instrumenta fetch e Axios com limitação por destino e cancelamento. Scores antigos não autorizam aceitação nem cache. Fixtures, métricas sintéticas e limites estão em `docs/validation-matching-quality.md`.
 
 O relatório v2 distingue oito resultados por ocorrência e não estima precisão sem referência humana. O cache separa decisões automáticas e manuais, com escopo de credenciais/catálogo. `readTrackIds` alimenta a conferência pós-escrita. Reordenação, remoção e substituição da playlist anterior permanecem desabilitadas. A correção explícita de uma ocorrência e o reparo de ordem criam uma nova playlist via `recreateOrderedPlaylist.js`. `creationIntent` protege a janela de criação remota com resposta desconhecida.
+
+
+## Usabilidade tela a tela
+
+- CORS sempre aceita `http://localhost:<PORT>` e `http://127.0.0.1:<PORT>` (`config/frontendOrigins.js`): trocar só a `PORT` não deixa mais o painel em branco. O iniciador (`scripts/start-local.mjs`) e o servidor explicam porta ocupada sugerindo `PORT=<porta+1>`.
+- Cotas locais em `middlewares/rateLimiter.js`: 1.000 requisições/15 min, 60 inícios/h e 300 ações/15 min. `GET /api/health` e `/api/ready` ficam fora da cota geral porque o painel confere o servidor a cada 20 s (`useLocalSystemStatus`) e mostra **Aplicativo parado** com aviso e **Tentar de novo** em `DashboardLayout`.
+- `waitForAuth` grava `authProvider` (origem na fase de leitura; destino na busca/inserção ou em `TransferNeedsAuthError`; `null` se desconhecido) e a mensagem nomeia a plataforma. O snapshot expõe `authProvider` só em `needs_auth`.
+- `DELETE /transfer/:transferId` (`services/transfer/removeTransfer.js`) remove registros `completed`/`failed` sem job, com estado por faixa e export do destino Arquivo; usa `withTransferActionLock`. Playlists remotas e cache ficam intactos.
+- `normalizeCookieHeader` aceita cURL do Chrome (`-b`, bash e cmd), do Firefox (`-H 'Cookie: ...'`) e bloco de cabeçalhos copiado.
+- `Dashboard` guarda foco por visita: `openIntegrations(providerId)` abre Integrações na plataforma certa; `openHistory(transferId)` abre o relatório. `freshTransferIds` evita repetir o aviso de conclusão ao recarregar: só anuncia o que foi iniciado na sessão ou visto em andamento.
+- Fluxo: no Destino a origem aparece desabilitada (exceto `sameProviderTransfer`); status por papel em `home/ProviderRow.jsx`; Conexões com ícones e motivo do bloqueio; lista com busca acima de seis playlists, campo de link para `readByLink` e arrastar arquivo; dica de Músicas Curtidas no Spotify; confirmação com visibilidade da playlist criada (`createdVisibility` em `constants/providers.js`).
+- Resultado: barra com cor por situação (vermelho só em falha), ações por playlist (abrir no destino, revisar faixas, baixar arquivo, reconectar a plataforma) e sem rolagem interna. **Migrar outra playlist** limpa a seleção.
+- Histórico: relatório com **Remover do histórico**, reconectar/retomar em `needs_auth` e confirmação antes de descartar escolhas não confirmadas.
+- Integrações: passo a passo completo em lista com links (sem carrossel); instruções do cookie com atalhos das ferramentas de desenvolvedor.
+- Página inicial (`/`) fala com quem já está com o app rodando: como funciona, problemas comuns e comandos de desenvolvimento recolhidos.

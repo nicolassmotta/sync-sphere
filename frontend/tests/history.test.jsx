@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import HistoryTab from '../src/components/dashboard/HistoryTab';
 import api from '../src/services/api';
 
-vi.mock('../src/services/api', async (load) => ({ ...await load(), default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../src/services/api', async (load) => ({ ...await load(), default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }));
 vi.mock('react-hot-toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
 const completed = { _id: 'transferencia-ficticia', playlistName: 'Arquivo', sourceProvider: 'file', targetProvider: 'file', status: 'completed', totalTracks: 3, processedTracks: 3, createdAt: '2026-10-02T12:00:00Z' };
 
@@ -29,7 +29,7 @@ describe('Histórico e recuperação', () => {
         });
         const user = userEvent.setup();
         render(<HistoryTab />);
-        await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+        await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
         const dialog = screen.getByRole('dialog');
         expect((await within(dialog).findByRole('alert')).textContent).toContain('Não foi possível carregar as faixas deste relatório.');
         expect(within(dialog).queryByText('Nenhuma faixa pendente.')).toBeNull();
@@ -52,7 +52,7 @@ it('registro failed totalmente inserido não oferece retry sem trabalho pendente
         : { counts: { total: 3 }, tracks: [] } } }));
     const user = userEvent.setup();
     render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull();
 });
 
@@ -61,7 +61,7 @@ it('origem cortada por limite orienta divisão em vez de oferecer retry repetiti
         ? { transfers: [{ ...completed, status: 'failed', sourceTruncated: true, sourceTotalTracks: 5, sourceOmittedTracks: 2 }] }
         : { counts: { total: 0 }, tracks: [] } } }));
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Tentar todas' })).toBeNull();
 });
@@ -90,14 +90,14 @@ it('seleciona duas ocorrências e confirma um lote depois de mostrar o resumo', 
     const queued = vi.fn();
     const user = userEvent.setup();
     render(<HistoryTab onTransfersQueued={queued} />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     for (let index = 0; index < 2; index += 1) {
         await user.click((await screen.findAllByRole('button', { name: 'Escolher alternativa' }))[index]);
         await user.click(await screen.findByRole('radio', { name: 'Original Fictício' }));
         await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
     }
     expect(api.post).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Revisar escolhas antes de confirmar' }));
+    await user.click(screen.getByRole('button', { name: 'Revisar e confirmar 2 escolhas' }));
     expect(screen.getByText('As escolhas confirmadas serão adicionadas ao fim da playlist.')).toBeTruthy();
     expect(screen.getAllByText('Original · Fictício')).toHaveLength(2);
     await user.click(screen.getByRole('button', { name: 'Confirmar escolhas' }));
@@ -132,7 +132,7 @@ it('abre uma migração sem pendências na aba das músicas adicionadas', async 
     api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
         ? { transfers: [completed] } : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Música adicionada', artist: 'Artista', status: 'matched', inserted: true }] } } }));
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     expect((await screen.findByRole('tab', { name: 'Adicionadas (1)' })).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tabpanel').textContent).toContain('Música adicionada');
     expect(screen.queryByText('Nenhuma faixa pendente.')).toBeNull();
@@ -143,7 +143,7 @@ it('abre diretamente as não encontradas quando elas são a única pendência', 
         ? { transfers: [{ ...completed, notFoundCount: 1 }] }
         : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Música ausente', status: 'not_found' }] } } }));
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     expect((await screen.findByRole('tab', { name: 'Não encontradas (1)' })).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tabpanel').textContent).toContain('Música ausente');
 });
@@ -155,13 +155,13 @@ it('remove uma escolha do resumo sem enviar a ocorrência removida para a API', 
         : url.endsWith('/candidates') ? { candidates: [] } : { counts: { total: 2 }, tracks } } }));
     api.post.mockResolvedValue({ data: { message: 'Salva', data: { transfer } } });
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     for (let index = 0; index < 2; index += 1) {
         await user.click((await screen.findAllByRole('button', { name: 'Escolher alternativa' }))[index]);
         await screen.findByText('Nenhuma alternativa disponível ainda. Busque pelo título e artista acima.');
         await user.click(screen.getByRole('button', { name: 'Ignorar esta faixa' }));
     }
-    await user.click(screen.getByRole('button', { name: 'Revisar escolhas antes de confirmar' }));
+    await user.click(screen.getByRole('button', { name: 'Revisar e confirmar 2 escolhas' }));
     await user.click(screen.getByRole('button', { name: 'Remover escolha da faixa 1' }));
     expect(api.post).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Confirmar escolhas' }));
@@ -174,7 +174,7 @@ it('atualiza um resultado em andamento sem fechar o relatório', async () => {
         ? { transfers: [{ ...completed, status: updated ? 'completed' : 'processing', processedTracks: updated ? 3 : 1 }] }
         : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Faixa confirmada', status: 'matched', inserted: true }] } } }));
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     expect(screen.getByRole('heading', { name: 'Sua migração continua em andamento' })).toBeTruthy();
     updated = true;
     await user.click(screen.getByRole('button', { name: 'Atualizar resultado' }));
@@ -191,7 +191,7 @@ it('impede confirmar uma cópia ordenada enquanto existem faixas pendentes', asy
             { index: 1, name: 'Pendente', status: 'needs_review' },
         ] } } }));
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     await screen.findByRole('tab', { name: 'Pendências (1)' });
     await user.click(screen.getByText('Correções e preferências'));
     await user.click(screen.getByRole('button', { name: 'Criar cópia na ordem da origem' }));
@@ -207,7 +207,7 @@ it('mostra a correção escolhida e envia somente seu identificador e revisão p
             : { counts: { total: 1 }, tracks: [{ index: 0, name: 'Faixa original', status: 'matched', inserted: true }] } } }));
     api.post.mockResolvedValue({ data: { message: 'Cópia criada', data: { transfer } } });
     const user = userEvent.setup(); render(<HistoryTab />);
-    await user.click(await screen.findByRole('button', { name: 'Ver detalhes', exact: true }));
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
     await screen.findByRole('tab', { name: 'Adicionadas (1)' });
     await user.click(screen.getByText('Correções e preferências'));
     await user.click(screen.getByText('Corrigir faixas em uma nova playlist'));
@@ -219,4 +219,61 @@ it('mostra a correção escolhida e envia somente seu identificador e revisão p
     expect(api.post).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Confirmar nova playlist' }));
     expect(api.post).toHaveBeenCalledWith('/transfer/transferencia-ficticia/ordered-copy', { choices: [{ trackIndex: 0, candidateId: 'alternativa-copia', revision: 2 }] });
+});
+
+it('resultado abre direto o relatório da transferência indicada', async () => {
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [{ ...completed, _id: 'outra', playlistName: 'Outra playlist' }, completed] }
+        : { counts: { total: 3 }, tracks: [] } } }));
+    render(<HistoryTab focusTransferId="transferencia-ficticia" />);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Relatório: Arquivo' })).toBeTruthy();
+});
+
+it('remove do histórico somente depois da confirmação e atualiza a lista', async () => {
+    let removed = false;
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: removed ? [] : [completed] } : { counts: { total: 3 }, tracks: [] } } }));
+    api.delete.mockImplementation(async () => { removed = true; return { data: { message: 'Migração removida do histórico.' } }; });
+    const user = userEvent.setup();
+    render(<HistoryTab />);
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
+    await user.click(screen.getByRole('button', { name: 'Remover do histórico' }));
+    expect(api.delete).not.toHaveBeenCalled();
+    const confirmation = screen.getByRole('dialog', { name: 'Remover esta migração do histórico?' });
+    expect(confirmation.textContent).toContain('o arquivo gerado serão apagados');
+    await user.click(within(confirmation).getByRole('button', { name: 'Remover do histórico' }));
+    expect(api.delete).toHaveBeenCalledWith('/transfer/transferencia-ficticia');
+    expect((await screen.findAllByText('Nenhuma migração listada.')).length).toBeGreaterThan(0);
+});
+
+it('avisa antes de descartar escolhas não confirmadas ao fechar o relatório', async () => {
+    const transfer = { ...completed, targetProvider: 'spotify', notFoundCount: 1, matchedCount: 2 };
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer'
+        ? { transfers: [transfer] } : url.endsWith('/candidates')
+            ? { candidates: [{ id: 'alternativa', revision: 1, name: 'Original', artist: 'Fictício' }] }
+            : { counts: { total: 3 }, tracks: [{ index: 0, name: 'Arquivo', artist: 'Artista fictício', status: 'not_found' }] } } }));
+    const user = userEvent.setup();
+    render(<HistoryTab />);
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
+    await user.click(await screen.findByRole('button', { name: 'Escolher alternativa' }));
+    await user.click(await screen.findByRole('radio', { name: 'Original Fictício' }));
+    await user.click(screen.getByRole('button', { name: 'Usar esta música' }));
+    await user.click(screen.getAllByRole('button', { name: 'Fechar' }).at(-1));
+    const warning = screen.getByRole('dialog', { name: 'Descartar 1 escolha não confirmada?' });
+    await user.click(within(warning).getByRole('button', { name: 'Continuar revisando' }));
+    expect(screen.getByRole('heading', { name: 'Relatório: Arquivo' })).toBeTruthy();
+    expect(api.post).not.toHaveBeenCalled();
+});
+
+it('aguardando reconexão oferece reconectar a plataforma que falhou', async () => {
+    const waiting = { ...completed, status: 'needs_auth', targetProvider: 'youtubeMusic', authProvider: 'youtubeMusic' };
+    api.get.mockImplementation(async (url) => ({ data: { data: url === '/transfer' ? { transfers: [waiting] } : { counts: { total: 3 }, tracks: [] } } }));
+    const reconnect = vi.fn();
+    const user = userEvent.setup();
+    render(<HistoryTab onOpenIntegrations={reconnect} />);
+    await user.click((await screen.findAllByRole('button', { name: /^Ver detalhes de / }))[0]);
+    await user.click(screen.getByRole('button', { name: 'Reconectar YouTube Music' }));
+    expect(reconnect).toHaveBeenCalledWith('youtubeMusic');
+    expect(screen.queryByRole('dialog')).toBeNull();
 });

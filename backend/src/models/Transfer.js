@@ -125,6 +125,15 @@ const Transfer = {
     find(query = {}) {
         return makeListQuery(load().filter((record) => matches(record, query)));
     },
+
+    async deleteById(id) {
+        const list = load();
+        const index = list.findIndex((record) => String(record._id) === String(id));
+        if (index === -1) return false;
+        list.splice(index, 1);
+        persist();
+        return true;
+    },
 };
 
 export default Transfer;

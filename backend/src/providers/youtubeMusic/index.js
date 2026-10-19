@@ -42,7 +42,7 @@ const youtubeMusicProvider = {
         fields: [{
             name: 'cookie',
             label: 'Cabeçalho Cookie de music.youtube.com',
-            placeholder: 'Cole o cabeçalho Cookie completo',
+            placeholder: 'Cole o cabeçalho Cookie ou o comando copiado como cURL',
             secret: true,
         }],
     },

@@ -10,6 +10,7 @@ import {
     retryAllTransfers,
     retryTransfer,
 } from '../services/transfer/transferQueueActions.js';
+import { removeTransferFromHistory } from '../services/transfer/removeTransfer.js';
 
 /**
  * @function startTransfer
@@ -151,6 +152,15 @@ export const resumeTransferNow = async (req, res, next) => {
             message: 'Transferência retomada.',
             data: { transfer },
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const removeTransfer = async (req, res, next) => {
+    try {
+        await removeTransferFromHistory({ transferId: req.params.transferId, userId: req.user.id });
+        res.status(200).json({ status: 'success', message: 'Migração removida do histórico.' });
     } catch (error) {
         next(error);
     }

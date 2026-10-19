@@ -4,7 +4,10 @@
 
 | Symptom | Next action |
 |---|---|
-| The app does not open | Keep the launcher terminal open and use its printed URL. Check whether another instance occupies the port. Inspect `/api/health` and `/api/ready`. |
+| The app does not open | Keep the launcher terminal open and use its printed URL. If the launcher says the port is in use by another program, close it or set another `PORT` in `backend/.env`; the dashboard served on the new port is accepted automatically. Inspect `/api/health` and `/api/ready`. |
+| The dashboard shows **App stopped** | The terminal window was closed or the server stopped. Start it again and use **Retry**; saved progress resumes. |
+| YouTube Music rejects the cookie | Copy the complete Cookie header again, or paste the whole **Copy as cURL** command: the dashboard extracts the Cookie. |
+| I want to delete old transfers | Open a finished transfer in History and use **Remove from history**. |
 | A connection expired | Reconnect the indicated provider in Connections. Progress and known matches stay saved. |
 | A transfer is paused | Check the scheduled resume time. Keep the app running for automatic retry. A rate limit has its own wait policy. |
 | Tracks were not found | Open History details and manually search an alternative. Compare title, artist and version before confirming. |

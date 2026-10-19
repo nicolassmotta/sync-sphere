@@ -52,6 +52,7 @@ const buildTransferConfig = ({ transferRecord, direction }) => {
     return {
         sourceLabel: source.label,
         targetLabel: target.label,
+        sourceProvider: source.id,
         targetProvider: target.id,
         stage: `${target.id}-matching`,
         noConfidentMatchReason: `Nenhum resultado confiável encontrado no ${target.label}.`,
@@ -513,15 +514,21 @@ export default class TransferProcessor {
     }
 
     async waitForAuth(transferId, transferRecord, error, config) {
+        // A fase indica qual lado falhou: leitura usa a origem; busca e inserção usam o destino.
+        const side = error instanceof TransferNeedsAuthError || [TRANSFER_PHASES.MATCHING, TRANSFER_PHASES.INSERTING].includes(transferRecord.phase)
+            ? 'target' : transferRecord.phase === TRANSFER_PHASES.READING ? 'source' : null;
+        const providerLabel = side === 'target' ? config.targetLabel : side === 'source' ? config.sourceLabel : null;
         const message = error instanceof TransferNeedsAuthError
             ? error.message
-            : `A conexão precisa ser renovada (${config.sourceLabel} ou ${config.targetLabel}): ${error.message}`;
+            : providerLabel ? `A conexão com o ${providerLabel} precisa ser renovada: ${error.message}`
+                : `A conexão precisa ser renovada (${config.sourceLabel} ou ${config.targetLabel}): ${error.message}`;
 
         logger.warn(`[Trabalhador] Transferência ${transferId} aguardando reconexão: ${error.message}`);
         await this.repository.update(transferRecord, {
             status: 'needs_auth',
             pauseReason: ERROR_KINDS.AUTH,
             resumeAt: null,
+            authProvider: side === 'target' ? config.targetProvider : side === 'source' ? config.sourceProvider : null,
             lastMessage: message,
         });
         this.publish(transferId, transferRecord);

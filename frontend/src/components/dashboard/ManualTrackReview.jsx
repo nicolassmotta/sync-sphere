@@ -148,7 +148,7 @@ const ManualTrackReview = ({ transferId, track, providerLabel, onBack, onQueued,
                     <Button variant="primary" leftIcon={<Check size={15} />} onClick={() => choose()} disabled={!selected || Boolean(busy) || loadingCandidates}
                         loading={busy === 'confirm'} loadingLabel={t('Confirmando...')}>{t('Usar esta música')}</Button>
                     {!correction ? <Button variant="secondary" onClick={() => choose('skip')} disabled={Boolean(busy)}>{t('Ignorar esta faixa')}</Button> : null}
-                    <Button variant="secondary" onClick={onBack} disabled={Boolean(busy)}>{t('Nenhuma alternativa serve')}</Button>
+                    <Button variant="secondary" onClick={onBack} disabled={Boolean(busy)}>{t('Decidir depois')}</Button>
                 </div>
             </fieldset>
         </div>

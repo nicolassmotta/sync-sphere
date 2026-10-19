@@ -33,7 +33,7 @@ export const setupSnippets = [
     {
         title: 'Aplicação local',
         description: 'Execute na raiz do projeto para instalar, buildar e servir tudo em `localhost:8000`.',
-        label: 'raiz',
+        label: 'raiz do projeto',
         code: `npm run setup
 cp backend/.env.example backend/.env
 # preencha backend/.env
@@ -95,19 +95,19 @@ export const usefulLinks = [
 
 export const troubleshootingItems = [
     {
-        title: 'Front-end não conecta no back-end',
-        text: 'Confirme `VITE_API_URL=http://localhost:8000/api/v1`, `FRONTEND_URL=http://localhost:8000` e se o back-end subiu sem erro.',
+        title: 'O painel não abre ou fica em branco',
+        text: 'Confira se a janela do terminal continua aberta. Se outro programa usa a porta 8000, defina outra porta em backend/.env (por exemplo, PORT=8001) e inicie de novo.',
     },
     {
-        title: 'Spotify volta para erro ou tela negada',
-        text: '`SPOTIFY_CLIENT_ID` precisa estar no `.env` e a URL de callback (`http://127.0.0.1:8000/api/v1/integrations/spotify/callback`) precisa estar idêntica em "Redirect URIs" no painel do Spotify. Para YouTube Music -> Spotify, reconecte se faltar escopo de escrita.',
+        title: 'O Spotify recusa a conexão',
+        text: 'O endereço de retorno cadastrado no app do Spotify precisa ser idêntico ao mostrado em Integrações, com 127.0.0.1 em vez de localhost. Outra conta do Spotify precisa estar em User Management no app.',
     },
     {
-        title: 'YouTube Music aparece como pendente',
-        text: 'Cole o cookie em Integrações (vale na hora) ou preencha `YTMUSIC_COOKIE` e reinicie o back-end. Nunca cole cookies reais em docs, commits ou issues.',
+        title: 'O YouTube Music pede o cookie de novo',
+        text: 'O cookie deixa de valer quando você sai da conta no navegador. Copie de novo em Integrações; colar o comando cURL inteiro também funciona. Nunca compartilhe cookies em issues ou capturas.',
     },
     {
-        title: 'Dados locais e histórico',
-        text: 'Credenciais e histórico ficam cifrados em `backend/data/` (ignorado pelo Git). Para limpar o histórico, rode `npm run history:clear` no back-end.',
+        title: 'Quero apagar migrações do histórico',
+        text: 'No Histórico, abra os detalhes de uma migração terminada e use Remover do histórico. As playlists criadas nas plataformas continuam na sua conta.',
     },
 ];

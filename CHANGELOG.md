@@ -4,6 +4,21 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+### Usabilidade tela a tela
+
+- Painel em outra porta não fica mais em branco: a origem da porta configurada é sempre aceita. Iniciador e servidor explicam porta ocupada e sugerem outra.
+- Aviso de **Aplicativo parado** quando o servidor deixa de responder, com **Tentar de novo**; saúde e prontidão fora da cota geral.
+- Cotas locais ajustadas para uso de uma pessoa: revisar muitas faixas ou migrar várias playlists por link não trava mais o painel.
+- Destino não troca a origem sem avisar; status de cada plataforma reflete leitura ou escrita conforme a etapa. **Conectar** abre a plataforma certa em Integrações.
+- Lista de playlists com busca, marcador de seleção visível, link de playlist fora da conta, arrastar arquivo e dica para Músicas Curtidas do Spotify. Linhas não estouram mais a largura no celular.
+- Confirmação explica o que será criado no destino e a visibilidade da playlist.
+- Resultado sem vermelho no sucesso, rótulos corretos, estimativa sem quem aguarda reconexão e ações por playlist: abrir no destino, revisar faixas, baixar o arquivo e reconectar a plataforma que expirou.
+- Reconexão identifica a plataforma (origem ou destino) e mostra o nome dela.
+- Aviso de conclusão não se repete ao recarregar a página.
+- Histórico abre direto no relatório vindo do resultado, permite **Remover do histórico** e pede confirmação antes de descartar escolhas não confirmadas.
+- Integrações com passo a passo completo e links; o cookie do YouTube Music aceita o comando **Copiar como cURL** inteiro.
+- Página inicial reescrita para quem já está com o aplicativo aberto, com textos traduzidos; diagnóstico pode ser copiado.
+
 ### Auditoria de rotas e usabilidade
 
 - Rotas HTTP e Socket.io com testes de sucesso, erros, cotas e recuperação; 43 pares de provedores exercitados com respostas simuladas.

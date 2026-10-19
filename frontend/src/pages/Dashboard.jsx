@@ -62,6 +62,10 @@ const Dashboard = () => {
         if (`${location.pathname}${location.search}` !== url) navigate(url);
     }, [location.pathname, location.search, navigate]);
     const [wizardStep, setWizardStep] = useState(() => readMigrationSession().step);
+    const [integrationFocus, setIntegrationFocus] = useState(null);
+    const [historyFocus, setHistoryFocus] = useState(null);
+    const [retryingConnection, setRetryingConnection] = useState(false);
+    const freshTransferIds = useRef(new Set());
     const [demoLoading, setDemoLoading] = useState(false);
     const [demoMode, setDemoMode] = useState(false);
     const demoRequestedRef = useRef(false);
@@ -116,7 +120,7 @@ const Dashboard = () => {
         transfers,
         prepareTransferProgress,
         stopTransferProgress,
-    } = useTransferSocket(transferIds);
+    } = useTransferSocket(transferIds, { freshTransferIds });
 
     const needsAuthIds = transfers.filter((transfer) => transfer.status === 'needs_auth').map((transfer) => transfer.transferId).sort().join(',');
     useEffect(() => {
@@ -151,8 +155,36 @@ const Dashboard = () => {
         };
     }, []);
 
+    // Abre Integrações já na plataforma que precisa de ação.
+    const openIntegrations = useCallback((providerId) => {
+        setIntegrationFocus(providerId || null);
+        setActiveTab('integrations');
+    }, [setActiveTab]);
+
+    // Abre o Histórico com o relatório da transferência indicada.
+    const openHistory = useCallback((transferId) => {
+        setHistoryFocus(transferId ? String(transferId) : null);
+        setActiveTab('history');
+    }, [setActiveTab]);
+
+    // O foco vale só para a visita atual; ao sair da aba, a próxima abre no padrão.
+    const previousTabRef = useRef(activeTab);
+    useEffect(() => {
+        if (previousTabRef.current === 'integrations' && activeTab !== 'integrations') setIntegrationFocus(null);
+        if (previousTabRef.current === 'history' && activeTab !== 'history') setHistoryFocus(null);
+        previousTabRef.current = activeTab;
+    }, [activeTab]);
+
+    const retryConnection = useCallback(async () => {
+        setRetryingConnection(true);
+        const status = await refreshSystemStatus();
+        if (status.backend.status === 'online') await refreshIntegrations({ force: true });
+        setRetryingConnection(false);
+    }, [refreshIntegrations, refreshSystemStatus]);
+
     const followTransfers = useCallback((nextTransferIds) => {
         const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        ids.forEach((id) => freshTransferIds.current.add(id));
         // Sempre um array novo: reconecta o socket mesmo se a transferência já estava na lista.
         setTransferIds((currentIds) => [...new Set([...currentIds.map(String), ...ids])]);
     }, []);
@@ -170,6 +202,7 @@ const Dashboard = () => {
     // Nova migração entra na lista sem esconder as que ainda estão pausadas ou na fila.
     const handleTransferQueued = useCallback((nextTransferIds) => {
         const ids = (Array.isArray(nextTransferIds) ? nextTransferIds : [nextTransferIds]).filter(Boolean).map(String);
+        ids.forEach((id) => freshTransferIds.current.add(id));
         const stillActiveIds = transfers
             .filter((transfer) => ACTIVE_TRANSFER_STATUSES.includes(transfer.status))
             .map((transfer) => String(transfer.transferId));
@@ -191,6 +224,14 @@ const Dashboard = () => {
         setProviderPair(nextPair);
         setDemoMode(false);
     }, [providerPair.sourceProvider]);
+
+    // Depois de uma migração, recomeça com a seleção limpa. Após a demonstração, volta à escolha da origem.
+    const restartMigration = useCallback(() => {
+        setSourcePlaylistId('');
+        setSourcePlaylistIds([]);
+        setWizardStep(demoMode ? 0 : source.canRead && target.canWrite ? 3 : 2);
+        setDemoMode(false);
+    }, [demoMode, source.canRead, target.canWrite]);
 
     const startDemo = useCallback(async () => {
         setDemoLoading(true);
@@ -215,6 +256,7 @@ const Dashboard = () => {
 
         if (providerId && connectionStatus === 'connected') toast.success(t("{{value0}} conectado com sucesso.", { value0: providerLabel }));
         if (providerId && connectionStatus === 'denied') toast.error(t("Conexão com {{value0}} cancelada.", { value0: providerLabel }));
+        if (providerId && tab === 'integrations' && Object.hasOwn(PROVIDER_UI, providerId)) setIntegrationFocus(providerId);
 
         if (demo && !demoRequestedRef.current) { demoRequestedRef.current = true; startDemo(); }
         if (providerId || demo || connectionStatus || (tab && !Object.hasOwn(DASHBOARD_TAB_LABELS, tab))) {
@@ -240,7 +282,8 @@ const Dashboard = () => {
     });
 
     return (
-        <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+        <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab} backendStatus={systemStatus?.backend?.status}
+            onRetryConnection={retryConnection} retryingConnection={retryingConnection}>
             <Suspense fallback={<DashboardTabFallback />}>
                 {activeTab === 'home' && (
                     <HomeTab 
@@ -249,6 +292,7 @@ const Dashboard = () => {
                         onStartDemo={startDemo}
                         demoLoading={demoLoading}
                         demoMode={demoMode}
+                        onRestartMigration={restartMigration}
                         providers={providers}
                         source={source}
                         target={target}
@@ -278,6 +322,8 @@ const Dashboard = () => {
                         sourcePlaylistsError={sourcePlaylistsError}
                         refreshSourcePlaylists={refreshSourcePlaylists}
                         setActiveTab={setActiveTab}
+                        onOpenIntegrations={openIntegrations}
+                        onOpenHistory={openHistory}
                     />
                 )}
 
@@ -285,7 +331,8 @@ const Dashboard = () => {
                     <IntegrationsTab
                         providers={providers}
                         preferredProviderIds={[source.id, target.id]}
-                        onContinue={() => { setActiveTab('home'); setWizardStep(2); }}
+                        focusProviderId={integrationFocus}
+                        onContinue={() => { setActiveTab('home'); setWizardStep((step) => Math.max(step, 2)); }}
                         integrations={integrations}
                         integrationsLoading={integrationsLoading}
                         refreshIntegrations={refreshIntegrations}
@@ -296,7 +343,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'history' && (
-                    <HistoryTab onTransfersQueued={followTransfers} />
+                    <HistoryTab onTransfersQueued={followTransfers} focusTransferId={historyFocus} onOpenIntegrations={openIntegrations} />
                 )}
 
                 {activeTab === 'settings' && (

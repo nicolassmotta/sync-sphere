@@ -6,6 +6,7 @@ import {
     ChevronDown,
     ChevronRight,
     CheckCircle2,
+    Circle,
     ExternalLink,
     Loader2,
     Trash2,
@@ -22,7 +23,7 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
     const checking = Boolean(preview?.loading && !preview?.open);
 
     return (
-        <div className={`[content-visibility:auto] [contain-intrinsic-size:auto_80px] rounded-lg border p-2 transition-colors ${unavailable ? 'border-youtube/35 bg-youtube/10' : selected ? 'border-spotify/60 bg-spotify/10' : 'border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.055]'}`}>
+        <div className={`[content-visibility:auto] [contain-intrinsic-size:auto_80px] min-w-0 rounded-lg border p-2 transition-colors ${unavailable ? 'border-youtube/35 bg-youtube/10' : selected ? 'border-spotify/60 bg-spotify/10' : 'border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.055]'}`}>
             <div className="flex items-center gap-3">
                 <button
                     type="button"
@@ -38,11 +39,14 @@ const PlaylistRow = memo(({ playlist, providerLabel = 'plataforma', preview, sel
                             {playlist.ownerName || providerLabel} · {formatTrackCount(visibleTrackCount)}
                         </span>
                     </span>
+                    <span className="ml-auto shrink-0 pl-2">
+                        {checking && <Loader2 size={18} aria-hidden="true" className="animate-spin text-spotify" />}
+                        {unavailable && <AlertTriangle size={18} aria-hidden="true" className="text-youtube" />}
+                        {!checking && !unavailable && (selected
+                            ? <CheckCircle2 size={18} aria-hidden="true" className="text-spotify" />
+                            : <Circle size={18} aria-hidden="true" className="text-white/30" />)}
+                    </span>
                 </button>
-
-                {checking && <Loader2 size={18} className="shrink-0 animate-spin text-spotify" />}
-                {unavailable && <AlertTriangle size={18} className="shrink-0 text-youtube" />}
-                {!checking && !unavailable && selected && <CheckCircle2 size={18} className="shrink-0 text-spotify" />}
 
                 <button
                     type="button"

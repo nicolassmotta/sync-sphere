@@ -317,7 +317,21 @@ describe('TransferProcessor: Spotify para YouTube Music', () => {
         const result = await processor.process(spotifyJob);
 
         expect(result).toEqual({ status: 'needs_auth' });
-        expect(transferRecord.status).toBe('needs_auth');
+        expect(transferRecord).toMatchObject({
+            status: 'needs_auth',
+            authProvider: 'youtubeMusic',
+            lastMessage: 'A conexão com o YouTube Music precisa ser renovada: O cookie pode estar incompleto ou expirado.',
+        });
+    });
+
+    it('identifica a origem quando a leitura da playlist exige nova conexão', async () => {
+        mockGetSpotifyPlaylistSnapshot.mockRejectedValueOnce(Object.assign(new Error('Token expirado.'), { status: 401 }));
+        const { processor, transferRecord } = buildProcessor();
+
+        const result = await processor.process(spotifyJob);
+
+        expect(result).toEqual({ status: 'needs_auth' });
+        expect(transferRecord).toMatchObject({ authProvider: 'spotify', lastMessage: 'A conexão com o Spotify precisa ser renovada: Token expirado.' });
     });
 
     it('publica contadores e ETA no progresso', async () => {
@@ -391,7 +405,7 @@ describe('TransferProcessor: YouTube Music para Spotify', () => {
         const result = await processor.process(youtubeJob);
 
         expect(result).toEqual({ status: 'needs_auth' });
-        expect(transferRecord).toMatchObject({ status: 'needs_auth', retryQueuedCount: 1 });
+        expect(transferRecord).toMatchObject({ status: 'needs_auth', retryQueuedCount: 1, authProvider: 'spotify' });
     });
 });
 

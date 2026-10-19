@@ -4,7 +4,7 @@
 
 ## Escolher origem e destino
 
-No Início, escolha os dois provedores. O painel mostra se estão conectados ou disponíveis para leitura pública. Serviços que escrevem na conta precisam de autorização; Arquivo funciona sem credenciais.
+No Início, escolha os dois provedores. Na origem, o painel mostra se a plataforma está conectada ou lê links públicos sem login. No destino, mostra se já pode criar a playlist; leitura pública não basta para escrever. Serviços que escrevem na conta precisam de autorização; Arquivo funciona sem credenciais. Na etapa Destino, a plataforma escolhida como origem aparece indisponível, exceto Arquivo.
 
 A origem oferece, conforme suas capacidades:
 
@@ -12,7 +12,16 @@ A origem oferece, conforme suas capacidades:
 - Link ou ID de uma playlist.
 - Importação de CSV, JSON, M3U/M3U8 ou TXT.
 
-Siga Origem, Destino e Conexões. Em Playlists, selecione a origem, confira a estimativa e confirme a transferência. Resultado mostra o progresso. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
+Siga Origem, Destino e Conexões. Em Conexões, **Conectar** abre Integrações já na plataforma que falta. Em Playlists, selecione a origem, confira a estimativa e confirme a transferência. Resultado mostra o progresso. Pares com o mesmo provedor são recusados, exceto Arquivo -> Arquivo, que converte formatos.
+
+Na lista de playlists:
+
+- Com mais de seis playlists, a busca por nome filtra a lista. **Selecionar as N encontradas** marca só o resultado da busca.
+- **Usar o link de uma playlist** aceita uma playlist pública que não está na conta. O link substitui a seleção da lista. No Spotify, a API pode bloquear playlists de outras contas; a prévia informa quando isso acontece.
+- Em Arquivo, também é possível arrastar o arquivo para o cartão da lista.
+- As Músicas Curtidas do Spotify não aparecem como playlist. No app do Spotify, selecione todas em Músicas Curtidas (Ctrl+A ou Cmd+A), adicione a uma nova playlist e atualize a lista.
+
+A confirmação informa o que será criado: uma nova playlist por item, com o mesmo nome e a visibilidade usada pelo destino (privada; não listada no TIDAL; biblioteca no Apple Music), ou um arquivo para baixar no Histórico.
 
 ## Acompanhar o processamento
 
@@ -27,7 +36,9 @@ O backend valida a leitura antes de enfileirar. Durante a execução, lê a orig
 | Concluída | Confira a saída e as faixas não encontradas. |
 | Precisa de atenção | Leia o erro no Histórico e use retry ou revisão quando disponíveis. |
 
-O tempo estimado usa medições anteriores de busca e inserção. Ele pode mudar durante a transferência, especialmente após bloqueios ou uso do cache.
+O tempo estimado usa medições anteriores de busca e inserção. Ele pode mudar durante a transferência, especialmente após bloqueios ou uso do cache. Playlists aguardando reconexão ficam fora da estimativa.
+
+Cada playlist do Resultado traz a próxima ação: **Abrir no** destino, **Revisar faixas** quando há pendências ou músicas não encontradas, **Baixar o arquivo** no destino Arquivo e **Reconectar** com o nome da plataforma que expirou. **Ver resultado e baixar relatório** abre o relatório da transferência; com várias playlists, abre o Histórico. **Migrar outra playlist** limpa a seleção e mantém origem e destino.
 
 ## Retomar e tentar de novo
 
@@ -48,7 +59,9 @@ Uma interrupção imediatamente após criar uma playlist remota, antes de persis
 3. Compare até cinco opções por título, artista, álbum, duração e diferenças de versão. Confira o link da plataforma quando disponível.
 4. Ajuste título/artista e use **Buscar alternativa** se as opções não servirem.
 5. Use **Usar esta música** para guardar uma seleção na tela ou **Ignorar esta faixa** para não inserir aquela ocorrência.
-6. Selecione outras faixas, abra **Revisar escolhas antes de confirmar** e use **Confirmar escolhas**.
+6. Selecione outras faixas, abra **Revisar e confirmar** e use **Confirmar escolhas**. **Decidir depois** volta à lista sem registrar escolha.
+
+Fechar o relatório com escolhas ainda não confirmadas pede confirmação antes de descartá-las.
 
 As alternativas têm validade de dez minutos. Se expirarem, refaça a busca; uma escolha antiga ou de outra faixa não pode ser confirmada. As decisões confirmadas persistem após reinício. Transferências em execução ou com job existente não aceitam outra revisão. Resultados duvidosos nunca entram automaticamente.
 
@@ -57,6 +70,10 @@ O relatório CSV/JSON distingue inserções, revisão, falhas técnicas, ignorad
 **Esquecer escolha futura** remove uma decisão reaproveitada do cache sem alterar a playlist atual. Para corrigir uma ocorrência já inserida, abra **Corrigir faixas em uma nova playlist**, escolha a alternativa e confirme a criação da cópia. Resolva ou ignore todas as pendências primeiro. A cópia preserva a ordem das ocorrências resolvidas e mantém a playlist anterior intacta.
 
 A conferência do destino distingue escrita aceita de presença/ordem verificadas. Quando a ordem divergir, use **Criar cópia na ordem da origem**. Uma criação com resposta desconhecida exige conferir a plataforma antes de tentar outra criação.
+
+## Remover do histórico
+
+Nos detalhes de uma migração concluída ou com falha, **Remover do histórico** apaga o registro, o relatório e o estado por faixa deste computador. No destino Arquivo, o arquivo gerado também é apagado; baixe-o antes se precisar. Playlists criadas nas plataformas continuam na conta. Migrações em andamento, pausadas ou aguardando reconexão não podem ser removidas.
 
 ## Arquivos exportados
 
