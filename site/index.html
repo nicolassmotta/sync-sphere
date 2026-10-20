@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SyncSphere: migre playlists entre plataformas</title>
+  <meta name="description" content="Aplicativo gratuito e de código aberto que copia playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e arquivos, rodando no seu computador.">
+  <meta name="theme-color" content="#070808">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="pt-BR" href="https://nicolassmotta.github.io/sync-sphere/">
+  <link rel="alternate" hreflang="en" href="https://nicolassmotta.github.io/sync-sphere/en/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SyncSphere: migre playlists entre plataformas">
+  <meta property="og:description" content="Copie playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e arquivos, no seu computador.">
+  <meta property="og:image" content="https://nicolassmotta.github.io/sync-sphere/img/social.jpg">
+  <meta property="og:locale" content="pt_BR">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/Sora.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="download.js"></script>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#050607"/><path d="M18 38c5 6 15 9 25 3" fill="none" stroke="#1DB954" stroke-width="5" stroke-linecap="round"/><path d="M46 26c-5-6-15-9-25-3" fill="none" stroke="#FF0033" stroke-width="5" stroke-linecap="round"/><path d="M41 18l8 8-8 8" fill="none" stroke="#FF0033" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 46l-8-8 8-8" fill="none" stroke="#1DB954" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        SyncSphere
+      </a>
+      <nav class="site-nav" aria-label="Principal">
+        <a class="nav-optional" href="#baixar">Baixar</a>
+        <a class="nav-optional" href="#antes-de-comecar">Antes de começar</a>
+        <a href="https://github.com/nicolassmotta/sync-sphere">GitHub</a>
+        <a href="en/" hreflang="en" lang="en">English</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <h1>Mude suas playlists de plataforma sem refazer tudo à mão.</h1>
+          <p class="hero-lead">O SyncSphere copia playlists entre Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud e arquivos. Ele roda no seu computador, mostra cada música encontrada e separa as que precisam da sua revisão.</p>
+          <div class="hero-actions">
+            <a class="button" href="#baixar" data-hero-download
+              data-label-win-x64="Baixar para Windows"
+              data-label-win-arm64="Baixar para Windows ARM"
+              data-label-darwin-arm64="Baixar para Mac com Apple Silicon"
+              data-label-darwin-x64="Baixar para Mac com Intel"
+              data-label-linux-x64="Baixar para Linux"
+              data-label-linux-arm64="Baixar para Linux ARM">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              <span data-hero-label>Ver os downloads</span>
+            </a>
+            <a href="#baixar">Outros sistemas</a>
+          </div>
+          <p class="hero-note"><span data-release hidden>Versão <span data-version></span>. </span>Grátis, de código aberto e sem cadastro.</p>
+          <p class="hero-note" data-mac-hint hidden>Mac com processador Intel? <a href="#macos">Use o pacote para Intel</a>.</p>
+        </div>
+
+        <figure class="transfer" aria-label="Exemplo de migração de Spotify para YouTube Music com cinco músicas">
+          <div class="transfer-route">
+            <span class="from">Spotify</span>
+            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 38c5 6 15 9 25 3" fill="none" stroke="#1DB954" stroke-width="4" stroke-linecap="round"/><path d="M46 26c-5-6-15-9-25-3" fill="none" stroke="#FF0033" stroke-width="4" stroke-linecap="round"/><path d="M41 18l8 8-8 8" fill="none" stroke="#FF0033" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 46l-8-8 8-8" fill="none" stroke="#1DB954" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="to">YouTube Music</span>
+          </div>
+          <ol class="tracks">
+            <li class="track" style="--i: 0"><span><span class="track-title">Horizonte</span><span class="track-artist">Banda Aurora</span></span><span class="track-state">Encontrada</span></li>
+            <li class="track" style="--i: 1"><span><span class="track-title">Perto do Sol</span><span class="track-artist">Duo Norte</span></span><span class="track-state">Encontrada</span></li>
+            <li class="track track-review" style="--i: 2"><span><span class="track-title">Noite Livre (ao vivo)</span><span class="track-artist">Quarteto Rota</span></span><span class="track-state">Para revisar</span></li>
+            <li class="track" style="--i: 3"><span><span class="track-title">Maré Alta</span><span class="track-artist">Coral Leste</span></span><span class="track-state">Encontrada</span></li>
+            <li class="track" style="--i: 4"><span><span class="track-title">Cidade Acesa</span><span class="track-artist">Trio Vento</span></span><span class="track-state">Encontrada</span></li>
+          </ol>
+          <div class="transfer-bar" aria-hidden="true"><span></span></div>
+          <figcaption>Quando a versão no destino não é a mesma, a música espera no Histórico para você escolher. Músicas fictícias.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="baixar" aria-labelledby="baixar-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="baixar-titulo">Baixar</h2>
+          <p>Escolha o seu sistema. O pacote já traz tudo o que o aplicativo precisa: não é preciso instalar mais nada nem usar o terminal.</p>
+        </div>
+
+        <div class="systems">
+          <div class="system" id="windows">
+            <h3>Windows</h3>
+            <ul class="files">
+              <li><a class="file" data-target="win-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Windows 10 ou 11</span><span class="file-detail">Intel ou AMD, a maioria dos computadores</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="win-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Windows em ARM</span><span class="file-detail">Snapdragon e outros processadores ARM</span><span class="file-size" data-size></span></a></li>
+            </ul>
+          </div>
+          <div class="system" id="macos">
+            <h3>macOS</h3>
+            <ul class="files">
+              <li><a class="file" data-target="darwin-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Mac com Apple Silicon</span><span class="file-detail">Chip M1 ou mais novo</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="darwin-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Mac com Intel</span><span class="file-detail">Modelos anteriores ao M1</span><span class="file-size" data-size></span></a></li>
+            </ul>
+            <p class="system-hint">Não sabe qual? No menu Apple, abra Sobre este Mac. Se aparecer "Chip Apple", é Apple Silicon.</p>
+          </div>
+          <div class="system" id="linux">
+            <h3>Linux</h3>
+            <ul class="files">
+              <li><a class="file" data-target="linux-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Linux x64</span><span class="file-detail">A maioria dos computadores</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="linux-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Linux ARM64</span><span class="file-detail">Raspberry Pi 4 ou 5 e outros ARM</span><span class="file-size" data-size></span></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <div>
+              <h3>Extraia a pasta inteira</h3>
+              <p>No Windows, clique com o botão direito no arquivo e escolha Extrair tudo. No Mac e no Linux, clique duas vezes nele. Não abra o aplicativo de dentro do arquivo compactado.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Abra o Iniciar</h3>
+              <p>Use Iniciar.cmd no Windows, Iniciar.command no macOS ou Iniciar.sh no Linux. O painel abre no navegador.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Deixe a janela aberta</h3>
+              <p>A janela do Iniciar é o aplicativo funcionando. Feche só quando terminar as migrações.</p>
+            </div>
+          </li>
+        </ol>
+
+        <details class="unsigned">
+          <summary>O Windows ou o macOS pediu confirmação para abrir?</summary>
+          <div>
+            <p>O pacote ainda não tem assinatura de desenvolvedor, por isso o sistema pede uma confirmação na primeira vez.</p>
+            <p><strong>Windows:</strong> em "O Windows protegeu o computador", clique em Mais informações e depois em Executar assim mesmo.</p>
+            <p><strong>macOS:</strong> se aparecer que o desenvolvedor não pode ser verificado, abra Ajustes do Sistema, entre em Privacidade e Segurança e clique em Abrir Mesmo Assim. Em versões anteriores ao macOS 15, clique com o botão direito no Iniciar.command e escolha Abrir.</p>
+            <p>Faça isso só com pacotes baixados desta página ou da página de Releases do projeto.</p>
+          </div>
+        </details>
+
+        <p class="fine-print">Para conferir o download, compare a soma SHA-256 do arquivo com <a data-asset="SHA256SUMS.txt" href="https://github.com/nicolassmotta/sync-sphere/releases/latest">SHA256SUMS.txt</a>. Versões anteriores e notas de cada versão estão em <a href="https://github.com/nicolassmotta/sync-sphere/releases">Releases</a>. Prefere instalar pelo código? Siga o <a href="https://github.com/nicolassmotta/sync-sphere/blob/main/docs/getting-started.md">guia de instalação</a>.</p>
+      </div>
+    </section>
+
+    <section class="section" id="como-funciona" aria-labelledby="como-funciona-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="como-funciona-titulo">Como é usar</h2>
+          <p>O painel guia a migração em cinco etapas. Para conhecer sem conectar conta nenhuma, use Experimentar sem contas na página inicial.</p>
+        </div>
+        <div class="flow">
+          <ol class="flow-steps">
+            <li><strong>Origem</strong><span>De onde vêm as playlists: uma plataforma ou um arquivo.</span></li>
+            <li><strong>Destino</strong><span>Para onde elas vão.</span></li>
+            <li><strong>Conexões</strong><span>Conecte só as plataformas escolhidas. O painel mostra o passo a passo de cada uma.</span></li>
+            <li><strong>Playlists</strong><span>Marque uma ou várias, ou cole o link de uma playlist.</span></li>
+            <li><strong>Resultado</strong><span>Acompanhe cada música, revise as que não foram encontradas e baixe o relatório.</span></li>
+          </ol>
+          <figure class="shot">
+            <img src="img/painel.jpg" width="1280" height="960" loading="lazy" alt="Painel do SyncSphere na etapa Resultado: migração 100% concluída, playlist com 3 de 3 faixas encontradas e botões para migrar outra playlist ou baixar o relatório.">
+            <figcaption>Etapa Resultado de uma demonstração com músicas fictícias.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="antes-de-comecar" aria-labelledby="antes-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="antes-titulo">Antes de começar</h2>
+          <p>Cada plataforma tem suas regras para deixar um aplicativo mexer na sua conta. Veja o que esperar de cada uma.</p>
+        </div>
+        <dl class="requirements">
+          <div class="requirement">
+            <dt>Spotify</dt>
+            <dd>Você cria um app gratuito no <a href="https://developer.spotify.com/dashboard">painel de desenvolvedor do Spotify</a> e cola o Client ID no SyncSphere. <strong>Desde fevereiro de 2026, o Spotify exige que a conta dona desse app seja Premium.</strong> O painel mostra o passo a passo.</dd>
+          </div>
+          <div class="requirement">
+            <dt>YouTube Music</dt>
+            <dd>A conexão usa o cookie da sua conta, copiado do navegador e colado no painel. O painel mostra onde encontrar.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Deezer, TIDAL, Apple Music e SoundCloud<span class="tag">Experimental</span></dt>
+            <dd>Leitura e escrita estão implementadas e passam nos testes automáticos, mas a criação de playlists ainda não foi conferida com contas reais. O painel marca essas escritas como experimentais.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Arquivos</dt>
+            <dd>CSV, JSON, M3U e TXT funcionam sem conta nenhuma, como origem ou destino. Bom para experimentar ou guardar uma cópia das suas playlists.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Músicas, não áudio</dt>
+            <dd>O SyncSphere copia a lista de músicas e procura cada uma no destino. Ele não baixa nem envia arquivos de áudio.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="seus-dados" aria-labelledby="dados-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="dados-titulo">Fica tudo no seu computador</h2>
+        </div>
+        <ul class="local-facts">
+          <li><strong>Sem conta e sem servidor do projeto</strong><span>O aplicativo conversa direto com as plataformas. Nada passa por um servidor do SyncSphere.</span></li>
+          <li><strong>Credenciais cifradas</strong><span>Conexões e histórico ficam cifrados na pasta do aplicativo. Um backup protegido por senha leva tudo para outra instalação.</span></li>
+          <li><strong>Código aberto</strong><span>Licença MIT. Todo o código está no <a href="https://github.com/nicolassmotta/sync-sphere">GitHub</a> para quem quiser conferir ou contribuir.</span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <ul class="footer-links">
+        <li><a href="https://github.com/nicolassmotta/sync-sphere">Código no GitHub</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/blob/main/docs/README.md">Documentação</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/issues">Relatar um problema</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/blob/main/LICENSE">Licença MIT</a></li>
+      </ul>
+      <p class="disclaimer">O SyncSphere é um projeto independente. Não é afiliado, patrocinado nem aprovado por Spotify, YouTube, Deezer, TIDAL, Apple ou SoundCloud. Os nomes e marcas pertencem aos seus donos.</p>
+    </div>
+  </footer>
+</body>
+</html>

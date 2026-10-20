@@ -1,0 +1,65 @@
+name: Página
+
+# A página em site/ só vai ao ar pela execução manual na aba Actions.
+# Em pull requests, o workflow apenas confere os links internos e monta o artefato.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/pages.yml
+      - site/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  montar:
+    name: Montar página
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v7
+
+      - name: Conferir arquivos referenciados
+        working-directory: site
+        run: |
+          missing=0
+          for page in index.html en/index.html; do
+            dir=$(dirname "$page")
+            while read -r ref; do
+              if [ ! -e "$dir/$ref" ] && [ ! -e "$dir/$ref/index.html" ]; then
+                echo "::error file=site/$page::Arquivo não encontrado: $ref"
+                missing=1
+              fi
+            done < <(grep -oE '(href|src)="[^"#:]+"' "$page" | sed -E 's/^(href|src)="//; s/"$//')
+          done
+          exit "$missing"
+
+      - name: Guardar página
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  publicar:
+    name: Publicar no GitHub Pages
+    needs: montar
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+
+    steps:
+      - name: Publicar
+        id: publicar
+        uses: actions/deploy-pages@v5
