@@ -11,6 +11,7 @@ SyncSphere é uma aplicação fullstack para migrar playlists entre Spotify, You
 - `backend/`: API Node.js + Express em ESM, arquitetura MVC, Socket.io. Persistência local em arquivos JSON cifrados (`backend/data/`) e fila de transferências local persistida em `data/queue.json`. Sem MongoDB, sem Redis, sem login.
 - `frontend/`: React 18 + Vite, React Router, Zustand, Axios com `withCredentials`, TailwindCSS, Framer Motion, Lucide.
 - `docs/ai/`: contexto operacional para agentes, MCPs e prompts repetíveis.
+- `site/`: página pública estática (PT e EN) publicada no GitHub Pages pelo workflow `Página`; veja `docs/ai/landing-page.md`.
 - `docs/README.md`: índice público de instalação, uso, integrações, configuração, formatos, solução de problemas, arquitetura, API e divulgação. Mantenha-o alinhado aos guias.
 - `.agents/skills/sync-sphere/`: skill local do projeto para reutilizar este contexto.
 - `agent-repos/`: clones locais opcionais de ferramentas para agentes. Atualmente usado para `caveman` e `rtk`; mantenha ignorado pelo Git e registre decisões em `docs/ai/agent-tooling.md`.
