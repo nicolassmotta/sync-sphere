@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
+const { version } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const nodeVersion = option('--node-version', '24.15.0');
 const supported = ['linux-x64', 'linux-arm64', 'darwin-x64', 'darwin-arm64', 'win-x64', 'win-arm64'];
 const targets = args.includes('--all') ? supported : [option('--target', `${process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`)];
@@ -51,7 +52,7 @@ try {
         if (target.startsWith('win-')) run('unzip', ['-q', archive, '-d', extract], root);
         else run('tar', ['-xzf', archive, '-C', extract], root);
         const distribution = path.join(extract, `node-v${nodeVersion}-${target}`);
-        const name = `syncsphere-1.1.0-preparacao-${target}`;
+        const name = `syncsphere-${version}-${target}`;
         const bundle = path.join(workspace, name);
         fs.cpSync(common, bundle, { recursive: true, verbatimSymlinks: true });
         const packageManifest = JSON.parse(fs.readFileSync(path.join(bundle, 'package.json'), 'utf8'));
@@ -61,21 +62,21 @@ try {
         fs.copyFileSync(path.join(distribution, target.startsWith('win-') ? 'node.exe' : 'bin/node'), path.join(bundle, 'runtime', target.startsWith('win-') ? 'node.exe' : 'node'));
         fs.copyFileSync(path.join(distribution, 'LICENSE'), path.join(bundle, 'runtime', 'LICENSE'));
         if (!target.startsWith('win-')) fs.chmodSync(path.join(bundle, 'runtime', 'node'), 0o755);
-        fs.writeFileSync(path.join(bundle, 'Iniciar.cmd'), '@echo off\r\nchcp 65001 >nul\r\n"%~dp0runtime\\node.exe" "%~dp0scripts\\start-local.mjs"\r\nif errorlevel 1 pause\r\n');
+        fs.writeFileSync(path.join(bundle, 'Iniciar.cmd'), '@echo off\r\nchcp 65001 >nul\r\n"%~dp0runtime\\node.exe" "%~dp0scripts\\start-local.mjs" %*\r\nif errorlevel 1 pause\r\n');
         fs.writeFileSync(path.join(bundle, 'Restaurar-backup.cmd'), '@echo off\r\nchcp 65001 >nul\r\n"%~dp0runtime\\node.exe" "%~dp0scripts\\restore-backup.mjs" --interactive\r\npause\r\n');
         for (const extension of ['sh', 'command']) {
             const prefix = '#!/bin/sh\ncd "$(dirname "$0")" || exit 1\n';
             fs.writeFileSync(path.join(bundle, `Iniciar.${extension}`), prefix + './runtime/node scripts/start-local.mjs "$@"\n', { mode: 0o755 });
             fs.writeFileSync(path.join(bundle, `Restaurar-backup.${extension}`), prefix + './runtime/node scripts/restore-backup.mjs --interactive\n', { mode: 0o755 });
         }
-        fs.writeFileSync(path.join(bundle, 'LEIA-ME.txt'), 'SyncSphere 1.1.0 em preparação\n\nExtraia toda a pasta antes de abrir. Windows: Iniciar.cmd. macOS: Iniciar.command. Linux: Iniciar.sh. Mantenha a janela aberta durante as migrações. Não precisa instalar Node.js.\n\nNo painel, use Experimentar sem contas para começar. Para proteger seus dados, abra Ajuda e segurança. Encerre o aplicativo antes de atualizar ou restaurar. Guarde a pasta backend/data da instalação anterior.\n\nPacotes ainda sem assinatura de instalador. Escritas experimentais são identificadas no painel. Consulte docs/primeira-migracao.md e docs/backups.md.\n');
-        fs.writeFileSync(path.join(bundle, 'README.txt'), 'SyncSphere 1.1.0 in preparation\n\nExtract the complete folder. Open Iniciar.cmd on Windows, Iniciar.command on macOS, or Iniciar.sh on Linux. Keep the terminal open during transfers. Node.js is included. Terminal prompts and filenames currently remain in Portuguese.\n\nChoose English in the browser header, then Try without accounts. See docs/en/README.md for installation, backups and recovery. Stop the app before updating or restoring. Protect your data and original key. Packages are unsigned preparation artifacts, not a published release.\n');
-        fs.writeFileSync(path.join(bundle, 'package-manifest.json'), JSON.stringify({ format: 'syncsphere-local-package', version: '1.1.0-preparacao', target, nodeVersion, runtimeArchiveSha256: expected }, null, 2));
+        fs.writeFileSync(path.join(bundle, 'LEIA-ME.txt'), `SyncSphere ${version}\n\nExtraia toda a pasta antes de abrir. Windows: Iniciar.cmd. macOS: Iniciar.command. Linux: Iniciar.sh. Mantenha a janela aberta durante as migrações. Não precisa instalar Node.js.\n\nNo painel, use Experimentar sem contas para começar. Para proteger seus dados, abra Ajuda e segurança. Encerre o aplicativo antes de atualizar ou restaurar. Guarde a pasta backend/data da instalação anterior.\n\nO pacote não é um instalador assinado: o Windows e o macOS podem pedir confirmação na primeira abertura. Escritas experimentais são identificadas no painel. Consulte docs/primeira-migracao.md e docs/backups.md.\n`);
+        fs.writeFileSync(path.join(bundle, 'README.txt'), `SyncSphere ${version}\n\nExtract the complete folder. Open Iniciar.cmd on Windows, Iniciar.command on macOS, or Iniciar.sh on Linux. Keep the terminal open during transfers. Node.js is included. Terminal prompts and filenames currently remain in Portuguese.\n\nChoose English in the browser header, then Try without accounts. See docs/en/README.md for installation, backups and recovery. Stop the app before updating or restoring. Protect your data and original key. This package is not a signed installer: Windows and macOS may ask for confirmation the first time you open it.\n`);
+        fs.writeFileSync(path.join(bundle, 'package-manifest.json'), JSON.stringify({ format: 'syncsphere-local-package', version, target, nodeVersion, runtimeArchiveSha256: expected }, null, 2));
         const output = path.join(artifacts, `${name}.${target.startsWith('win-') ? 'zip' : 'tar.gz'}`);
         if (target.startsWith('win-')) run('zip', ['-qr', output, name], workspace);
         else run('tar', ['-czf', output, '-C', workspace, name], root);
         fs.writeFileSync(`${output}.sha256`, `${crypto.createHash('sha256').update(fs.readFileSync(output)).digest('hex')}  ${path.basename(output)}\n`);
-        console.log(`Pacote local gerado: ${output}. Execução em ${target} requer verificação no sistema correspondente.`);
+        console.log(`Pacote local gerado: ${output}. Para conferir a execução, rode node scripts/verify-package.mjs ${output} em um computador ${target}.`);
     }
 } catch (error) {
     console.error(error.message);
