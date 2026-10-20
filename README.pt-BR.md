@@ -48,7 +48,7 @@ Para migrar entre serviços, siga as etapas **Origem > Destino > Conexões > Pla
 
 ## Abrir sem instalar Node.js
 
-O projeto também permite gerar [pacotes portáteis](docs/distribution.md) com o runtime incluído. Extraia a pasta e abra **Iniciar** no seu sistema. A 1.1.0 continua em preparação: gerar pacotes locais não publica uma Release, e cada plataforma precisa de conferência no seu sistema antes de distribuição validada.
+Cada versão publicada traz [pacotes portáteis](docs/distribution.md) com o runtime incluído na página de [Releases](https://github.com/nicolassmotta/sync-sphere/releases). Extraia a pasta e abra **Iniciar** no seu sistema. Antes de criar a Release, o CI abre cada pacote no próprio sistema e confere se o painel responde.
 
 Em **Ajuda e segurança**, você encontra orientação por sintoma, [backup protegido por senha](docs/backups.md) e diagnóstico revisável antes de compartilhar. Nenhum diagnóstico é enviado automaticamente. A interface oferece português e inglês, com preferência salva no navegador. Os guias iniciais também estão disponíveis em [inglês](docs/en/README.md).
 

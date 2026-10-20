@@ -11,7 +11,7 @@ These guides follow the source branch. Version 1.1.0 is in preparation, not publ
 - [Usage and limits](usage.md): progress, recovery, review and reports.
 - [Integrations and privacy](integrations.md): connection methods for all seven providers.
 - [Backups and recovery](backups.md): password-protected copies and offline restore.
-- [Portable packages](distribution.md): included runtime and local packaging.
+- [Portable packages](distribution.md): download, included runtime, packaging and checks.
 - [Troubleshooting](troubleshooting.md): symptoms and the next action.
 
 ## Develop and contribute

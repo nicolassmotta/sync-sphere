@@ -33,7 +33,7 @@ The launcher opens the dashboard in your browser. Choose **Try without accounts*
 
 For music services, follow **Source > Destination > Connections > Playlists > Outcome**. Configure only the platforms you need. The panel can save Spotify and TIDAL Client IDs. The [installation guide](docs/en/getting-started.md) covers configuration, updates and stopping the app.
 
-[Portable packages](docs/en/distribution.md) include Node.js. Extract the complete folder and open `Iniciar` for your system. They remain preparation artifacts, not a published release. Generating a package does not prove that it runs on that operating system.
+Each published version attaches [portable packages](docs/en/distribution.md) with Node.js included to [Releases](https://github.com/nicolassmotta/sync-sphere/releases). Extract the complete folder and open `Iniciar` for your system. Before a Release is created, CI opens each package on its own operating system and checks that the panel responds.
 
 ## Platforms and connections
 
