@@ -8,7 +8,7 @@ Esta documentação acompanha a versão da `main`. Para instalar uma versão pub
 
 - [Sua primeira migração](primeira-migracao.md): fluxo guiado, demonstração integrada e resultado.
 - [Backup e restauração](backups.md): cópia cifrada por senha e recuperação com o aplicativo fechado.
-- [Pacotes portáteis](distribution.md): iniciador e geração local de pacotes com Node.js incluído.
+- [Pacotes portáteis](distribution.md): download, iniciador, geração e conferência de pacotes com Node.js incluído.
 
 - [Idiomas](localization.md): preferência, catálogos e mensagens HTTP.
 - [Primeiros passos](getting-started.md): instalação, execução local e demonstração sem contas.

@@ -4,6 +4,17 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 
 ## [Não publicado]
 
+Nada por enquanto.
+
+## [1.1.0] - A publicar
+
+### Pacotes e Release
+
+- Workflow **Release**: a tag `vX.Y.Z` valida o código, gera os pacotes das seis plataformas, abre cada um pelo iniciador no próprio sistema (Linux, macOS e Windows, x64 e ARM) e cria a GitHub Release com os arquivos e `SHA256SUMS.txt`.
+- Pacotes levam a versão do `package.json` no nome, no manifesto e no LEIA-ME, sem a marca de preparação. `Iniciar.cmd` repassa opções ao iniciador, como `--no-browser`.
+- `scripts/verify-package.mjs` confere um pacote no sistema atual: soma SHA-256, plataforma, ausência de `.env` e dados, abertura pelo iniciador e resposta do painel.
+- Dependências de produção com alertas de segurança atualizadas: `follow-redirects` 1.16.1 e `proxy-addr` 2.0.8.
+
 ### Usabilidade tela a tela
 
 - Painel em outra porta não fica mais em branco: a origem da porta configurada é sempre aceita. Iniciador e servidor explicam porta ocupada e sugerem outra.
@@ -29,8 +40,6 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 - Navegação preservada na URL, progresso informa reconexão do socket, revisão orienta músicas não encontradas e links executáveis são descartados.
 - Formulário de Client ID aceita Enter, navegação permanece acessível no celular e ajustes de contraste/foco melhoram leitura e teclado.
 
-
-
 ### Idiomas em preparação
 
 - Interface PT/EN com preferência local, datas localizadas e mensagens de progresso nos dois idiomas.
@@ -45,7 +54,7 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 - Assistentes de conexão e configuração local de Client IDs de Spotify/TIDAL pelo painel; escritas sem confirmação real identificadas como experimentais.
 - Relatórios CSV/JSON por transferência, orientação por sintoma e diagnóstico revisável sem credenciais, logs ou dados de playlists.
 - Backup cifrado por senha e restauração offline com confirmação, bloqueio exclusivo e diário de rollback.
-- Iniciador local e geração de pacotes portáteis com Node.js incluído, sem publicar a versão em preparação.
+- Iniciador local e pacotes portáteis com Node.js incluído.
 - Melhorias de foco, teclado, legibilidade, navegação, confirmações e fonte servida localmente.
 - Guia visual da primeira migração, documentação de distribuição/backup e roteiro de conferência com pessoas.
 
@@ -66,12 +75,10 @@ Todas as mudanças relevantes do SyncSphere serão registradas neste arquivo.
 - Credenciais opcionais vazias no `.env.example` para começar pelo fluxo Arquivo sem falsas conexões.
 - Guia embutido e contexto de manutenção atualizados para os sete provedores e a fila persistida.
 
-## [1.1.0] - Em preparação
-
 ### Preparação da versão
 
 - Versões da raiz, backend, frontend e lockfiles alinhadas em 1.1.0.
-- Dependências atualizadas com correções de segurança; Vite atualizado para 6.4.3 e plugin React para 4.7.0.
+- Dependências atualizadas com correções de segurança; Vite atualizado para 6.4.4 e plugin React para 4.7.0.
 - README e título do aplicativo alinhados às sete plataformas.
 - Guias de contribuição, segurança, fases e notas de versão adicionados.
 

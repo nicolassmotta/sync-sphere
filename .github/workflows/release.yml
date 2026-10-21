@@ -1,0 +1,159 @@
+name: Release
+
+# A tag vX.Y.Z valida o código, gera os pacotes das seis plataformas, abre cada
+# um no próprio sistema e só então cria a GitHub Release com os arquivos.
+# Em pull requests e na execução manual, o workflow para antes da publicação.
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - scripts/package-local.mjs
+      - scripts/start-local.mjs
+      - scripts/verify-package.mjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validar:
+    name: Validar código
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/ci.yml
+
+  empacotar:
+    name: Gerar pacotes
+    needs: validar
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Conferir versão, changelog e notas da tag
+        if: github.ref_type == 'tag'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for manifest in package.json backend/package.json frontend/package.json backend/package-lock.json frontend/package-lock.json; do
+            current=$(node -p "require('./$manifest').version")
+            if [ "$current" != "$version" ]; then
+              echo "::error file=$manifest::A versão é $current, mas a tag é $GITHUB_REF_NAME."
+              exit 1
+            fi
+          done
+          if ! grep -Eq "^## \[${version//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::Defina a data da $version no CHANGELOG antes de criar a tag."
+            exit 1
+          fi
+          if [ ! -f "docs/releases/$GITHUB_REF_NAME.md" ]; then
+            echo "::error::Crie as notas em docs/releases/$GITHUB_REF_NAME.md antes de criar a tag."
+            exit 1
+          fi
+
+      - name: Instalar dependências do front-end
+        run: npm ci --prefix frontend
+
+      - name: Gerar pacotes das seis plataformas
+        run: npm run package -- --all
+
+      - name: Reunir somas SHA-256
+        working-directory: artifacts
+        run: sha256sum -- *.zip *.tar.gz | tee SHA256SUMS.txt
+
+      - name: Guardar pacotes
+        uses: actions/upload-artifact@v7
+        with:
+          name: pacotes
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  testar:
+    name: Abrir pacote ${{ matrix.target }}
+    needs: empacotar
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux-x64, runner: ubuntu-latest, archive: tar.gz }
+          - { target: linux-arm64, runner: ubuntu-24.04-arm, archive: tar.gz }
+          - { target: darwin-x64, runner: macos-15-intel, archive: tar.gz }
+          - { target: darwin-arm64, runner: macos-latest, archive: tar.gz }
+          - { target: win-x64, runner: windows-latest, archive: zip }
+          - { target: win-arm64, runner: windows-11-arm, archive: zip }
+
+    steps:
+      - name: Baixar script de conferência
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Baixar pacotes
+        uses: actions/download-artifact@v8
+        with:
+          name: pacotes
+          path: artifacts
+
+      - name: Abrir pelo iniciador e conferir o painel
+        shell: bash
+        run: node scripts/verify-package.mjs artifacts/syncsphere-*-${{ matrix.target }}.${{ matrix.archive }}
+
+  publicar:
+    name: Publicar Release
+    needs: testar
+    if: ${{ !failure() && !cancelled() && github.event_name == 'push' && github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v7
+
+      - name: Baixar pacotes
+        uses: actions/download-artifact@v8
+        with:
+          name: pacotes
+          path: artifacts
+
+      - name: Preparar notas com links absolutos
+        run: |
+          base="https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}"
+          sed -e '1{/^# /d}' -e "s#](\.\./\.\./#](${base}/#g" -e "s#](\.\./#](${base}/docs/#g" \
+            "docs/releases/${GITHUB_REF_NAME}.md" > "$RUNNER_TEMP/notas.md"
+
+      - name: Criar Release com os pacotes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/*.zip artifacts/*.tar.gz artifacts/SHA256SUMS.txt \
+            --verify-tag \
+            --title "SyncSphere ${GITHUB_REF_NAME#v}" \
+            --notes-file "$RUNNER_TEMP/notas.md"
