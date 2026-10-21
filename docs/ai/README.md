@@ -11,6 +11,7 @@ A documentação pública está em [../README.md](../README.md). Este contexto c
 - Para escolher MCPs: leia [mcp-catalog.md](mcp-catalog.md).
 - Para pedir tarefas recorrentes com menos atrito: use [prompt-recipes.md](prompt-recipes.md).
 - Para preparar e publicar versões: siga [release-process.md](release-process.md).
+- Para mexer na página pública do GitHub Pages: leia [landing-page.md](landing-page.md).
 - Para a entrada de uma sessão: comece por [AGENTS.md](../../AGENTS.md) e [agent-onboarding.md](agent-onboarding.md).
 
 ## Manutenção

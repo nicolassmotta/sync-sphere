@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SyncSphere: move playlists between platforms</title>
+  <meta name="description" content="Free, open source app that copies playlists between Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud and files, running on your own computer.">
+  <meta name="theme-color" content="#070808">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="pt-BR" href="https://nicolassmotta.github.io/sync-sphere/">
+  <link rel="alternate" hreflang="en" href="https://nicolassmotta.github.io/sync-sphere/en/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SyncSphere: move playlists between platforms">
+  <meta property="og:description" content="Copy playlists between Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud and files, on your own computer.">
+  <meta property="og:image" content="https://nicolassmotta.github.io/sync-sphere/img/social.jpg">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="../fonts/Sora.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="../styles.css">
+  <script type="module" src="../download.js"></script>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#050607"/><path d="M18 38c5 6 15 9 25 3" fill="none" stroke="#1DB954" stroke-width="5" stroke-linecap="round"/><path d="M46 26c-5-6-15-9-25-3" fill="none" stroke="#FF0033" stroke-width="5" stroke-linecap="round"/><path d="M41 18l8 8-8 8" fill="none" stroke="#FF0033" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 46l-8-8 8-8" fill="none" stroke="#1DB954" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        SyncSphere
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a class="nav-optional" href="#download">Download</a>
+        <a class="nav-optional" href="#before-you-start">Before you start</a>
+        <a href="https://github.com/nicolassmotta/sync-sphere">GitHub</a>
+        <a href="../" hreflang="pt-BR" lang="pt-BR">Português</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <h1>Move your playlists to another platform without rebuilding them by hand.</h1>
+          <p class="hero-lead">SyncSphere copies playlists between Spotify, YouTube Music, Deezer, TIDAL, Apple Music, SoundCloud and files. It runs on your computer, shows every track it finds and sets aside the ones that need your review.</p>
+          <div class="hero-actions">
+            <a class="button" href="#download" data-hero-download
+              data-label-win-x64="Download for Windows"
+              data-label-win-arm64="Download for Windows on ARM"
+              data-label-darwin-arm64="Download for Mac with Apple silicon"
+              data-label-darwin-x64="Download for Intel Mac"
+              data-label-linux-x64="Download for Linux"
+              data-label-linux-arm64="Download for Linux on ARM">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              <span data-hero-label>See downloads</span>
+            </a>
+            <a href="#download">Other systems</a>
+          </div>
+          <p class="hero-note"><span data-release hidden>Version <span data-version></span>. </span>Free, open source, no sign-up.</p>
+          <p class="hero-note" data-mac-hint hidden>Mac with an Intel processor? <a href="#macos">Use the Intel package</a>.</p>
+        </div>
+
+        <figure class="transfer" aria-label="Example transfer of five tracks from Spotify to YouTube Music">
+          <div class="transfer-route">
+            <span class="from">Spotify</span>
+            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 38c5 6 15 9 25 3" fill="none" stroke="#1DB954" stroke-width="4" stroke-linecap="round"/><path d="M46 26c-5-6-15-9-25-3" fill="none" stroke="#FF0033" stroke-width="4" stroke-linecap="round"/><path d="M41 18l8 8-8 8" fill="none" stroke="#FF0033" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 46l-8-8 8-8" fill="none" stroke="#1DB954" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="to">YouTube Music</span>
+          </div>
+          <ol class="tracks">
+            <li class="track" style="--i: 0"><span><span class="track-title">Horizonte</span><span class="track-artist">Banda Aurora</span></span><span class="track-state">Found</span></li>
+            <li class="track" style="--i: 1"><span><span class="track-title">Perto do Sol</span><span class="track-artist">Duo Norte</span></span><span class="track-state">Found</span></li>
+            <li class="track track-review" style="--i: 2"><span><span class="track-title">Noite Livre (live)</span><span class="track-artist">Quarteto Rota</span></span><span class="track-state">To review</span></li>
+            <li class="track" style="--i: 3"><span><span class="track-title">Maré Alta</span><span class="track-artist">Coral Leste</span></span><span class="track-state">Found</span></li>
+            <li class="track" style="--i: 4"><span><span class="track-title">Cidade Acesa</span><span class="track-artist">Trio Vento</span></span><span class="track-state">Found</span></li>
+          </ol>
+          <div class="transfer-bar" aria-hidden="true"><span></span></div>
+          <figcaption>When the destination only has a different version, the track waits in History for you to choose. Fictional tracks.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="download" aria-labelledby="download-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="download-title">Download</h2>
+          <p>Pick your system. Each package includes everything the app needs: nothing else to install and no terminal commands.</p>
+        </div>
+
+        <div class="systems">
+          <div class="system" id="windows">
+            <h3>Windows</h3>
+            <ul class="files">
+              <li><a class="file" data-target="win-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Windows 10 or 11</span><span class="file-detail">Intel or AMD, most computers</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="win-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Windows on ARM</span><span class="file-detail">Snapdragon and other ARM processors</span><span class="file-size" data-size></span></a></li>
+            </ul>
+          </div>
+          <div class="system" id="macos">
+            <h3>macOS</h3>
+            <ul class="files">
+              <li><a class="file" data-target="darwin-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Mac with Apple silicon</span><span class="file-detail">M1 chip or newer</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="darwin-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Intel Mac</span><span class="file-detail">Models from before the M1</span><span class="file-size" data-size></span></a></li>
+            </ul>
+            <p class="system-hint">Not sure? Open About This Mac from the Apple menu. If it lists a Chip such as Apple M1, it has Apple silicon.</p>
+          </div>
+          <div class="system" id="linux">
+            <h3>Linux</h3>
+            <ul class="files">
+              <li><a class="file" data-target="linux-x64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Linux x64</span><span class="file-detail">Most computers</span><span class="file-size" data-size></span></a></li>
+              <li><a class="file" data-target="linux-arm64" href="https://github.com/nicolassmotta/sync-sphere/releases/latest"><span class="file-name">Linux ARM64</span><span class="file-detail">Raspberry Pi 4 or 5 and other ARM devices</span><span class="file-size" data-size></span></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <div>
+              <h3>Extract the whole folder</h3>
+              <p>On Windows, right-click the file and choose Extract All. On Mac and Linux, double-click it. Do not open the app from inside the compressed file.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Open Iniciar</h3>
+              <p>Use Iniciar.cmd on Windows, Iniciar.command on macOS or Iniciar.sh on Linux ("Iniciar" means start). The app opens in your browser.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Keep the window open</h3>
+              <p>The Iniciar window is the app running. Close it only when your transfers are done. Its messages are in Portuguese; the app itself is in English.</p>
+            </div>
+          </li>
+        </ol>
+
+        <details class="unsigned">
+          <summary>Did Windows or macOS ask for confirmation?</summary>
+          <div>
+            <p>The package is not signed by a registered developer yet, so the system asks for confirmation the first time.</p>
+            <p><strong>Windows:</strong> under "Windows protected your PC", click More info and then Run anyway.</p>
+            <p><strong>macOS:</strong> if the developer cannot be verified, open System Settings, go to Privacy &amp; Security and click Open Anyway. Before macOS 15, right-click Iniciar.command and choose Open.</p>
+            <p>Only do this for packages downloaded from this page or from the project's Releases page.</p>
+          </div>
+        </details>
+
+        <p class="fine-print">To verify a download, compare its SHA-256 checksum with <a data-asset="SHA256SUMS.txt" href="https://github.com/nicolassmotta/sync-sphere/releases/latest">SHA256SUMS.txt</a>. Older versions and release notes are on <a href="https://github.com/nicolassmotta/sync-sphere/releases">Releases</a>. Prefer installing from source? Follow the <a href="https://github.com/nicolassmotta/sync-sphere/blob/main/docs/en/getting-started.md">installation guide</a>.</p>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works" aria-labelledby="how-it-works-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="how-it-works-title">How it works</h2>
+          <p>The app guides each transfer in five steps. To look around without connecting any account, choose Try without accounts on the home screen.</p>
+        </div>
+        <div class="flow">
+          <ol class="flow-steps">
+            <li><strong>Source</strong><span>Where the playlists come from: a platform or a file.</span></li>
+            <li><strong>Destination</strong><span>Where they go.</span></li>
+            <li><strong>Connections</strong><span>Connect only the platforms you chose. The app walks you through each one.</span></li>
+            <li><strong>Playlists</strong><span>Select one or several, or paste a playlist link.</span></li>
+            <li><strong>Outcome</strong><span>Follow every track, review the ones that were not found and download the report.</span></li>
+          </ol>
+          <figure class="shot">
+            <img src="../img/painel.jpg" width="1280" height="960" loading="lazy" alt="SyncSphere in Portuguese at the Outcome step: transfer 100% complete, a playlist with 3 of 3 tracks found and buttons to transfer another playlist or download the report.">
+            <figcaption>Outcome step of a demonstration with fictional tracks, shown in Portuguese. The app can be switched to English in its header.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="before-you-start" aria-labelledby="before-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="before-title">Before you start</h2>
+          <p>Each platform has its own rules for letting an app work with your account. Here is what to expect.</p>
+        </div>
+        <dl class="requirements">
+          <div class="requirement">
+            <dt>Spotify</dt>
+            <dd>You create a free app in the <a href="https://developer.spotify.com/dashboard">Spotify developer dashboard</a> and paste its Client ID into SyncSphere. <strong>Since February 2026, Spotify requires the account that owns that app to be Premium.</strong> The app shows each step.</dd>
+          </div>
+          <div class="requirement">
+            <dt>YouTube Music</dt>
+            <dd>The connection uses your account cookie, copied from your browser and pasted into the app. The app shows where to find it.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Deezer, TIDAL, Apple Music and SoundCloud<span class="tag">Experimental</span></dt>
+            <dd>Reading and writing are implemented and pass automated tests, but creating playlists has not been checked with real accounts yet. The app labels these writes as experimental.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Files</dt>
+            <dd>CSV, JSON, M3U and TXT work without any account, as source or destination. Useful for trying the app or keeping a copy of your playlists.</dd>
+          </div>
+          <div class="requirement">
+            <dt>Track lists, not audio</dt>
+            <dd>SyncSphere copies the list of tracks and looks for each one on the destination. It does not download or upload audio files.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="your-data" aria-labelledby="data-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="data-title">Everything stays on your computer</h2>
+        </div>
+        <ul class="local-facts">
+          <li><strong>No account, no project server</strong><span>The app talks directly to the platforms. Nothing goes through a SyncSphere server.</span></li>
+          <li><strong>Encrypted credentials</strong><span>Connections and history are encrypted in the app folder. A password-protected backup moves everything to another installation.</span></li>
+          <li><strong>Open source</strong><span>MIT license. All the code is on <a href="https://github.com/nicolassmotta/sync-sphere">GitHub</a> for anyone to inspect or contribute.</span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <ul class="footer-links">
+        <li><a href="https://github.com/nicolassmotta/sync-sphere">Code on GitHub</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/blob/main/docs/en/README.md">Documentation</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/issues">Report a problem</a></li>
+        <li><a href="https://github.com/nicolassmotta/sync-sphere/blob/main/LICENSE">MIT license</a></li>
+      </ul>
+      <p class="disclaimer">SyncSphere is an independent project. It is not affiliated with, sponsored or endorsed by Spotify, YouTube, Deezer, TIDAL, Apple or SoundCloud. Names and trademarks belong to their owners.</p>
+    </div>
+  </footer>
+</body>
+</html>
